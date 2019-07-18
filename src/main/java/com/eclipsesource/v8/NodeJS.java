@@ -37,18 +37,6 @@ public class NodeJS {
     private V8Function require;
 
     /**
-     * Creates a NodeJS Runtime
-     *
-     * @return The NodeJS runtime.
-     *
-     * May throw an UnsupportedOperationException if node.js integration has not
-     * been compiled for your platform.
-     */
-    public static NodeJS createNodeJS() {
-        return createNodeJS(null);
-    }
-
-    /**
      * Returns the version of Node.js that is runtime is built against.
      * This uses process.versions.node to get the version.
      *
@@ -74,14 +62,13 @@ public class NodeJS {
     /**
      * Creates a NodeJS runtime and executes a JS Script
      *
-     * @param file The JavaScript to execute or null for no script.
      * @return The NodeJS runtime.
      *
      * May throw an UnsupportedOperationException if node.js integration has not
      * been compiled for your platform.
      */
-    public static NodeJS createNodeJS(final File file) {
-        V8 v8 = V8.createV8Runtime(GLOBAL);
+    public static NodeJS createNodeJS() {
+        final V8 v8 = V8.createV8Runtime(GLOBAL);
         final NodeJS node = new NodeJS(v8);
         v8.registerJavaMethod(new JavaVoidCallback() {
 
@@ -104,9 +91,6 @@ public class NodeJS {
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
-        }
-        if (file != null) {
-            node.exec(file);
         }
         return node;
     }
@@ -158,14 +142,14 @@ public class NodeJS {
      * Invokes NodeJS require() on the specified file. This will load the module, execute
      * it and return the exports object to the caller. The exports object must be released.
      *
-     * @param file The module to load.
+     * @param path The module to load.
      * @return The exports object.
      */
-    public V8Object require(final File file) {
+    public V8Object require(final String path) {
         v8.checkThread();
         V8Array requireParams = new V8Array(v8);
         try {
-            requireParams.push(file.getAbsolutePath());
+            requireParams.push(path);
             return (V8Object) require.call(null, requireParams);
         } finally {
             requireParams.close();
@@ -178,10 +162,10 @@ public class NodeJS {
      * the script won't actually run until the next tick, this method does not return
      * a result.
      *
-     * @param file The script to execute.
+     * @param script The script to execute.
      */
-    public void exec(final File file) {
-        V8Function scriptExecution = createScriptExecutionCallback(file);
+    public void exec(final String script) {
+        V8Function scriptExecution = createScriptExecutionCallback(script);
         V8Object process = null;
         V8Array parameters = null;
         try {
@@ -196,20 +180,13 @@ public class NodeJS {
         }
     }
 
-    private V8Function createScriptExecutionCallback(final File file) {
-        V8Function v8Function = new V8Function(v8, new JavaCallback() {
+    private V8Function createScriptExecutionCallback(final String script) {
+        return new V8Function(v8, new JavaCallback() {
             @Override
             public Object invoke(final V8Object receiver, final V8Array parameters) {
-                V8Array requireParams = new V8Array(v8);
-                try {
-                    requireParams.push(file.getAbsolutePath());
-                    return require.call(null, requireParams);
-                } finally {
-                    requireParams.close();
-                }
+                return getRuntime().executeScript(script);
             }
         });
-        return v8Function;
     }
 
     private void safeRelease(final Releasable releasable) {

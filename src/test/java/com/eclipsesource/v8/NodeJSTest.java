@@ -10,18 +10,16 @@
  ******************************************************************************/
 package com.eclipsesource.v8;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.Assert.*;
+import static org.junit.Assume.assumeFalse;
 
 public class NodeJSTest {
 
@@ -65,7 +63,7 @@ public class NodeJSTest {
             @Override
             public void run() {
                 try {
-                    nodeJS.require(File.createTempFile("temp", ".js"));
+                    nodeJS.require(File.createTempFile("temp", ".js").getAbsolutePath());
                 } catch (Error e) {
                     result[0] = e.getMessage().contains("Invalid V8 thread access");
                 } catch (IOException e) {
@@ -84,7 +82,7 @@ public class NodeJSTest {
         assumeFalse(skipMessage, skipTest()); // conditional skip
         String result = nodeJS.getNodeVersion();
 
-        assertEquals("7.4.0", result);
+        assertEquals("7.9.0", result);
     }
 
     @Test
@@ -128,30 +126,15 @@ public class NodeJSTest {
     }
 
     @Test
-    public void testExecuteNodeScript_Startup() throws IOException {
-        assumeFalse(skipMessage, skipTest()); // conditional skip
-        nodeJS.release();
-        File testScript = createTemporaryScriptFile("global.passed = true;", "testScript");
-
-        nodeJS = NodeJS.createNodeJS(testScript);
-        runMessageLoop();
-
-        assertEquals(true, nodeJS.getRuntime().getBoolean("passed"));
-        testScript.delete();
-    }
-
-    @Test
     public void testExecNodeScript() throws IOException {
         assumeFalse(skipMessage, skipTest()); // conditional skip
         nodeJS.release();
-        File testScript = createTemporaryScriptFile("global.passed = true;", "testScript");
 
         nodeJS = NodeJS.createNodeJS();
-        nodeJS.exec(testScript);
+        nodeJS.exec("global.passed = true;");
         runMessageLoop();
 
         assertEquals(true, nodeJS.getRuntime().getBoolean("passed"));
-        testScript.delete();
     }
 
     @Test
@@ -161,7 +144,7 @@ public class NodeJSTest {
         File testScript = createTemporaryScriptFile("global.passed = true;", "testScript");
 
         nodeJS = NodeJS.createNodeJS();
-        nodeJS.require(testScript).close();
+        nodeJS.require(testScript.getAbsolutePath()).close();
         runMessageLoop();
 
         assertEquals(true, nodeJS.getRuntime().getBoolean("passed"));
@@ -175,7 +158,7 @@ public class NodeJSTest {
         File testScript = createTemporaryScriptFile("exports.foo=7", "testScript");
 
         nodeJS = NodeJS.createNodeJS();
-        V8Object exports = nodeJS.require(testScript);
+        V8Object exports = nodeJS.require(testScript.getAbsolutePath());
         runMessageLoop();
 
         assertEquals(7, exports.getInteger("foo"));
