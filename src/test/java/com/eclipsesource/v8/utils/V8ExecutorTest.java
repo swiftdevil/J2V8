@@ -10,21 +10,11 @@
  ******************************************************************************/
 package com.eclipsesource.v8.utils;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
+import com.eclipsesource.v8.*;
 import org.junit.After;
 import org.junit.Test;
 
-import com.eclipsesource.v8.JavaVoidCallback;
-import com.eclipsesource.v8.V8;
-import com.eclipsesource.v8.V8Array;
-import com.eclipsesource.v8.V8Object;
-import com.eclipsesource.v8.V8ScriptCompilationException;
-import com.eclipsesource.v8.V8ScriptException;
-import com.eclipsesource.v8.V8ScriptExecutionException;
+import static org.junit.Assert.*;
 
 public class V8ExecutorTest {
 
@@ -61,8 +51,8 @@ public class V8ExecutorTest {
         executor.start();
         V8Object key = new V8Object(runtime);
         runtime.registerV8Executor(key, executor);
-        key.release();
-        runtime.release();
+        key.close();
+        runtime.close();
         executor.join();
     }
 

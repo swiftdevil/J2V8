@@ -10,20 +10,11 @@
  ******************************************************************************/
 package com.eclipsesource.v8.debug;
 
+import com.eclipsesource.v8.*;
+
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.nio.charset.Charset;
 import java.util.LinkedList;
 import java.util.List;
-
-import com.eclipsesource.v8.JavaVoidCallback;
-import com.eclipsesource.v8.Releasable;
-import com.eclipsesource.v8.V8;
-import com.eclipsesource.v8.V8Array;
-import com.eclipsesource.v8.V8Function;
-import com.eclipsesource.v8.V8Object;
 
 /**
  * <p>V8DebugServer enables debuggers to connect to J2V8 via V8 server sockets debug protocol.
@@ -80,24 +71,6 @@ public class V8DebugServer {
     private static final String  SET_LISTENER                   = "setListener";
     private static final String  V8_DEBUG_OBJECT                = "Debug";
 
-    //Headers
-    private static final String  HEADER_TYPE                    = "Type: ";
-    private static final String  HEADER_V8_VERSION              = "V8-Version: ";
-    private static final String  HEADER_PROTOCOL_VERSION        = "Protocol-Version: ";
-    private static final String  HEADER_EMBEDDING_HOST          = "Embedding-Host: ";
-
-    private static final String  V8_VERSION                     = "4.10.253";
-    private static final String  J2V8_VERSION                   = "4.0.0";
-    private static final String  PROTOCOL_VERSION               = "1";
-
-    //Protocol consts
-    private static final Charset PROTOCOL_CHARSET               = Charset.forName("UTF-8");
-    private static final String  PROTOCOL_EOL                   = "\r\n";
-    private static final byte[]  PROTOCOL_EOL_BYTES             = PROTOCOL_EOL.getBytes(PROTOCOL_CHARSET);
-    private static final String  PROTOCOL_CONTENT_LENGTH_HEADER = "Content-Length:";
-    private static final byte[]  PROTOCOL_CONTENT_LENGTH_BYTES  = PROTOCOL_CONTENT_LENGTH_HEADER.getBytes(PROTOCOL_CHARSET);
-    private static final int     PROTOCOL_BUFFER_SIZE           = 4096;
-
     /**
      * Utility method for simplification of configuring V8 for debugging support.
      */
@@ -109,29 +82,27 @@ public class V8DebugServer {
         }
     }
 
-    private ServerSocket server;
-    private Socket       client;
-    private Object       clientLock         = new Object();
+    private DebugProxy<String> proxy;
 
-    private V8           runtime;
-    private V8Object     debugObject;
-    private V8Object     runningStateDcp;
-    private V8Object     stoppedStateDcp;
-    private boolean      waitForConnection;
-    private boolean      traceCommunication = false;
+    private V8                  runtime;
+    private V8Object            debugObject;
+    private V8Object            runningStateDcp;
+    private V8Object            stoppedStateDcp;
+    private boolean             traceCommunication = false;
 
-    private List<String> requests           = new LinkedList<String>();
+    private List<String>        requests           = new LinkedList<>();
 
     /**
      * Creates V8DebugServer.
      *
      * @param runtime
-     * @param port
-     * @param waitForConnection
+     * @param proxy
      */
-    public V8DebugServer(final V8 runtime, final int port, final boolean waitForConnection) {
+    public V8DebugServer(final V8 runtime, final DebugProxy<String> proxy) {
+        setupProxy(proxy);
+
+        this.proxy = proxy;
         this.runtime = runtime;
-        this.waitForConnection = waitForConnection;
 
         V8Object debugScope = runtime.getObject(DEBUG_OBJECT_NAME);
         if (debugScope == null) {
@@ -158,19 +129,6 @@ public class V8DebugServer {
                 + "  return {toJSONProtocol: function() {return ''}}\n"
                 + " }\n"
                 + "})()");
-        try {
-            server = new ServerSocket(port);
-        } catch (Exception e) {
-            logError(e);
-        }
-    }
-
-    /**
-     * Returns port on which server is listening or -1 if server failed to bound to a port.
-     * @return port or -1 if server failed to bound to a port
-     */
-    public int getPort() {
-        return (server != null) && server.isBound() ? server.getLocalPort() : -1;
     }
 
     /**
@@ -186,52 +144,18 @@ public class V8DebugServer {
      * if {@code waitForConnection} has been passed to V8DebugServer constructor.
      */
     public void start() {
-        if (server == null) {
+        if (!hasClient()) {
             return;
         }
-        boolean waitForConnection = this.waitForConnection;
-        Thread clientThread = new Thread(new ClientLoop(), "J2V8 Debugger Server");
-        clientThread.setDaemon(true);
-        clientThread.start();
-
         setupEventHandler();
 
         runningStateDcp = runtime.executeObjectScript("(function() {return new " + DEBUG_OBJECT_NAME + ".DebugCommandProcessor(null, true)})()");
-
-        if (waitForConnection) {
-            synchronized (clientLock) {
-                while (this.waitForConnection) {
-                    try {
-                        clientLock.wait();
-                    } catch (InterruptedException e) {
-                        //ignore
-                    }
-                }
-            }
-
-            //Process initial requests
-            //Give 100ms for initial debugger connection setup
-            try {
-                processRequests(100);
-            } catch (InterruptedException e) {
-                //ignore
-            }
-        }
-
     }
 
     public void stop() {
-        try {
-            server.close();
-
-            synchronized (clientLock) {
-                if (client != null) {
-                    client.close();
-                    client = null;
-                }
-            }
-        } catch (IOException e) {
-            logError(e);
+        if (proxy != null) {
+            proxy.close();
+            proxy = null;
         }
 
         //release resources
@@ -247,59 +171,30 @@ public class V8DebugServer {
             stoppedStateDcp.close();
             stoppedStateDcp = null;
         }
-    };
-
-    private void sendJson(String json) throws IOException {
-        json = json.replace("\\/", "/"); // Unescape slashes.
-        sendMessage("", json);
     }
 
-    protected void logError(final Throwable t) {
+    private void logError(final Throwable t) {
         t.printStackTrace();
     }
 
-    private void sendMessage(final String header, final String contents) throws IOException {
-        synchronized (clientLock) {
-            if (!isConnected()) {
-                throw new IOException("There is no connected client.");
-            }
+    private void sendJson(String json) throws IOException {
+        if (!hasClient()) {
+            throw new IOException("There is no connected client.");
+        }
 
-            byte[] contentBytes = contents.getBytes(PROTOCOL_CHARSET);
+        json = json.replace("\\/", "/");
 
-            StringBuilder sb = new StringBuilder();
-
-            //append custom headers
-            sb.append(header);
-
-            //append content length header
-            sb.append(PROTOCOL_CONTENT_LENGTH_HEADER);
-            sb.append(Integer.toString(contentBytes.length));
-            sb.append(PROTOCOL_EOL);
-
-            //skip tools info
-            sb.append(PROTOCOL_EOL);
-
-            //send headers to the client
-            client.getOutputStream().write(sb.toString().getBytes(
-                    PROTOCOL_CHARSET));
-
-            //send contents to the client
-            if (contentBytes.length > 0) {
-                client.getOutputStream().write(contentBytes);
-            }
+        //send contents to the client
+        if (json.length() > 0) {
+            proxy.toClient(json);
         }
     }
 
-    private boolean isConnected() {
-        synchronized (clientLock) {
-            return (server != null) && (client != null) && client.isConnected();
-        }
+    private boolean hasClient() {
+        return proxy != null;
     }
 
     public void processRequests(final long timeout) throws InterruptedException {
-        if (server == null) {
-            return;
-        }
         long start = System.currentTimeMillis();
         do {
             String[] reqs;
@@ -348,6 +243,10 @@ public class V8DebugServer {
             System.out.println("Returning response: \n" + json.substring(0, Math.min(json.length(), 1000)));
         }
         sendJson(json);
+    }
+
+    private void setupProxy(DebugProxy<String> proxy) {
+        proxy.setServer(requests::add);
     }
 
     private void setupEventHandler() {
@@ -404,7 +303,7 @@ public class V8DebugServer {
             }
 
             //process requests until one of the resumes execution
-            while (isConnected() && !stoppedStateDcp.executeBooleanFunction("isRunning", null)) {
+            while (hasClient() && !stoppedStateDcp.executeBooleanFunction("isRunning", null)) {
                 try {
                     processRequests(10);
                 } catch (InterruptedException e) {
@@ -418,7 +317,7 @@ public class V8DebugServer {
     }
 
     private void sendCompileEvent(final V8Object eventData) throws IOException {
-        if (!isConnected()) {
+        if (!hasClient()) {
             return;
         }
         //send event to debugger
@@ -492,7 +391,7 @@ public class V8DebugServer {
                     System.out.println("V8 has emmitted an event of type " + type);
                 }
 
-                if (!isConnected()) {
+                if (!hasClient()) {
                     return;
                 }
 
@@ -520,174 +419,5 @@ public class V8DebugServer {
                 object.release();
             }
         }
-
     }
-
-    private class ClientLoop implements Runnable {
-
-        private int from;
-
-        @Override
-        public void run() {
-            while (true) {
-                try {
-                    Socket socket = server.accept();
-                    socket.setTcpNoDelay(true);
-                    synchronized (clientLock) {
-                        client = socket;
-                        waitForConnection = false;
-                        clientLock.notifyAll();
-                    }
-                    startHandshake();
-                    processClientRequests();
-                } catch (Exception e) {
-                    synchronized (clientLock) {
-                        if (client != null) {
-                            try {
-                                client.close();
-                            } catch (IOException ex) {
-                                //ignore
-                            }
-                            client = null;
-                        }
-                    }
-                    logError(e);
-                }
-            }
-        }
-
-        private void startHandshake() throws IOException {
-            StringBuilder sb = new StringBuilder();
-
-            sb.append(HEADER_V8_VERSION);
-            sb.append(V8_VERSION);
-            sb.append(PROTOCOL_EOL);
-
-            sb.append(HEADER_PROTOCOL_VERSION);
-            sb.append(PROTOCOL_VERSION);
-            sb.append(PROTOCOL_EOL);
-
-            sb.append(HEADER_EMBEDDING_HOST);
-            sb.append("j2v8 ");
-            sb.append(J2V8_VERSION);
-            sb.append(PROTOCOL_EOL);
-
-            sb.append(HEADER_TYPE);
-            sb.append("connect");
-            sb.append(PROTOCOL_EOL);
-
-            sendMessage(sb.toString(), "");
-        }
-
-        private void processClientRequests() throws IOException {
-            final byte[] EMPTY_ARR = new byte[] {};
-
-            byte[] buf = new byte[PROTOCOL_BUFFER_SIZE];
-            int bytesRead;
-            int offset = 0;
-
-            //Message data
-            boolean toolInfoSkipped = false;
-            byte[] messageBytes = EMPTY_ARR;
-            int contentLength = -1;
-
-            InputStream cIn;
-            synchronized (clientLock) {
-                cIn = client.getInputStream();
-            }
-
-            while ((bytesRead = cIn.read(buf, offset, PROTOCOL_BUFFER_SIZE - offset)) > 0) {
-                bytesRead += offset;
-                from = 0;
-                do {
-                    if (contentLength < 0) {
-                        contentLength = readContentLength(buf, bytesRead);
-                        if (contentLength < 0) {
-                            break;
-                        }
-                    }
-                    if (!toolInfoSkipped) {
-                        toolInfoSkipped = skipToolInfo(buf, bytesRead);
-                        if (!toolInfoSkipped) {
-                            break;
-                        }
-                    }
-                    int length = Math.min(contentLength - messageBytes.length, bytesRead - from);
-                    messageBytes = join(messageBytes, buf, from, length);
-                    from += length;
-                    if (messageBytes.length == contentLength) {
-                        String message = new String(messageBytes, PROTOCOL_CHARSET);
-                        synchronized (requests) {
-                            requests.add(message);
-                        }
-                        contentLength = -1;
-                        toolInfoSkipped = false;
-                        messageBytes = EMPTY_ARR;
-                    }
-                } while (from < bytesRead);
-                if (from < bytesRead) {
-                    System.arraycopy(buf, from, buf, 0, bytesRead - from);
-                    offset = bytesRead - from;
-                } else {
-                    offset = 0;
-                }
-            }
-        }
-
-        private int readContentLength(final byte[] bytes, final int to) throws IOException {
-            int pos = indexOf(PROTOCOL_CONTENT_LENGTH_BYTES, bytes, from, to);
-            if (pos < 0) {
-                return -1;
-            }
-            pos += PROTOCOL_CONTENT_LENGTH_BYTES.length;
-            int end = indexOf(PROTOCOL_EOL_BYTES, bytes, pos, to);
-            if (end < 0) {
-                return -1;
-            }
-            String str = new String(bytes, pos, end - pos, PROTOCOL_CHARSET);
-            int contentLength;
-            try {
-                contentLength = Integer.parseInt(str.trim());
-            } catch (Exception ex) {
-                throw new IOException("Invalid content length header: '" + str + "' in message" +
-                        new String(bytes, PROTOCOL_CHARSET));
-            }
-            from = end + PROTOCOL_EOL_BYTES.length;
-            return contentLength;
-        }
-
-        private boolean skipToolInfo(final byte[] bytes, final int n) {
-            int end = indexOf(PROTOCOL_EOL_BYTES, bytes, from, n);
-            if (end < 0) {
-                return false;
-            }
-            from = end + PROTOCOL_EOL_BYTES.length;
-            return true;
-        }
-
-        private int indexOf(final byte[] pattern, final byte[] array, final int start, final int end) {
-            int len = pattern.length;
-            for (int i = start; i < end; i++) {
-                for (int j = 0; j <= len; j++) {
-                    if (j == len) {
-                        //pattern matches at i
-                        return i;
-                    }
-                    if (((i + j) >= end) || (array[i + j] != pattern[j])) {
-                        //pattern does not match at i
-                        break;
-                    }
-                }
-            }
-            return -1;
-        }
-
-        private byte[] join(final byte[] arr1, final byte[] arr2, final int startPos, final int length) {
-            byte[] res = new byte[arr1.length + length];
-            System.arraycopy(arr1, 0, res, 0, arr1.length);
-            System.arraycopy(arr2, startPos, res, arr1.length, length);
-            return res;
-        }
-
-    };
 }
