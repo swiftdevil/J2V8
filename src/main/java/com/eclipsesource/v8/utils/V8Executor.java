@@ -10,13 +10,12 @@
  ******************************************************************************/
 package com.eclipsesource.v8.utils;
 
-import java.util.LinkedList;
-
 import com.eclipsesource.v8.JavaVoidCallback;
-import com.eclipsesource.v8.Releasable;
-import com.eclipsesource.v8.V8;
+import com.eclipsesource.v8.NodeJS;
 import com.eclipsesource.v8.V8Array;
 import com.eclipsesource.v8.V8Object;
+
+import java.util.LinkedList;
 
 /**
  * Executes a JS Script on a new V8 runtime in its own thread, and once finished,
@@ -33,16 +32,16 @@ import com.eclipsesource.v8.V8Object;
  */
 public class V8Executor extends Thread {
 
-    private final String         script;
-    private V8                   runtime;
-    private String               result;
-    private volatile boolean     terminated       = false;
-    private volatile boolean     shuttingDown     = false;
-    private volatile boolean     forceTerminating = false;
-    private Exception            exception        = null;
-    private LinkedList<String[]> messageQueue     = new LinkedList<String[]>();
-    private boolean              longRunning;
-    private String               messageHandler;
+    private final String                   script;
+    private NodeJS                         nodeJs;
+	private V8ResultConsumer               resultConsumer;
+    private volatile boolean               terminated       = false;
+    private volatile boolean               shuttingDown     = false;
+    private volatile boolean               forceTerminating = false;
+    private Exception                      exception        = null;
+    private LinkedList<String[]>           messageQueue     = new LinkedList<String[]>();
+    private boolean                        longRunning;
+    private String                         messageHandler;
 
     /**
      * Create a new executor and execute the given script on it. Once
@@ -51,13 +50,28 @@ public class V8Executor extends Thread {
      *
      * @param script The script to execute on this executor.
      * @param longRunning True to indicate that this executor should be longRunning.
-     * @param messageHandler The name of the message handler that should be notified
-     *        when messages are delivered.
+     * @param messageHandler The name of the message handler that should be notified when messages are delivered.
+	 * @param resultConsumer The consumer that the result will get pushed to
      */
-    public V8Executor(final String script, final boolean longRunning, final String messageHandler) {
+    public V8Executor(final String script, boolean longRunning, String messageHandler, final V8ResultConsumer resultConsumer) {
         this.script = script;
         this.longRunning = longRunning;
         this.messageHandler = messageHandler;
+        this.resultConsumer = resultConsumer;
+    }
+
+    public V8Executor(final String script, boolean longRunning, String messageHandler) {
+        this(script, longRunning, messageHandler, null);
+    }
+
+    /**
+     * Create a new executor and execute the given script on it.
+     *
+     * @param script The script to execute on this executor.
+	 * @param resultConsumer The consumer that the result will get pushed to
+     */
+    public V8Executor(final String script, final V8ResultConsumer resultConsumer) {
+        this(script, false, null, resultConsumer);
     }
 
     /**
@@ -66,7 +80,7 @@ public class V8Executor extends Thread {
      * @param script The script to execute on this executor.
      */
     public V8Executor(final String script) {
-        this(script, false, null);
+        this(script, false, null, null);
     }
 
     /**
@@ -77,19 +91,8 @@ public class V8Executor extends Thread {
      *
      * @param runtime The runtime to configure.
      */
-    protected void setup(final V8 runtime) {
+    protected void setup(final NodeJS runtime) {
 
-    }
-
-    /**
-     * Gets the result of the JavaScript that was executed
-     * on this executor.
-     *
-     * @return The result of the JS Script that was executed on
-     * this executor.
-     */
-    public String getResult() {
-        return result;
     }
 
     /**
@@ -112,18 +115,15 @@ public class V8Executor extends Thread {
     @Override
     public void run() {
         synchronized (this) {
-            runtime = V8.createV8Runtime();
-            runtime.registerJavaMethod(new ExecutorTermination(), "__j2v8__checkThreadTerminate");
-            setup(runtime);
+            nodeJs = NodeJS.createNodeJS();
+            nodeJs.getRuntime().registerJavaMethod(new ExecutorTermination(), "__j2v8__checkThreadTerminate");
+            setup(nodeJs);
         }
         try {
             if (!forceTerminating) {
-                Object scriptResult = runtime.executeScript("__j2v8__checkThreadTerminate();\n" + script, getName(), -1);
-                if (scriptResult != null) {
-                    result = scriptResult.toString();
-                }
-                if (scriptResult instanceof Releasable) {
-                    ((Releasable) scriptResult).release();
+                nodeJs.getRuntime().executeVoidScript("__j2v8__checkThreadTerminate();\n" + script, getName(), -1);
+                if (resultConsumer != null) {
+                    resultConsumer.apply(nodeJs.getRuntime());
                 }
             }
             while (!forceTerminating && longRunning) {
@@ -137,14 +137,18 @@ public class V8Executor extends Thread {
                 }
                 if (!messageQueue.isEmpty()) {
                     String[] message = messageQueue.remove(0);
-                    V8Array parameters = new V8Array(runtime);
-                    V8Array strings = new V8Array(runtime);
+                    V8Array parameters = new V8Array(nodeJs.getRuntime());
+                    V8Array strings = new V8Array(nodeJs.getRuntime());
                     try {
                         for (String string : message) {
                             strings.push(string);
                         }
                         parameters.push(strings);
-                        runtime.executeVoidFunction(messageHandler, parameters);
+                        nodeJs.getRuntime().executeVoidFunction(messageHandler, parameters);
+
+                        if (resultConsumer != null) {
+                            resultConsumer.apply(nodeJs.getRuntime());
+                        }
                     } finally {
                         strings.close();
                         parameters.close();
@@ -155,11 +159,13 @@ public class V8Executor extends Thread {
             exception = e;
         } finally {
             synchronized (this) {
-                if (runtime.getLocker().hasLock()) {
-                    runtime.close();
-                    runtime = null;
+                if (nodeJs.getRuntime().getLocker().hasLock()) {
+                    nodeJs.close();
+                    nodeJs = null;
                 }
                 terminated = true;
+
+                this.notify();
             }
         }
     }
@@ -202,8 +208,8 @@ public class V8Executor extends Thread {
         synchronized (this) {
             forceTerminating = true;
             shuttingDown = true;
-            if (runtime != null) {
-                runtime.terminateExecution();
+            if (nodeJs != null) {
+                nodeJs.getRuntime().terminateExecution();
             }
             notify();
         }

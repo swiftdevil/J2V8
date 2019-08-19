@@ -40,7 +40,7 @@ public class NodeJSTest {
             return;
         }
 
-        nodeJS.release();
+        nodeJS.close();
     }
 
     private static boolean skipTest() {
@@ -128,7 +128,7 @@ public class NodeJSTest {
     @Test
     public void testExecNodeScript() throws IOException {
         assumeFalse(skipMessage, skipTest()); // conditional skip
-        nodeJS.release();
+        nodeJS.close();
 
         nodeJS = NodeJS.createNodeJS();
         nodeJS.exec("global.passed = true;");
@@ -140,7 +140,7 @@ public class NodeJSTest {
     @Test
     public void testExecuteNodeScript_viaRequire() throws IOException {
         assumeFalse(skipMessage, skipTest()); // conditional skip
-        nodeJS.release();
+        nodeJS.close();
         File testScript = createTemporaryScriptFile("global.passed = true;", "testScript");
 
         nodeJS = NodeJS.createNodeJS();
@@ -154,7 +154,7 @@ public class NodeJSTest {
     @Test
     public void testExports() throws IOException {
         assumeFalse(skipMessage, skipTest()); // conditional skip
-        nodeJS.release();
+        nodeJS.close();
         File testScript = createTemporaryScriptFile("exports.foo=7", "testScript");
 
         nodeJS = NodeJS.createNodeJS();

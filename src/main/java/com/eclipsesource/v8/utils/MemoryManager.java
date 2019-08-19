@@ -10,12 +10,13 @@
  ******************************************************************************/
 package com.eclipsesource.v8.utils;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-
 import com.eclipsesource.v8.ReferenceHandler;
 import com.eclipsesource.v8.V8;
 import com.eclipsesource.v8.V8Value;
+
+import java.io.Closeable;
+import java.util.ArrayList;
+import java.util.Iterator;
 
 /**
  * A memory manager that tracks all V8 Handles while the object is registered.
@@ -26,7 +27,7 @@ import com.eclipsesource.v8.V8Value;
  * created while the memory manager is active, are persisted.
  *
  */
-public class MemoryManager {
+public class MemoryManager implements Closeable {
 
     private MemoryManagerReferenceHandler memoryManagerReferenceHandler;
     private V8                            v8;
@@ -112,6 +113,11 @@ public class MemoryManager {
         if (released) {
             throw new IllegalStateException("Memory manager released");
         }
+    }
+
+    @Override
+    public void close() {
+        release();
     }
 
     private class MemoryManagerReferenceHandler implements ReferenceHandler {

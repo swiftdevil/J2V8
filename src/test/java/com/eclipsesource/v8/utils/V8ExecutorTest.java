@@ -12,6 +12,7 @@ package com.eclipsesource.v8.utils;
 
 import com.eclipsesource.v8.*;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -32,10 +33,11 @@ public class V8ExecutorTest {
     public void testNestedExecutorExecutionLongRunning() throws InterruptedException {
         V8 runtime = V8.createV8Runtime();
         runtime.terminateExecution();
+
         V8Executor executor = new V8Executor("foo();") {
             @Override
-            protected void setup(final V8 runtime) {
-                runtime.registerJavaMethod(new JavaVoidCallback() {
+            protected void setup(final NodeJS nodeJs) {
+                nodeJs.getRuntime().registerJavaMethod(new JavaVoidCallback() {
 
                     @Override
                     public void invoke(final V8Object receiver, final V8Array parameters) {
@@ -150,39 +152,28 @@ public class V8ExecutorTest {
 
     @Test
     public void testSimpleScript() throws InterruptedException {
-        V8Executor executor = new V8Executor("'fooBar'");
+        V8ResultConsumer consumer = new V8ResultConsumer((result) -> assertEquals("fooBar", result), "x");
+        V8Executor executor = new V8Executor("var x = 'fooBar'", consumer);
         executor.start();
         executor.join();
 
-        assertEquals("fooBar", executor.getResult());
         assertFalse(executor.hasException());
     }
 
     @Test
     public void testNonStringReturnType() throws InterruptedException {
-        V8Executor executor = new V8Executor("3+4");
+        V8ResultConsumer consumer = new V8ResultConsumer((result) -> assertEquals("7", result), "x");
+        V8Executor executor = new V8Executor("var x = 3+4", consumer);
         executor.start();
         executor.join();
-
-        assertEquals("7", executor.getResult());
-    }
-
-    @Test
-    public void testNoReturn() throws InterruptedException {
-        V8Executor executor = new V8Executor("var x = 7;");
-        executor.start();
-        executor.join();
-
-        assertEquals("undefined", executor.getResult());
     }
 
     @Test
     public void testNullReturn() throws InterruptedException {
-        V8Executor executor = new V8Executor("null;");
+        V8ResultConsumer consumer = new V8ResultConsumer(Assert::assertNull, "x");
+        V8Executor executor = new V8Executor("var x = null;", consumer);
         executor.start();
         executor.join();
-
-        assertNull(executor.getResult());
     }
 
     public void callback() {
@@ -193,8 +184,8 @@ public class V8ExecutorTest {
     public void testSetup() throws InterruptedException {
         V8Executor executor = new V8Executor("callback()") {
             @Override
-            protected void setup(final V8 runtime) {
-                runtime.registerJavaMethod(V8ExecutorTest.this, "callback", "callback", new Class<?>[] {});
+            protected void setup(final NodeJS nodeJs) {
+                nodeJs.getRuntime().registerJavaMethod(V8ExecutorTest.this, "callback", "callback", new Class<?>[] {});
             }
         };
         executor.start();
@@ -205,12 +196,11 @@ public class V8ExecutorTest {
 
     @Test
     public void testTerminateBeforeExecution() throws InterruptedException {
-        V8Executor executor = new V8Executor("'fooBar'");
+        V8ResultConsumer consumer = new V8ResultConsumer(Assert::assertNull, "x");
+        V8Executor executor = new V8Executor("var x = 'fooBar'", consumer);
         executor.forceTermination();
         executor.start();
         executor.join();
-
-        assertNull(executor.getResult());
     }
 
     @Test
@@ -227,8 +217,8 @@ public class V8ExecutorTest {
     public void testTerminateHasException() throws InterruptedException {
         V8Executor executor = new V8Executor("postMessage(''); while(true){}") {
             @Override
-            protected void setup(final V8 runtime) {
-                runtime.registerJavaMethod(V8ExecutorTest.this, "postMessage", "postMessage", new Class<?>[] { Object[].class });
+            protected void setup(final NodeJS nodeJs) {
+                nodeJs.getRuntime().registerJavaMethod(V8ExecutorTest.this, "postMessage", "postMessage", new Class<?>[] { Object[].class });
             }
         };
         executor.start();
@@ -241,22 +231,21 @@ public class V8ExecutorTest {
 
     @Test
     public void testTerminateAfterExecution() throws InterruptedException {
-        V8Executor executor = new V8Executor("'fooBar'");
+        V8ResultConsumer consumer = new V8ResultConsumer((result) -> assertEquals("fooBar", result), "x");
+        V8Executor executor = new V8Executor("var x = 'fooBar'", consumer);
         executor.start();
         executor.join();
         executor.forceTermination();
-
-        assertEquals("fooBar", executor.getResult());
     }
 
     @Test
     public void testHasException() throws InterruptedException {
-        V8Executor executor = new V8Executor("(function() {throw 'foo';})();");
+        V8ResultConsumer consumer = new V8ResultConsumer(Assert::assertNull, "x");
+        V8Executor executor = new V8Executor("(function() {throw 'foo';})();", consumer);
         executor.start();
         executor.join();
         executor.forceTermination();
 
-        assertNull(executor.getResult());
         assertTrue(executor.hasException());
     }
 
@@ -295,8 +284,8 @@ public class V8ExecutorTest {
     public void testLongRunningExecutorWithMessageHandler() throws InterruptedException {
         V8Executor executor = new V8Executor("messageHandler = function(e) { postMessage(e); }", true, "messageHandler") {
             @Override
-            protected void setup(final V8 runtime) {
-                runtime.registerJavaMethod(V8ExecutorTest.this, "postMessage", "postMessage", new Class<?>[] { Object[].class });
+            protected void setup(final NodeJS nodeJs) {
+                nodeJs.getRuntime().registerJavaMethod(V8ExecutorTest.this, "postMessage", "postMessage", new Class<?>[] { Object[].class });
             }
         };
         executor.start();
@@ -312,8 +301,8 @@ public class V8ExecutorTest {
     public void testPostEmptyMessageToLongRunningTask() throws InterruptedException {
         V8Executor executor = new V8Executor("messageHandler = function(e) { postMessage(e); }", true, "messageHandler") {
             @Override
-            protected void setup(final V8 runtime) {
-                runtime.registerJavaMethod(V8ExecutorTest.this, "postMessage", "postMessage", new Class<?>[] { Object[].class });
+            protected void setup(final NodeJS nodeJs) {
+                nodeJs.getRuntime().registerJavaMethod(V8ExecutorTest.this, "postMessage", "postMessage", new Class<?>[] { Object[].class });
             }
         };
         executor.start();
@@ -328,8 +317,8 @@ public class V8ExecutorTest {
     public void testLongRunningExecutorWithMultiPartMessage() throws InterruptedException {
         V8Executor executor = new V8Executor("messageHandler = function(e) { postMessage(e[0], e[1]); }", true, "messageHandler") {
             @Override
-            protected void setup(final V8 runtime) {
-                runtime.registerJavaMethod(V8ExecutorTest.this, "postMessage", "postMessage", new Class<?>[] { Object[].class });
+            protected void setup(final NodeJS nodeJs) {
+                nodeJs.getRuntime().registerJavaMethod(V8ExecutorTest.this, "postMessage", "postMessage", new Class<?>[] { Object[].class });
             }
         };
         executor.start();
@@ -345,8 +334,8 @@ public class V8ExecutorTest {
     public void testLongRunningExecutorWithSeveralMessages() throws InterruptedException {
         V8Executor executor = new V8Executor("messageHandler = function(e) { postMessage(e); }", true, "messageHandler") {
             @Override
-            protected void setup(final V8 runtime) {
-                runtime.registerJavaMethod(V8ExecutorTest.this, "postMessage", "postMessage", new Class<?>[] { Object[].class });
+            protected void setup(final NodeJS nodeJs) {
+                nodeJs.getRuntime().registerJavaMethod(V8ExecutorTest.this, "postMessage", "postMessage", new Class<?>[] { Object[].class });
             }
         };
         executor.start();
@@ -364,8 +353,8 @@ public class V8ExecutorTest {
     public void testLongRunningExecutorWithNoMessage() throws InterruptedException {
         V8Executor executor = new V8Executor("messageHandler = function(e) { postMessage(e); }", true, "messageHandler") {
             @Override
-            protected void setup(final V8 runtime) {
-                runtime.registerJavaMethod(V8ExecutorTest.this, "postMessage", "postMessage", new Class<?>[] { Object[].class });
+            protected void setup(final NodeJS nodeJs) {
+                nodeJs.getRuntime().registerJavaMethod(V8ExecutorTest.this, "postMessage", "postMessage", new Class<?>[] { Object[].class });
             }
         };
         executor.start();

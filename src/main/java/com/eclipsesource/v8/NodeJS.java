@@ -10,6 +10,7 @@
  ******************************************************************************/
 package com.eclipsesource.v8;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -20,7 +21,7 @@ import java.io.PrintWriter;
  * This class is only available on some platforms. In particular any methods
  * on this class, on an Android device, will lead to an UnsupportedOperationException.
  */
-public class NodeJS {
+public class NodeJS implements Closeable {
 
     private static final String TMP_JS_EXT          = ".js.tmp";
     private static final String NEXT_TICK           = "nextTick";
@@ -118,7 +119,8 @@ public class NodeJS {
     /**
      * Releases the NodeJS runtime.
      */
-    public void release() {
+    @Override
+    public void close() {
         v8.checkThread();
         if (!require.isReleased()) {
             require.close();
