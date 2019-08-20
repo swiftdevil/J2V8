@@ -25,3 +25,6 @@ J2V8_VERSION = '{}.{}.{}'.format(J2V8_VERSION_MAJOR, J2V8_VERSION_MINOR, J2V8_VE
 
 # The J2V8 version including a version suffix string (e.g. 1.0.0-SUFFIX)
 J2V8_FULL_VERSION = J2V8_VERSION + J2V8_VERSION_SUFFIX
+
+# The path where other lib builds live. These will get included in the final JAR
+OTHER_LIBS_DIR = "$HOME/src/j2v8_build"

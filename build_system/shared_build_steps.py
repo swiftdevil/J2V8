@@ -4,7 +4,6 @@ reused between target-platform configurations or build-steps on the same platfor
 """
 import glob
 import os
-import sys
 import xml.etree.ElementTree as ET
 
 # see: https://stackoverflow.com/a/27333347/425532
@@ -51,7 +50,13 @@ def outputLibPath(config):
     return cmake_out_dir + "/" + outputLibName(config)
 
 def outputJarName(config):
-    return config.inject_env("j2v8_$VENDOR-$PLATFORM_$FILE_ABI-$J2V8_FULL_VERSION.jar")
+    return config.inject_env("j2v8-$J2V8_FULL_VERSION.jar")
+
+def outputSourcesJarName(config):
+    return config.inject_env("j2v8-$J2V8_FULL_VERSION-sources.jar")
+
+def otherLibsPath(config):
+    return config.inject_env("$OTHER_LIBS_DIR/*")
 
 def setEnvVar(name, value):
     if (os.name == "nt"):
@@ -120,10 +125,12 @@ def build_j2v8_jni(config):
 #-----------------------------------------------------------------------
 def copyOutput(config):
     jar_name = outputJarName(config)
+    sources_name = outputSourcesJarName(config)
 
     return \
         mkdir("build.out") + \
-        cp("target/" + jar_name + " build.out/")
+        cp("target/" + jar_name + " build.out/") + \
+        cp("target/" + sources_name + " build.out/")
 
 def clearNativeLibs(config):
     """
@@ -177,37 +184,33 @@ def copyNativeLibs(config):
 
     copy_cmds += cp(platform_lib_path + " " + lib_target_path)
 
+    other_libs_path = otherLibsPath(config)
+    print "Copying other lib builds from: " + other_libs_path + " to: " + lib_target_path
+    copy_cmds += cp(other_libs_path + " " + lib_target_path)
+
     return copy_cmds
 
 def apply_maven_null_settings(src_pom_path = "./pom.xml", target_pom_path = None):
     """Copy the Maven pom.xml from src to target, while replacing the necessary XML element values with fixed dummy parameter values"""
     maven_settings = {
         "properties": {
-            "os": "undefined",
             "arch": "undefined",
         },
-        "artifactId": "undefined",
         "version": "undefined",
-        "name": "undefined",
     }
 
     apply_maven_settings(maven_settings, src_pom_path, target_pom_path)
 
 def apply_maven_config_settings(config, src_pom_path = "./pom.xml", target_pom_path = None):
     """Copy the Maven pom.xml from src to target, while replacing the necessary XML element values based on the given build-step config"""
-    os = config.inject_env("$VENDOR-$PLATFORM")
     arch = config.file_abi
     version = s.J2V8_FULL_VERSION
-    name = config.inject_env("j2v8_$VENDOR-$PLATFORM_$FILE_ABI")
 
     maven_settings = {
         "properties": {
-            "os": os,
             "arch": arch,
         },
-        "artifactId": name,
         "version": version,
-        "name": name,
     }
 
     apply_maven_settings(maven_settings, src_pom_path, target_pom_path)

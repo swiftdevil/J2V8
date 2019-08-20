@@ -1,13 +1,12 @@
 """Contains the fundamental data-structures that are used for the build-process"""
 
 from abc import ABCMeta, abstractmethod
-import commands
-import os
-import sys
 from shutil import copy2
+
 import build_settings as s
 import build_utils as utils
 import shared_build_steps as sbs
+
 
 class PlatformConfig():
     """Configuration container for all values that are defined for a single target-platform"""
@@ -117,6 +116,7 @@ class BuildSystem:
             .replace("$NODE_VERSION", s.NODE_VERSION)
             .replace("$J2V8_VERSION", s.J2V8_VERSION)
             .replace("$J2V8_FULL_VERSION", s.J2V8_FULL_VERSION)
+            .replace("$OTHER_LIBS_DIR", s.OTHER_LIBS_DIR)
 
             # build specific variables
             .replace("$BUILD_CWD", config.build_cwd or build_cwd)
