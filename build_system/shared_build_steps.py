@@ -55,8 +55,8 @@ def outputJarName(config):
 def outputSourcesJarName(config):
     return config.inject_env("j2v8-$J2V8_FULL_VERSION-sources.jar")
 
-def otherLibsPath(config):
-    return config.inject_env("$OTHER_LIBS_DIR/*")
+def targetsLibPath(config):
+    return config.inject_env("$TARGETS_LIB_DIR")
 
 def setEnvVar(name, value):
     if (os.name == "nt"):
@@ -184,10 +184,11 @@ def copyNativeLibs(config):
 
     copy_cmds += cp(platform_lib_path + " " + lib_target_path)
 
-    other_libs_path = otherLibsPath(config)
-    if (os.path.exists(other_libs_path)):
-        print "Copying other lib builds from: " + other_libs_path + " to: " + lib_target_path
-        copy_cmds += cp(other_libs_path + " " + lib_target_path)
+    targets_lib_path = targetsLibPath(config)
+    if (os.path.exists(targets_lib_path)):
+        targets_lib_path += "/*"
+        print "Copying other lib builds from: " + targets_lib_path + " to: " + lib_target_path
+        copy_cmds += cp(targets_lib_path + " " + lib_target_path)
 
     return copy_cmds
 

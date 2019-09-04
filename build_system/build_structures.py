@@ -116,7 +116,7 @@ class BuildSystem:
             .replace("$NODE_VERSION", s.NODE_VERSION)
             .replace("$J2V8_VERSION", s.J2V8_VERSION)
             .replace("$J2V8_FULL_VERSION", s.J2V8_FULL_VERSION)
-            .replace("$OTHER_LIBS_DIR", s.OTHER_LIBS_DIR)
+            .replace("$TARGETS_LIB_DIR", s.TARGETS_LIB_DIR)
 
             # build specific variables
             .replace("$BUILD_CWD", config.build_cwd or build_cwd)

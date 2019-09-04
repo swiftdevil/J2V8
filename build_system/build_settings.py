@@ -3,6 +3,9 @@ The values specified here will be used as the single source of truth for
 version strings and other globally shared build variables that should be
 used in the build-process (build.py) or the Node.js utility scripts (nodejs.py)
 """
+
+import os
+
 #-----------------------------------------------------------------------
 # Node.js settings
 #-----------------------------------------------------------------------
@@ -27,4 +30,4 @@ J2V8_VERSION = '{}.{}.{}'.format(J2V8_VERSION_MAJOR, J2V8_VERSION_MINOR, J2V8_VE
 J2V8_FULL_VERSION = J2V8_VERSION + J2V8_VERSION_SUFFIX
 
 # The path where other lib builds live. These will get included in the final JAR
-OTHER_LIBS_DIR = "$HOME/src/j2v8_build"
+TARGETS_LIB_DIR = os.environ['HOME'] + "/src/j2v8_targets"
