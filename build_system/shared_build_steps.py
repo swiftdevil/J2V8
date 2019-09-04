@@ -185,8 +185,9 @@ def copyNativeLibs(config):
     copy_cmds += cp(platform_lib_path + " " + lib_target_path)
 
     other_libs_path = otherLibsPath(config)
-    print "Copying other lib builds from: " + other_libs_path + " to: " + lib_target_path
-    copy_cmds += cp(other_libs_path + " " + lib_target_path)
+    if (len(other_libs_path) > 0):
+        print "Copying other lib builds from: " + other_libs_path + " to: " + lib_target_path
+        copy_cmds += cp(other_libs_path + " " + lib_target_path)
 
     return copy_cmds
 
