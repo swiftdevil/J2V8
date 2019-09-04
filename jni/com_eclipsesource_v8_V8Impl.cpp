@@ -1880,6 +1880,12 @@ Isolate* getIsolate(JNIEnv *env, jlong v8RuntimePtr) {
   return runtime->isolate;
 }
 
+JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8__1newScope
+(JNIEnv *env, jobject, jlong v8RuntimePtr) {
+    Isolate* isolate = getIsolate(env, v8RuntimePtr);
+    HandleScope handle_scope(isolate);
+}
+
 void throwResultUndefinedException(JNIEnv *env, const char *message) {
   (env)->ThrowNew(v8ResultsUndefinedCls, message);
 }

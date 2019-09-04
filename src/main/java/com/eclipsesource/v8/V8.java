@@ -10,19 +10,14 @@
  ******************************************************************************/
 package com.eclipsesource.v8;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import com.eclipsesource.v8.utils.V8Executor;
 import com.eclipsesource.v8.utils.V8Map;
 import com.eclipsesource.v8.utils.V8Runnable;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
+import java.util.*;
 
 /**
  * An isolated V8Runtime. All JavaScript execution must exist
@@ -740,6 +735,14 @@ public class V8 extends V8Object {
     }
 
     /**
+     * Creates a new handle scope on the stack.
+     */
+    public void newScope() {
+        checkThread();
+        _newScope(v8RuntimePtr);
+    }
+
+    /**
      * Returns the locker associated with this runtime. The locker allows
      * threads to give up control of the runtime and other threads to acquire
      * control.
@@ -1412,6 +1415,8 @@ public class V8 extends V8Object {
     private native void _releaseRuntime(long v8RuntimePtr);
 
     private native long _createIsolate(String globalAlias);
+
+    private native void _newScope(long v8RuntimePtr);
 
     private native int _executeIntegerScript(long v8RuntimePtr, final String script, final String scriptName, final int lineNumber);
 
