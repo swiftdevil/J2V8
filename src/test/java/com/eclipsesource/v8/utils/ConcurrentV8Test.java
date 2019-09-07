@@ -11,16 +11,13 @@
  ******************************************************************************/
 package com.eclipsesource.v8.utils;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
+import com.eclipsesource.v8.V8;
+import com.eclipsesource.v8.V8Context;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.eclipsesource.v8.V8;
+import static org.junit.Assert.*;
 
 public class ConcurrentV8Test {
 
@@ -56,8 +53,8 @@ public class ConcurrentV8Test {
         concurrentV8.run(new V8Runnable() {
 
             @Override
-            public void run(final V8 runtime) {
-                runtime.executeScript("foo = 7;");
+            public void run(final V8Context v8Context) {
+                v8Context.executeScript("foo = 7;");
             }
         });
 
@@ -73,8 +70,8 @@ public class ConcurrentV8Test {
             concurrentV8.run(new V8Runnable() {
 
                 @Override
-                public void run(final V8 runtime) {
-                    runtime.executeScript("throw 'my exception';");
+                public void run(final V8Context v8Context) {
+                    v8Context.executeScript("throw 'my exception';");
                 }
             });
         } catch (Exception e) {
@@ -93,8 +90,8 @@ public class ConcurrentV8Test {
             concurrentV8.run(new V8Runnable() {
 
                 @Override
-                public void run(final V8 runtime) {
-                    assertTrue(runtime.getLocker().hasLock());
+                public void run(final V8Context v8Context) {
+                    assertTrue(v8Context.getRuntime().getLocker().hasLock());
                 }
             });
         } catch (Exception e) {
@@ -120,8 +117,8 @@ public class ConcurrentV8Test {
             public void run() {
                 v8.run(new V8Runnable() {
                     @Override
-                    public void run(final V8 v8) {
-                        v8.executeVoidScript("var i = 3000;");
+                    public void run(final V8Context v8Context) {
+                        v8Context.executeVoidScript("var i = 3000;");
                     }
                 });
             }
@@ -139,8 +136,8 @@ public class ConcurrentV8Test {
             public void run() {
                 v8.run(new V8Runnable() {
                     @Override
-                    public void run(final V8 v8) {
-                        v8.executeVoidScript("i += 344;");
+                    public void run(final V8Context v8Context) {
+                        v8Context.executeVoidScript("i += 344;");
                     }
                 });
             }
@@ -155,8 +152,8 @@ public class ConcurrentV8Test {
 
         v8.run(new V8Runnable() {
             @Override
-            public void run(final V8 v8) {
-                Assert.assertEquals(3344, v8.executeIntegerScript("i"));
+            public void run(final V8Context v8Context) {
+                Assert.assertEquals(3344, v8Context.executeIntegerScript("i"));
             }
         });
 
@@ -171,16 +168,16 @@ public class ConcurrentV8Test {
 
         v8.run(new V8Runnable() {
             @Override
-            public void run(final V8 v8) {
-                v8.registerJavaMethod(exceptionThrower, "whine", "whine", new Class[0]);
+            public void run(final V8Context v8Context) {
+                v8Context.registerJavaMethod(exceptionThrower, "whine", "whine", new Class[0]);
             }
         });
 
         try {
             v8.run(new V8Runnable() {
                 @Override
-                public void run(final V8 v8) {
-                    v8.executeScript("whine();");
+                public void run(final V8Context v8Context) {
+                    v8Context.executeScript("whine();");
                 }
             });
 

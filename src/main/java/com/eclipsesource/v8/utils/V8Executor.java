@@ -121,7 +121,7 @@ public class V8Executor extends Thread {
         }
         try {
             if (!forceTerminating) {
-                nodeJs.getRuntime().executeVoidScript("__j2v8__checkThreadTerminate();\n" + script, getName(), -1);
+                nodeJs.getContext().executeVoidScript("__j2v8__checkThreadTerminate();\n" + script, getName(), -1);
                 if (resultConsumer != null) {
                     resultConsumer.apply(nodeJs.getRuntime());
                 }
@@ -137,8 +137,8 @@ public class V8Executor extends Thread {
                 }
                 if (!messageQueue.isEmpty()) {
                     String[] message = messageQueue.remove(0);
-                    V8Array parameters = new V8Array(nodeJs.getRuntime());
-                    V8Array strings = new V8Array(nodeJs.getRuntime());
+                    V8Array parameters = new V8Array(nodeJs.getContext());
+                    V8Array strings = new V8Array(nodeJs.getContext());
                     try {
                         for (String string : message) {
                             strings.push(string);

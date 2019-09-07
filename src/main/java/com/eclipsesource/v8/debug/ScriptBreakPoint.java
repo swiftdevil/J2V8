@@ -56,7 +56,7 @@ public class ScriptBreakPoint implements Releasable {
      * @param condition A JavaScript condition to be evaluated.
      */
     public void setCondition(final String condition) {
-        V8Array parameters = new V8Array(v8Object.getRuntime());
+        V8Array parameters = new V8Array(v8Object.getContext());
         parameters.push(condition);
         try {
             v8Object.executeVoidFunction(SET_CONDITION, parameters);

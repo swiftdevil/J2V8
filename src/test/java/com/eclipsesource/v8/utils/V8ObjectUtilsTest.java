@@ -10,38 +10,24 @@
  ******************************************************************************/
 package com.eclipsesource.v8.utils;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.Map;
-
+import com.eclipsesource.v8.*;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.eclipsesource.v8.V8;
-import com.eclipsesource.v8.V8Array;
-import com.eclipsesource.v8.V8ArrayBuffer;
-import com.eclipsesource.v8.V8Function;
-import com.eclipsesource.v8.V8Object;
-import com.eclipsesource.v8.V8TypedArray;
-import com.eclipsesource.v8.V8Value;
+import java.nio.ByteBuffer;
+import java.util.*;
+
+import static org.junit.Assert.*;
 
 public class V8ObjectUtilsTest {
     private V8 v8;
+    private V8Context v8Context;
 
     @Before
-    public void seutp() {
+    public void setup() {
         v8 = V8.createV8Runtime();
+        v8Context = v8.getDefaultContext();
     }
 
     @After
@@ -61,7 +47,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testCreateIntegerMapFromV8Object() {
-        V8Object object = v8.executeObjectScript("x = {a:1, b:2, c:3}; x");
+        V8Object object = v8Context.executeObjectScript("x = {a:1, b:2, c:3}; x");
 
         Map<String, ? super Object> map = V8ObjectUtils.toMap(object);
 
@@ -74,7 +60,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testCreateMapWithFunction() {
-        V8Object object = v8.executeObjectScript("x = {a : function() {return 1;}, b : 'foo'}; x;");
+        V8Object object = v8Context.executeObjectScript("x = {a : function() {return 1;}, b : 'foo'}; x;");
 
         Map<String, ? super Object> map = V8ObjectUtils.toMap(object);
 
@@ -85,7 +71,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testCreateListWithFunction() {
-        V8Array array = v8.executeArrayScript("x = [function() {return 1;}, 'foo']; x;");
+        V8Array array = v8Context.executeArrayScript("x = [function() {return 1;}, 'foo']; x;");
 
         List<Object> list = V8ObjectUtils.toList(array);
 
@@ -96,7 +82,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testCreateDoubleMapFromV8Object() {
-        V8Object object = v8.executeObjectScript("x = {a:1.1, b:2.2, c:3.3, d:4.4}; x");
+        V8Object object = v8Context.executeObjectScript("x = {a:1.1, b:2.2, c:3.3, d:4.4}; x");
 
         Map<String, ? super Object> map = V8ObjectUtils.toMap(object);
 
@@ -110,7 +96,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testCreateStringMapFromV8Object() {
-        V8Object object = v8.executeObjectScript("x = {a:'foo', b:'bar', c:'baz', d:'boo'}; x");
+        V8Object object = v8Context.executeObjectScript("x = {a:'foo', b:'bar', c:'baz', d:'boo'}; x");
 
         Map<String, ? super Object> map = V8ObjectUtils.toMap(object);
 
@@ -124,7 +110,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testCreateBooleanMapFromV8Object() {
-        V8Object object = v8.executeObjectScript("x = {a:true, b:1==1, c:false, d:1!=1}; x");
+        V8Object object = v8Context.executeObjectScript("x = {a:true, b:1==1, c:false, d:1!=1}; x");
 
         Map<String, ? super Object> map = V8ObjectUtils.toMap(object);
 
@@ -138,7 +124,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testCreateMixedMapFromV8Object() {
-        V8Object object = v8.executeObjectScript("x = {boolean:true, integer:1, double:3.14159, string:'hello'}; x");
+        V8Object object = v8Context.executeObjectScript("x = {boolean:true, integer:1, double:3.14159, string:'hello'}; x");
 
         Map<String, ? super Object> map = V8ObjectUtils.toMap(object);
 
@@ -153,7 +139,7 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("rawtypes")
     @Test
     public void testCreateNestedMapFromV8Object() {
-        V8Object object = v8.executeObjectScript("x = { name : { first :'john', last: 'smith'}, age: 7}; x");
+        V8Object object = v8Context.executeObjectScript("x = { name : { first :'john', last: 'smith'}, age: 7}; x");
 
         Map<String, ? super Object> map = V8ObjectUtils.toMap(object);
 
@@ -166,7 +152,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testCreateListFromV8Array() {
-        V8Array array = v8.executeArrayScript("x = [1,2,3]; x");
+        V8Array array = v8Context.executeArrayScript("x = [1,2,3]; x");
 
         List<? super Object> list = V8ObjectUtils.toList(array);
 
@@ -179,7 +165,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testCreateListWithUndefinedFromV8Array() {
-        V8Array array = v8.executeArrayScript("x = [1,2,3]; x[9] = 10; x");
+        V8Array array = v8Context.executeArrayScript("x = [1,2,3]; x[9] = 10; x");
 
         List<? super Object> list = V8ObjectUtils.toList(array);
 
@@ -199,7 +185,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testCreateListWithNullFromV8Array() {
-        V8Array array = v8.executeArrayScript("x = [null]; x");
+        V8Array array = v8Context.executeArrayScript("x = [null]; x");
 
         List<? super Object> list = V8ObjectUtils.toList(array);
 
@@ -211,7 +197,7 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("rawtypes")
     @Test
     public void testCreateMatrixFromV8Array() {
-        V8Array array = v8.executeArrayScript("x = [[1,2,3],[true,false,true],['this','that','other']]; x");
+        V8Array array = v8Context.executeArrayScript("x = [[1,2,3],[true,false,true],['this','that','other']]; x");
 
         List<? super Object> list = V8ObjectUtils.toList(array);
 
@@ -234,7 +220,7 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("rawtypes")
     @Test
     public void testCreateMapWithLists() {
-        V8Object object = v8.executeObjectScript("x = {a:[1,2,3], b:[4,5,6]}; x;");
+        V8Object object = v8Context.executeObjectScript("x = {a:[1,2,3], b:[4,5,6]}; x;");
 
         Map<String, ? super Object> map = V8ObjectUtils.toMap(object);
 
@@ -250,7 +236,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testCreateMapWithNulls() {
-        V8Object object = v8.executeObjectScript("x = {a:null}; x;");
+        V8Object object = v8Context.executeObjectScript("x = {a:null}; x;");
 
         Map<String, ? super Object> map = V8ObjectUtils.toMap(object);
 
@@ -268,8 +254,8 @@ public class V8ObjectUtilsTest {
         int size = registerAndRelease("result", map);
 
         assertEquals(2, size);
-        assertEquals("john", v8.executeStringScript("result.first"));
-        assertEquals("smith", v8.executeStringScript("result['last']"));
+        assertEquals("john", v8Context.executeStringScript("result.first"));
+        assertEquals("smith", v8Context.executeStringScript("result['last']"));
     }
 
     @Test
@@ -281,8 +267,8 @@ public class V8ObjectUtilsTest {
         int size = registerAndRelease("result", map);
 
         assertEquals(2, size);
-        assertEquals(1, v8.executeIntegerScript("result.a"));
-        assertEquals(3, v8.executeIntegerScript("result['b']"));
+        assertEquals(1, v8Context.executeIntegerScript("result.a"));
+        assertEquals(3, v8Context.executeIntegerScript("result['b']"));
     }
 
     @Test
@@ -294,8 +280,8 @@ public class V8ObjectUtilsTest {
         int size = registerAndRelease("result", map);
 
         assertEquals(2, size);
-        assertEquals(1, v8.executeIntegerScript("result.a"));
-        assertEquals(3, v8.executeIntegerScript("result['b']"));
+        assertEquals(1, v8Context.executeIntegerScript("result.a"));
+        assertEquals(3, v8Context.executeIntegerScript("result['b']"));
     }
 
     @Test
@@ -306,7 +292,7 @@ public class V8ObjectUtilsTest {
         int size = registerAndRelease("result", map);
 
         assertEquals(1, size);
-        assertEquals(1477486236000L, (long) v8.executeDoubleScript("result.a"));
+        assertEquals(1477486236000L, (long) v8Context.executeDoubleScript("result.a"));
     }
 
     @Test
@@ -318,8 +304,8 @@ public class V8ObjectUtilsTest {
         int size = registerAndRelease("result", map);
 
         assertEquals(2, size);
-        assertEquals(Long.MAX_VALUE, (long) v8.executeDoubleScript("result.a"));
-        assertEquals(Long.MIN_VALUE, (long) v8.executeDoubleScript("result.b"));
+        assertEquals(Long.MAX_VALUE, (long) v8Context.executeDoubleScript("result.a"));
+        assertEquals(Long.MIN_VALUE, (long) v8Context.executeDoubleScript("result.b"));
     }
 
     @Test
@@ -332,9 +318,9 @@ public class V8ObjectUtilsTest {
         int size = registerAndRelease("result", map);
 
         assertEquals(3, size);
-        assertEquals(1.1, v8.executeDoubleScript("result.a"), 0.000001);
-        assertEquals(3.14159, v8.executeDoubleScript("result['b']"), 0.000001);
-        assertEquals(4.999, v8.executeDoubleScript("result['c']"), 0.000001);
+        assertEquals(1.1, v8Context.executeDoubleScript("result.a"), 0.000001);
+        assertEquals(3.14159, v8Context.executeDoubleScript("result['b']"), 0.000001);
+        assertEquals(4.999, v8Context.executeDoubleScript("result['c']"), 0.000001);
     }
 
     @Test
@@ -347,9 +333,9 @@ public class V8ObjectUtilsTest {
         int size = registerAndRelease("result", map);
 
         assertEquals(3, size);
-        assertEquals(1.1, v8.executeDoubleScript("result.a"), 0.000001);
-        assertEquals(3.14159, v8.executeDoubleScript("result['b']"), 0.000001);
-        assertEquals(4.999, v8.executeDoubleScript("result['c']"), 0.000001);
+        assertEquals(1.1, v8Context.executeDoubleScript("result.a"), 0.000001);
+        assertEquals(3.14159, v8Context.executeDoubleScript("result['b']"), 0.000001);
+        assertEquals(4.999, v8Context.executeDoubleScript("result['c']"), 0.000001);
     }
 
     @Test
@@ -362,9 +348,9 @@ public class V8ObjectUtilsTest {
         int size = registerAndRelease("result", map);
 
         assertEquals(3, size);
-        assertTrue(v8.executeBooleanScript("result.a"));
-        assertTrue(v8.executeBooleanScript("result['b']"));
-        assertFalse(v8.executeBooleanScript("result['c']"));
+        assertTrue(v8Context.executeBooleanScript("result.a"));
+        assertTrue(v8Context.executeBooleanScript("result['b']"));
+        assertFalse(v8Context.executeBooleanScript("result['c']"));
     }
 
     @Test
@@ -375,8 +361,8 @@ public class V8ObjectUtilsTest {
 
         int size = registerAndRelease("result", map);
 
-        assertTrue(v8.executeBooleanScript("result.a"));
-        assertTrue(v8.executeBooleanScript("typeof result.b === 'undefined'"));
+        assertTrue(v8Context.executeBooleanScript("result.a"));
+        assertTrue(v8Context.executeBooleanScript("typeof result.b === 'undefined'"));
         assertEquals(2, size);
     }
 
@@ -397,7 +383,7 @@ public class V8ObjectUtilsTest {
         assertEquals(7, object.getInteger("integer"));
         assertEquals(3.14159, object.getDouble("double"), 0.000001);
         assertEquals("hello", object.getString("String"));
-        assertEquals(V8Value.UNDEFINED, object.getType("undefined"));
+        assertEquals(V8API.UNDEFINED, object.getType("undefined"));
         object.close();
     }
 
@@ -413,16 +399,16 @@ public class V8ObjectUtilsTest {
         int size = registerAndRelease("result", list);
 
         assertEquals(10, size);
-        assertEquals(1, v8.executeIntegerScript("result[0]"));
-        assertEquals(1, v8.executeIntegerScript("result[1]"));
-        assertEquals(2, v8.executeIntegerScript("result[2]"));
-        assertEquals(3, v8.executeIntegerScript("result[3]"));
-        assertEquals(5, v8.executeIntegerScript("result[4]"));
-        assertEquals(8, v8.executeIntegerScript("result[5]"));
-        assertEquals(13, v8.executeIntegerScript("result[6]"));
-        assertEquals(21, v8.executeIntegerScript("result[7]"));
-        assertEquals(34, v8.executeIntegerScript("result[8]"));
-        assertEquals(55, v8.executeIntegerScript("result[9]"));
+        assertEquals(1, v8Context.executeIntegerScript("result[0]"));
+        assertEquals(1, v8Context.executeIntegerScript("result[1]"));
+        assertEquals(2, v8Context.executeIntegerScript("result[2]"));
+        assertEquals(3, v8Context.executeIntegerScript("result[3]"));
+        assertEquals(5, v8Context.executeIntegerScript("result[4]"));
+        assertEquals(8, v8Context.executeIntegerScript("result[5]"));
+        assertEquals(13, v8Context.executeIntegerScript("result[6]"));
+        assertEquals(21, v8Context.executeIntegerScript("result[7]"));
+        assertEquals(34, v8Context.executeIntegerScript("result[8]"));
+        assertEquals(55, v8Context.executeIntegerScript("result[9]"));
     }
 
     @Test
@@ -433,7 +419,7 @@ public class V8ObjectUtilsTest {
         int size = registerAndRelease("result", list);
 
         assertEquals(1, size);
-        assertEquals(1, v8.executeIntegerScript("result[0]"));
+        assertEquals(1, v8Context.executeIntegerScript("result[0]"));
     }
 
     @Test
@@ -444,7 +430,7 @@ public class V8ObjectUtilsTest {
         int size = registerAndRelease("result", list);
 
         assertEquals(1, size);
-        assertEquals(Long.MAX_VALUE, v8.executeDoubleScript("result[0]"), 0.0000001);
+        assertEquals(Long.MAX_VALUE, v8Context.executeDoubleScript("result[0]"), 0.0000001);
     }
 
     @Test
@@ -455,7 +441,7 @@ public class V8ObjectUtilsTest {
         int size = registerAndRelease("result", list);
 
         assertEquals(1, size);
-        assertEquals(1.1, v8.executeDoubleScript("result[0]"), 0.0000001);
+        assertEquals(1.1, v8Context.executeDoubleScript("result[0]"), 0.0000001);
     }
 
     @Test
@@ -468,9 +454,9 @@ public class V8ObjectUtilsTest {
         int size = registerAndRelease("result", list);
 
         assertEquals(3, size);
-        assertEquals(3.14159, v8.executeDoubleScript("result[0]"), 0.000001);
-        assertEquals(4.1, v8.executeDoubleScript("result[1]"), 0.000001);
-        assertEquals(5.3, v8.executeDoubleScript("result[2]"), 0.000001);
+        assertEquals(3.14159, v8Context.executeDoubleScript("result[0]"), 0.000001);
+        assertEquals(4.1, v8Context.executeDoubleScript("result[1]"), 0.000001);
+        assertEquals(5.3, v8Context.executeDoubleScript("result[2]"), 0.000001);
     }
 
     @Test
@@ -482,8 +468,8 @@ public class V8ObjectUtilsTest {
         int size = registerAndRelease("result", list);
 
         assertEquals(2, size);
-        assertTrue(v8.executeBooleanScript("result[0]"));
-        assertFalse(v8.executeBooleanScript("result[1]"));
+        assertTrue(v8Context.executeBooleanScript("result[0]"));
+        assertFalse(v8Context.executeBooleanScript("result[1]"));
     }
 
     @Test
@@ -495,8 +481,8 @@ public class V8ObjectUtilsTest {
         int size = registerAndRelease("result", list);
 
         assertEquals(2, size);
-        assertEquals("hello", v8.executeStringScript("result[0]"));
-        assertEquals("world", v8.executeStringScript("result[1]"));
+        assertEquals("hello", v8Context.executeStringScript("result[0]"));
+        assertEquals("world", v8Context.executeStringScript("result[1]"));
     }
 
     @Test
@@ -509,9 +495,9 @@ public class V8ObjectUtilsTest {
         int size = registerAndRelease("result", list);
 
         assertEquals(3, size);
-        assertEquals("hello", v8.executeStringScript("result[0]"));
-        assertTrue(v8.executeBooleanScript("typeof result[1] === 'undefined'"));
-        assertEquals("world", v8.executeStringScript("result[2]"));
+        assertEquals("hello", v8Context.executeStringScript("result[0]"));
+        assertTrue(v8Context.executeBooleanScript("typeof result[1] === 'undefined'"));
+        assertEquals("world", v8Context.executeStringScript("result[2]"));
     }
 
     @Test
@@ -526,11 +512,11 @@ public class V8ObjectUtilsTest {
         int size = registerAndRelease("result", list);
 
         assertEquals(5, size);
-        assertEquals("string", v8.executeStringScript("result[0]"));
-        assertEquals(7, v8.executeIntegerScript("result[1]"));
-        assertEquals(3.14159, v8.executeDoubleScript("result[2]"), 0.000001);
-        assertTrue(v8.executeBooleanScript("result[3]"));
-        assertTrue(v8.executeBooleanScript("typeof result[4] === 'undefined'"));
+        assertEquals("string", v8Context.executeStringScript("result[0]"));
+        assertEquals(7, v8Context.executeIntegerScript("result[1]"));
+        assertEquals(3.14159, v8Context.executeDoubleScript("result[2]"), 0.000001);
+        assertTrue(v8Context.executeBooleanScript("result[3]"));
+        assertTrue(v8Context.executeBooleanScript("typeof result[4] === 'undefined'"));
     }
 
     @Test
@@ -548,10 +534,10 @@ public class V8ObjectUtilsTest {
         int size = registerAndRelease("result", list);
 
         assertEquals(2, size);
-        assertEquals(7, v8.executeIntegerScript("result[0].Sadie"));
-        assertEquals(5, v8.executeIntegerScript("result[0].Lily"));
-        assertEquals(3, v8.executeIntegerScript("result[0].Maggie"));
-        assertEquals(38, v8.executeIntegerScript("result[1].Ian"));
+        assertEquals(7, v8Context.executeIntegerScript("result[0].Sadie"));
+        assertEquals(5, v8Context.executeIntegerScript("result[0].Lily"));
+        assertEquals(3, v8Context.executeIntegerScript("result[0].Maggie"));
+        assertEquals(38, v8Context.executeIntegerScript("result[1].Ian"));
     }
 
     @Test
@@ -575,18 +561,18 @@ public class V8ObjectUtilsTest {
 
         int size = registerAndRelease("result", matrix);
         assertEquals(3, size);
-        assertEquals(3, v8.executeIntegerScript("result[0].length"));
-        assertEquals(3, v8.executeIntegerScript("result[1].length"));
-        assertEquals(3, v8.executeIntegerScript("result[2].length"));
-        assertEquals(1, v8.executeIntegerScript("result[0][0]"));
-        assertEquals(2, v8.executeIntegerScript("result[0][1]"));
-        assertEquals(3, v8.executeIntegerScript("result[0][2]"));
-        assertEquals(4, v8.executeIntegerScript("result[1][0]"));
-        assertEquals(5, v8.executeIntegerScript("result[1][1]"));
-        assertEquals(6, v8.executeIntegerScript("result[1][2]"));
-        assertEquals(7, v8.executeIntegerScript("result[2][0]"));
-        assertEquals(8, v8.executeIntegerScript("result[2][1]"));
-        assertEquals(9, v8.executeIntegerScript("result[2][2]"));
+        assertEquals(3, v8Context.executeIntegerScript("result[0].length"));
+        assertEquals(3, v8Context.executeIntegerScript("result[1].length"));
+        assertEquals(3, v8Context.executeIntegerScript("result[2].length"));
+        assertEquals(1, v8Context.executeIntegerScript("result[0][0]"));
+        assertEquals(2, v8Context.executeIntegerScript("result[0][1]"));
+        assertEquals(3, v8Context.executeIntegerScript("result[0][2]"));
+        assertEquals(4, v8Context.executeIntegerScript("result[1][0]"));
+        assertEquals(5, v8Context.executeIntegerScript("result[1][1]"));
+        assertEquals(6, v8Context.executeIntegerScript("result[1][2]"));
+        assertEquals(7, v8Context.executeIntegerScript("result[2][0]"));
+        assertEquals(8, v8Context.executeIntegerScript("result[2][1]"));
+        assertEquals(9, v8Context.executeIntegerScript("result[2][2]"));
     }
 
     @Test
@@ -610,14 +596,14 @@ public class V8ObjectUtilsTest {
         int size = registerAndRelease("result", map);
 
         assertEquals(3, size);
-        assertEquals("first", v8.executeStringScript("result.numbers[0]"));
-        assertEquals("second", v8.executeStringScript("result.numbers[1]"));
-        assertEquals("third", v8.executeStringScript("result.numbers[2]"));
-        assertEquals("a", v8.executeStringScript("result.letters[0]"));
-        assertEquals("b", v8.executeStringScript("result.letters[1]"));
-        assertEquals("c", v8.executeStringScript("result.letters[2]"));
-        assertEquals("dog", v8.executeStringScript("result.animals[0]"));
-        assertEquals("cat", v8.executeStringScript("result.animals[1]"));
+        assertEquals("first", v8Context.executeStringScript("result.numbers[0]"));
+        assertEquals("second", v8Context.executeStringScript("result.numbers[1]"));
+        assertEquals("third", v8Context.executeStringScript("result.numbers[2]"));
+        assertEquals("a", v8Context.executeStringScript("result.letters[0]"));
+        assertEquals("b", v8Context.executeStringScript("result.letters[1]"));
+        assertEquals("c", v8Context.executeStringScript("result.letters[2]"));
+        assertEquals("dog", v8Context.executeStringScript("result.animals[0]"));
+        assertEquals("cat", v8Context.executeStringScript("result.animals[1]"));
     }
 
     @Test(expected = IllegalStateException.class)
@@ -654,7 +640,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testGetIntValueFromArray() {
-        V8Array array = v8.executeArrayScript("[1,2,3,4,5]");
+        V8Array array = v8Context.executeArrayScript("[1,2,3,4,5]");
 
         assertEquals(1, V8ObjectUtils.getValue(array, 0));
         array.close();
@@ -662,7 +648,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testGetDoubleValueFromArray() {
-        V8Array array = v8.executeArrayScript("[1.2,2.2,3.3,4.4,5.5]");
+        V8Array array = v8Context.executeArrayScript("[1.2,2.2,3.3,4.4,5.5]");
 
         assertEquals(4.4, V8ObjectUtils.getValue(array, 3));
         array.close();
@@ -670,7 +656,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testGetStringValueFromArray() {
-        V8Array array = v8.executeArrayScript("['string']");
+        V8Array array = v8Context.executeArrayScript("['string']");
 
         assertEquals("string", V8ObjectUtils.getValue(array, 0));
         array.close();
@@ -678,7 +664,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testGetBooleanValueFromArray() {
-        V8Array array = v8.executeArrayScript("[true, false]");
+        V8Array array = v8Context.executeArrayScript("[true, false]");
 
         assertEquals(Boolean.TRUE, V8ObjectUtils.getValue(array, 0));
         array.close();
@@ -687,7 +673,7 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testGetMapValueFromArray() {
-        V8Array array = v8.executeArrayScript("[{a:'b', c:'d'}]");
+        V8Array array = v8Context.executeArrayScript("[{a:'b', c:'d'}]");
 
         assertTrue(V8ObjectUtils.getValue(array, 0) instanceof Map<?, ?>);
         assertEquals("b", ((Map<String, Object>) V8ObjectUtils.getValue(array, 0)).get("a"));
@@ -697,7 +683,7 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testGetArrayValueFromArray() {
-        V8Array array = v8.executeArrayScript("[[1,2,3]]");
+        V8Array array = v8Context.executeArrayScript("[[1,2,3]]");
 
         assertTrue(V8ObjectUtils.getValue(array, 0) instanceof List<?>);
         assertEquals(1, ((List<Object>) V8ObjectUtils.getValue(array, 0)).get(0));
@@ -706,49 +692,49 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testGetV8ResultInteger() {
-        Object result = V8ObjectUtils.getV8Result(v8, new Integer(77));
+        Object result = V8ObjectUtils.getV8Result(v8Context, new Integer(77));
 
         assertEquals(77, result);
     }
 
     @Test
     public void testGetV8ResultDouble() {
-        Object result = V8ObjectUtils.getV8Result(v8, new Double(77.7));
+        Object result = V8ObjectUtils.getV8Result(v8Context, new Double(77.7));
 
         assertEquals(77.7, result);
     }
 
     @Test
     public void testGetV8ResultFloat() {
-        Object result = V8ObjectUtils.getV8Result(v8, new Float(77.7));
+        Object result = V8ObjectUtils.getV8Result(v8Context, new Float(77.7));
 
         assertEquals(77.7f, result);
     }
 
     @Test
     public void testGetV8ResultString() {
-        Object result = V8ObjectUtils.getV8Result(v8, "Seven");
+        Object result = V8ObjectUtils.getV8Result(v8Context, "Seven");
 
         assertEquals("Seven", result);
     }
 
     @Test
     public void testGetV8ResultNull() {
-        Object result = V8ObjectUtils.getV8Result(v8, null);
+        Object result = V8ObjectUtils.getV8Result(v8Context, null);
 
         assertNull(result);
     }
 
     @Test
     public void testGetV8ResultUndefined() {
-        Object result = V8ObjectUtils.getV8Result(v8, V8.getUndefined());
+        Object result = V8ObjectUtils.getV8Result(v8Context, V8.getUndefined());
 
         assertEquals(V8.getUndefined(), result);
     }
 
     @Test
     public void testGetV8ResultTrue() {
-        Object result = V8ObjectUtils.getV8Result(v8, Boolean.TRUE);
+        Object result = V8ObjectUtils.getV8Result(v8Context, Boolean.TRUE);
 
         assertEquals(true, result);
     }
@@ -757,7 +743,7 @@ public class V8ObjectUtilsTest {
     public void testGetV8ResultObject() {
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("foo", "bar");
-        Object result = V8ObjectUtils.getV8Result(v8, map);
+        Object result = V8ObjectUtils.getV8Result(v8Context, map);
 
         assertTrue(result instanceof V8Object);
         assertEquals("bar", ((V8Object) result).getString("foo"));
@@ -769,7 +755,7 @@ public class V8ObjectUtilsTest {
         List<Object> list = new ArrayList<Object>();
         list.add(1);
         list.add("two");
-        Object result = V8ObjectUtils.getV8Result(v8, list);
+        Object result = V8ObjectUtils.getV8Result(v8Context, list);
 
         assertTrue(result instanceof V8Array);
         assertEquals(2, ((V8Array) result).length());
@@ -780,9 +766,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testPushInteger() {
-        V8Array array = new V8Array(v8);
+        V8Array array = new V8Array(v8Context);
 
-        V8ObjectUtils.pushValue(v8, array, 7);
+        V8ObjectUtils.pushValue(v8Context, array, 7);
 
         assertEquals(7, array.getInteger(0));
         array.close();
@@ -790,9 +776,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testPushDouble() {
-        V8Array array = new V8Array(v8);
+        V8Array array = new V8Array(v8Context);
 
-        V8ObjectUtils.pushValue(v8, array, 7.8);
+        V8ObjectUtils.pushValue(v8Context, array, 7.8);
 
         assertEquals(7.8, array.getDouble(0), 0.000001);
         array.close();
@@ -800,9 +786,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testPushBoolean() {
-        V8Array array = new V8Array(v8);
+        V8Array array = new V8Array(v8Context);
 
-        V8ObjectUtils.pushValue(v8, array, true);
+        V8ObjectUtils.pushValue(v8Context, array, true);
 
         assertTrue(array.getBoolean(0));
         array.close();
@@ -810,9 +796,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testPushString() {
-        V8Array array = new V8Array(v8);
+        V8Array array = new V8Array(v8Context);
 
-        V8ObjectUtils.pushValue(v8, array, "string");
+        V8ObjectUtils.pushValue(v8Context, array, "string");
 
         assertEquals("string", array.getString(0));
         array.close();
@@ -820,11 +806,11 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testPushMap() {
-        V8Array array = new V8Array(v8);
+        V8Array array = new V8Array(v8Context);
         Map<String, String> map = new HashMap<String, String>();
         map.put("foo", "bar");
 
-        V8ObjectUtils.pushValue(v8, array, map);
+        V8ObjectUtils.pushValue(v8Context, array, map);
 
         V8Object result = array.getObject(0);
         assertEquals("bar", result.getString("foo"));
@@ -834,11 +820,11 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testPushList() {
-        V8Array array = new V8Array(v8);
+        V8Array array = new V8Array(v8Context);
         List<String> list = new ArrayList<String>();
         list.add("one");
 
-        V8ObjectUtils.pushValue(v8, array, list);
+        V8ObjectUtils.pushValue(v8Context, array, list);
 
         V8Array result = array.getArray(0);
         assertEquals("one", result.getString(0));
@@ -848,9 +834,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testPopulateFromIntegerArray() {
-        V8Array array = v8.executeArrayScript("[1,2,3,4]");
+        V8Array array = v8Context.executeArrayScript("[1,2,3,4]");
 
-        int[] result = (int[]) V8ObjectUtils.getTypedArray(array, V8Value.INTEGER);
+        int[] result = (int[]) V8ObjectUtils.getTypedArray(array, V8API.INTEGER);
 
         assertEquals(4, result.length);
         assertEquals(1, result[0]);
@@ -862,9 +848,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testPopulateFromDoubleArray() {
-        V8Array array = v8.executeArrayScript("[1,2,3,4.4]");
+        V8Array array = v8Context.executeArrayScript("[1,2,3,4.4]");
 
-        double[] result = (double[]) V8ObjectUtils.getTypedArray(array, V8Value.DOUBLE);
+        double[] result = (double[]) V8ObjectUtils.getTypedArray(array, V8API.DOUBLE);
 
         assertEquals(4, result.length);
         assertEquals(1.0, result[0], 0.000001);
@@ -876,9 +862,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testPopulateFromBooleanArray() {
-        V8Array array = v8.executeArrayScript("[true, false, false, true]");
+        V8Array array = v8Context.executeArrayScript("[true, false, false, true]");
 
-        boolean[] result = (boolean[]) V8ObjectUtils.getTypedArray(array, V8Value.BOOLEAN);
+        boolean[] result = (boolean[]) V8ObjectUtils.getTypedArray(array, V8API.BOOLEAN);
 
         assertEquals(4, result.length);
         assertTrue(result[0]);
@@ -890,9 +876,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testPopulateFromStringArray() {
-        V8Array array = v8.executeArrayScript("['one', 'two', 'three', 'four']");
+        V8Array array = v8Context.executeArrayScript("['one', 'two', 'three', 'four']");
 
-        String[] result = (String[]) V8ObjectUtils.getTypedArray(array, V8Value.STRING);
+        String[] result = (String[]) V8ObjectUtils.getTypedArray(array, V8API.STRING);
 
         assertEquals(4, result.length);
         assertEquals("one", result[0]);
@@ -904,10 +890,10 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testPopulateFromExistingIntArray() {
-        V8Array array = v8.executeArrayScript("[1,2,3,4,5]");
+        V8Array array = v8Context.executeArrayScript("[1,2,3,4,5]");
         int[] result = new int[1000];
 
-        V8ObjectUtils.getTypedArray(array, V8Value.INTEGER, result);
+        V8ObjectUtils.getTypedArray(array, V8API.INTEGER, result);
 
         assertEquals(1000, result.length);
         assertEquals(1, result[0]);
@@ -920,9 +906,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testPopulateFromNonExistingIntArray() {
-        V8Array array = v8.executeArrayScript("[1,2,3,4,5]");
+        V8Array array = v8Context.executeArrayScript("[1,2,3,4,5]");
 
-        int[] result = (int[]) V8ObjectUtils.getTypedArray(array, V8Value.INTEGER, null);
+        int[] result = (int[]) V8ObjectUtils.getTypedArray(array, V8API.INTEGER, null);
 
         assertEquals(5, result.length);
         assertEquals(1, result[0]);
@@ -935,10 +921,10 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testPopulateFromSmallExistingIntArray() {
-        V8Array array = v8.executeArrayScript("[1,2,3,4,5]");
+        V8Array array = v8Context.executeArrayScript("[1,2,3,4,5]");
         int[] result = new int[4];
 
-        result = (int[]) V8ObjectUtils.getTypedArray(array, V8Value.INTEGER, null);
+        result = (int[]) V8ObjectUtils.getTypedArray(array, V8API.INTEGER, null);
 
         assertEquals(5, result.length);
         assertEquals(1, result[0]);
@@ -951,10 +937,10 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testPopulateFromExistingDoubleArray() {
-        V8Array array = v8.executeArrayScript("[1.1,2.2,3,4,5]");
+        V8Array array = v8Context.executeArrayScript("[1.1,2.2,3,4,5]");
         double[] result = new double[1000];
 
-        V8ObjectUtils.getTypedArray(array, V8Value.DOUBLE, result);
+        V8ObjectUtils.getTypedArray(array, V8API.DOUBLE, result);
 
         assertEquals(1000, result.length);
         assertEquals(1.1, result[0], 0.000001);
@@ -967,9 +953,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testPopulateFromNonExistingDoubleArray() {
-        V8Array array = v8.executeArrayScript("[1.1,2.2,3,4,5]");
+        V8Array array = v8Context.executeArrayScript("[1.1,2.2,3,4,5]");
 
-        double[] result = (double[]) V8ObjectUtils.getTypedArray(array, V8Value.DOUBLE, null);
+        double[] result = (double[]) V8ObjectUtils.getTypedArray(array, V8API.DOUBLE, null);
 
         assertEquals(5, result.length);
         assertEquals(1.1, result[0], 0.000001);
@@ -982,10 +968,10 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testPopulateFromSmallExistingDoubleArray() {
-        V8Array array = v8.executeArrayScript("[1.1,2.2,3,4,5.5]");
+        V8Array array = v8Context.executeArrayScript("[1.1,2.2,3,4,5.5]");
         double[] result = new double[4];
 
-        result = (double[]) V8ObjectUtils.getTypedArray(array, V8Value.DOUBLE, null);
+        result = (double[]) V8ObjectUtils.getTypedArray(array, V8API.DOUBLE, null);
 
         assertEquals(5, result.length);
         assertEquals(1.1, result[0], 0.000001);
@@ -998,10 +984,10 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testPopulateFromExistingByteArray() {
-        V8Array array = v8.executeArrayScript("[0, 1, 2, 256]");
+        V8Array array = v8Context.executeArrayScript("[0, 1, 2, 256]");
         byte[] result = new byte[1000];
 
-        V8ObjectUtils.getTypedArray(array, V8Value.BYTE, result);
+        V8ObjectUtils.getTypedArray(array, V8API.BYTE, result);
 
         assertEquals(1000, result.length);
         assertEquals(0, result[0]);
@@ -1013,10 +999,10 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testPopulateFromExistingBooleanArray() {
-        V8Array array = v8.executeArrayScript("[true, true, false, false]");
+        V8Array array = v8Context.executeArrayScript("[true, true, false, false]");
         boolean[] result = new boolean[1000];
 
-        V8ObjectUtils.getTypedArray(array, V8Value.BOOLEAN, result);
+        V8ObjectUtils.getTypedArray(array, V8API.BOOLEAN, result);
 
         assertEquals(1000, result.length);
         assertTrue(result[0]);
@@ -1028,9 +1014,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testPopulateFromNonExistingByteArray() {
-        V8Array array = v8.executeArrayScript("[0, 1, 2, 256]");
+        V8Array array = v8Context.executeArrayScript("[0, 1, 2, 256]");
 
-        byte[] result = (byte[]) V8ObjectUtils.getTypedArray(array, V8Value.BYTE, null);
+        byte[] result = (byte[]) V8ObjectUtils.getTypedArray(array, V8API.BYTE, null);
 
         assertEquals(4, result.length);
         assertEquals(0, result[0]);
@@ -1042,9 +1028,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testPopulateFromNonExistingBooleanArray() {
-        V8Array array = v8.executeArrayScript("[true, true, false, false]");
+        V8Array array = v8Context.executeArrayScript("[true, true, false, false]");
 
-        boolean[] result = (boolean[]) V8ObjectUtils.getTypedArray(array, V8Value.BOOLEAN, null);
+        boolean[] result = (boolean[]) V8ObjectUtils.getTypedArray(array, V8API.BOOLEAN, null);
 
         assertEquals(4, result.length);
         assertTrue(result[0]);
@@ -1056,10 +1042,10 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testPopulateFromSmallExistingBooleanArray() {
-        V8Array array = v8.executeArrayScript("[true, true, false, false]");
+        V8Array array = v8Context.executeArrayScript("[true, true, false, false]");
         boolean[] result = new boolean[4];
 
-        result = (boolean[]) V8ObjectUtils.getTypedArray(array, V8Value.BOOLEAN, null);
+        result = (boolean[]) V8ObjectUtils.getTypedArray(array, V8API.BOOLEAN, null);
 
         assertEquals(4, result.length);
         assertTrue(result[0]);
@@ -1071,10 +1057,10 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testPopulateFromExistingStringArray() {
-        V8Array array = v8.executeArrayScript("['a', 'b', 'c', 'z']");
+        V8Array array = v8Context.executeArrayScript("['a', 'b', 'c', 'z']");
         String[] result = new String[1000];
 
-        V8ObjectUtils.getTypedArray(array, V8Value.STRING, result);
+        V8ObjectUtils.getTypedArray(array, V8API.STRING, result);
 
         assertEquals(1000, result.length);
         assertEquals("a", result[0]);
@@ -1086,9 +1072,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testPopulateFromNonExistingStringArray() {
-        V8Array array = v8.executeArrayScript("['a', 'b', 'c', 'z']");
+        V8Array array = v8Context.executeArrayScript("['a', 'b', 'c', 'z']");
 
-        String[] result = (String[]) V8ObjectUtils.getTypedArray(array, V8Value.STRING, null);
+        String[] result = (String[]) V8ObjectUtils.getTypedArray(array, V8API.STRING, null);
 
         assertEquals(4, result.length);
         assertEquals("a", result[0]);
@@ -1100,10 +1086,10 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testPopulateFromSmallExistingStringArray() {
-        V8Array array = v8.executeArrayScript("['a', 'b', 'c', 'z']");
+        V8Array array = v8Context.executeArrayScript("['a', 'b', 'c', 'z']");
         String[] result = new String[4];
 
-        result = (String[]) V8ObjectUtils.getTypedArray(array, V8Value.STRING, null);
+        result = (String[]) V8ObjectUtils.getTypedArray(array, V8API.STRING, null);
 
         assertEquals(4, result.length);
         assertEquals("a", result[0]);
@@ -1118,7 +1104,7 @@ public class V8ObjectUtilsTest {
         List<Object> list = new ArrayList<Object>();
         list.add(list);
 
-        V8Array v8Array = V8ObjectUtils.toV8Array(v8, list);
+        V8Array v8Array = V8ObjectUtils.toV8Array(v8Context, list);
         V8Object self = v8Array.getObject(0);
 
         assertEquals(v8Array, self);
@@ -1133,7 +1119,7 @@ public class V8ObjectUtilsTest {
         map.put("self2", map);
         map.put("self3", map);
 
-        V8Object v8Object = V8ObjectUtils.toV8Object(v8, map);
+        V8Object v8Object = V8ObjectUtils.toV8Object(v8Context, map);
         V8Object self = v8Object.getObject("self");
 
         assertEquals(v8Object, self);
@@ -1149,7 +1135,7 @@ public class V8ObjectUtilsTest {
         parent.put("child", child);
         child.put("parent", parent);
 
-        V8Object v8Object = V8ObjectUtils.toV8Object(v8, parent);
+        V8Object v8Object = V8ObjectUtils.toV8Object(v8Context, parent);
         V8Object v8_child = v8Object.getObject("child");
         V8Object v8_parent = v8_child.getObject("parent");
 
@@ -1161,7 +1147,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testV8ArrayContainsSelf() {
-        V8Array v8Array = new V8Array(v8);
+        V8Array v8Array = new V8Array(v8Context);
         v8Array.push(v8Array);
 
         List<Object> list = V8ObjectUtils.toList(v8Array);
@@ -1172,7 +1158,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testV8ObjectContainsSelf() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("self", v8Object);
 
         Map<String, Object> map = V8ObjectUtils.toMap(v8Object);
@@ -1185,7 +1171,7 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testBackpointer() {
-        V8Object parent = v8.executeObjectScript("var parent = {};\n"
+        V8Object parent = v8Context.executeObjectScript("var parent = {};\n"
                 + "var child = {parent : parent};\n"
                 + "parent.child = child\n;"
                 + "parent;");
@@ -1198,36 +1184,36 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testCloneV8Object() {
-        V8Object list = v8.executeObjectScript("var l = [{first:'ian', last:'bull'}, {first:'sadie', last:'bull'}]; l;");
+        V8Object list = v8Context.executeObjectScript("var l = [{first:'ian', last:'bull'}, {first:'sadie', last:'bull'}]; l;");
 
-        V8Object v8Object = V8ObjectUtils.toV8Object(v8, V8ObjectUtils.toMap(list));
+        V8Object v8Object = V8ObjectUtils.toV8Object(v8Context, V8ObjectUtils.toMap(list));
 
         v8.add("l2", v8Object);
-        v8.executeBooleanScript("JSON.stringify(l) === JSON.stringify(l2);");
+        v8Context.executeBooleanScript("JSON.stringify(l) === JSON.stringify(l2);");
         list.close();
         v8Object.close();
     }
 
     @Test
     public void testCloneV8Array() {
-        V8Array list = v8.executeArrayScript("var l = [{first:'ian', last:'bull'}, {first:'sadie', last:'bull'}]; l;");
+        V8Array list = v8Context.executeArrayScript("var l = [{first:'ian', last:'bull'}, {first:'sadie', last:'bull'}]; l;");
 
-        V8Array v8Object = V8ObjectUtils.toV8Array(v8, V8ObjectUtils.toList(list));
+        V8Array v8Object = V8ObjectUtils.toV8Array(v8Context, V8ObjectUtils.toList(list));
 
         v8.add("l2", v8Object);
-        v8.executeBooleanScript("JSON.stringify(l) === JSON.stringify(l2);");
+        v8Context.executeBooleanScript("JSON.stringify(l) === JSON.stringify(l2);");
         list.close();
         v8Object.close();
     }
 
     @Test
     public void testCloneV8ObjectsWithCircularStructure() {
-        V8Object parent = v8.executeObjectScript("var parent = {};\n"
+        V8Object parent = v8Context.executeObjectScript("var parent = {};\n"
                 + "var child = {parent : parent};\n"
                 + "parent.child = child\n;"
                 + "parent;");
 
-        V8Object v8Object = V8ObjectUtils.toV8Object(v8, V8ObjectUtils.toMap(parent));
+        V8Object v8Object = V8ObjectUtils.toV8Object(v8Context, V8ObjectUtils.toMap(parent));
 
         assertEquals(1, v8Object.getKeys().length);
         assertEquals("child", v8Object.getKeys()[0]);
@@ -1237,7 +1223,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testEqualSiblings() {
-        V8Object parent = v8.executeObjectScript("var parent = {};\n"
+        V8Object parent = v8Context.executeObjectScript("var parent = {};\n"
                 + "var child = {parent : parent};\n"
                 + "parent.child1 = child\n;"
                 + "parent.child2 = child\n;"
@@ -1251,7 +1237,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testArrayTypedArrayValue_ArrayBuffer() {
-        V8Array root = v8.executeArrayScript("var buf = new ArrayBuffer(100);\n"
+        V8Array root = v8Context.executeArrayScript("var buf = new ArrayBuffer(100);\n"
                 + "var root = [buf];\n"
                 + "root;\n");
 
@@ -1264,7 +1250,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testArrayTypedArrayValue_Int8Array() {
-        V8Array root = v8.executeArrayScript("var buf = new ArrayBuffer(100);\n"
+        V8Array root = v8Context.executeArrayScript("var buf = new ArrayBuffer(100);\n"
                 + "var intsArray = new Int8Array(buf);\n"
                 + "intsArray[0] = 16;\n"
                 + "var root = [intsArray];\n"
@@ -1280,7 +1266,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testArrayTypedArrayValue_Int8ArrayWithoutBackingStore() {
-        V8Array root = v8.executeArrayScript(""
+        V8Array root = v8Context.executeArrayScript(""
                 + "var intsArray = new Int8Array(24);\n"
                 + "var root = [intsArray];\n"
                 + "root;\n");
@@ -1294,7 +1280,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testArrayTypedArrayValue_Uint8Array() {
-        V8Array root = v8.executeArrayScript("var buf = new ArrayBuffer(100);\n"
+        V8Array root = v8Context.executeArrayScript("var buf = new ArrayBuffer(100);\n"
                 + "var intsArray = new Uint8Array(buf);\n"
                 + "intsArray[0] = 16;\n"
                 + "var root = [intsArray];\n"
@@ -1310,7 +1296,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testArrayTypedArrayValue_Uint8ClampedArray() {
-        V8Array root = v8.executeArrayScript("var buf = new ArrayBuffer(100);\n"
+        V8Array root = v8Context.executeArrayScript("var buf = new ArrayBuffer(100);\n"
                 + "var int8ClampedArray = new Uint8ClampedArray(buf);\n"
                 + "int8ClampedArray[0] = 16;\n"
                 + "var root = [int8ClampedArray];\n"
@@ -1326,7 +1312,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testArrayTypedArrayValue_Int16Array() {
-        V8Array root = v8.executeArrayScript("var buf = new ArrayBuffer(100);\n"
+        V8Array root = v8Context.executeArrayScript("var buf = new ArrayBuffer(100);\n"
                 + "var intsArray = new Int16Array(buf);\n"
                 + "intsArray[0] = 16;\n"
                 + "var root = [intsArray];\n"
@@ -1342,7 +1328,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testArrayTypedArrayValue_Uint16Array() {
-        V8Array root = v8.executeArrayScript("var buf = new ArrayBuffer(100);\n"
+        V8Array root = v8Context.executeArrayScript("var buf = new ArrayBuffer(100);\n"
                 + "var intsArray = new Uint16Array(buf);\n"
                 + "intsArray[0] = 16;\n"
                 + "var root = [intsArray];\n"
@@ -1358,7 +1344,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testArrayTypedArrayValue_Int32Array() {
-        V8Array root = v8.executeArrayScript("var buf = new ArrayBuffer(100);\n"
+        V8Array root = v8Context.executeArrayScript("var buf = new ArrayBuffer(100);\n"
                 + "var intsArray = new Int32Array(buf);\n"
                 + "intsArray[0] = 16;\n"
                 + "var root = [intsArray];\n"
@@ -1375,7 +1361,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testArrayTypedArrayValue_Uint32Array() {
-        V8Array root = v8.executeArrayScript("var buf = new ArrayBuffer(100);\n"
+        V8Array root = v8Context.executeArrayScript("var buf = new ArrayBuffer(100);\n"
                 + "var intsArray = new Uint32Array(buf);\n"
                 + "intsArray[0] = 16;\n"
                 + "var root = [intsArray]\n"
@@ -1391,7 +1377,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testArrayTypedArrayValue_Float32Array() {
-        V8Array root = v8.executeArrayScript("var buf = new ArrayBuffer(100);\n"
+        V8Array root = v8Context.executeArrayScript("var buf = new ArrayBuffer(100);\n"
                 + "var floatsArray = new Float32Array(buf);\n"
                 + "floatsArray[0] = 16.2;\n"
                 + "var root = [floatsArray];"
@@ -1407,7 +1393,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testArrayTypedArrayValue_Float64Array() {
-        V8Array root = v8.executeArrayScript("var buf = new ArrayBuffer(80);\n"
+        V8Array root = v8Context.executeArrayScript("var buf = new ArrayBuffer(80);\n"
                 + "var floatsArray = new Float64Array(buf);\n"
                 + "floatsArray[0] = 16.2;\n"
                 + "var root = [floatsArray];\n"
@@ -1423,7 +1409,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testArrayBufferAsProperty() {
-        V8Object root = v8.executeObjectScript("var buf = new ArrayBuffer(100);\n"
+        V8Object root = v8Context.executeObjectScript("var buf = new ArrayBuffer(100);\n"
                 + "var root = { 'items' : buf };\n"
                 + "root;\n");
 
@@ -1436,7 +1422,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testTypedArrayValue_Int8Array() {
-        V8Object root = v8.executeObjectScript("var buf = new ArrayBuffer(100);\n"
+        V8Object root = v8Context.executeObjectScript("var buf = new ArrayBuffer(100);\n"
                 + "var intsArray = new Int8Array(buf);\n"
                 + "intsArray[0] = 16;\n"
                 + "var root = { 'items' : intsArray };\n"
@@ -1452,7 +1438,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testTypedArrayValue_Uint8Array() {
-        V8Object root = v8.executeObjectScript("var buf = new ArrayBuffer(100);\n"
+        V8Object root = v8Context.executeObjectScript("var buf = new ArrayBuffer(100);\n"
                 + "var intsArray = new Uint8Array(buf);\n"
                 + "intsArray[0] = 16;\n"
                 + "var root = { 'items' : intsArray };\n"
@@ -1468,7 +1454,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testTypedArrayValue_Uint8ClampedArray() {
-        V8Object root = v8.executeObjectScript("var buf = new ArrayBuffer(100);\n"
+        V8Object root = v8Context.executeObjectScript("var buf = new ArrayBuffer(100);\n"
                 + "var int8ClampedArray = new Uint8ClampedArray(buf);\n"
                 + "int8ClampedArray[0] = 16;\n"
                 + "var root = { 'items' : int8ClampedArray };\n"
@@ -1484,7 +1470,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testTypedArrayValue_Int16Array() {
-        V8Object root = v8.executeObjectScript("var buf = new ArrayBuffer(100);\n"
+        V8Object root = v8Context.executeObjectScript("var buf = new ArrayBuffer(100);\n"
                 + "var intsArray = new Int16Array(buf);\n"
                 + "intsArray[0] = 16;\n"
                 + "var root = { 'items' : intsArray };\n"
@@ -1500,7 +1486,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testTypedArrayValue_Uint16Array() {
-        V8Object root = v8.executeObjectScript("var buf = new ArrayBuffer(100);\n"
+        V8Object root = v8Context.executeObjectScript("var buf = new ArrayBuffer(100);\n"
                 + "var intsArray = new Uint16Array(buf);\n"
                 + "intsArray[0] = 16;\n"
                 + "var root = { 'items' : intsArray };\n"
@@ -1516,7 +1502,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testTypedArrayValue_Int32Array() {
-        V8Object root = v8.executeObjectScript("var buf = new ArrayBuffer(100);\n"
+        V8Object root = v8Context.executeObjectScript("var buf = new ArrayBuffer(100);\n"
                 + "var intsArray = new Int32Array(buf);\n"
                 + "intsArray[0] = 16;\n"
                 + "var root = { 'items' : intsArray };\n"
@@ -1532,7 +1518,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testTypedArrayValue_Uint32Array() {
-        V8Object root = v8.executeObjectScript("var buf = new ArrayBuffer(100);\n"
+        V8Object root = v8Context.executeObjectScript("var buf = new ArrayBuffer(100);\n"
                 + "var intsArray = new Uint32Array(buf);\n"
                 + "intsArray[0] = 16;\n"
                 + "var root = { 'items' : intsArray };\n"
@@ -1548,7 +1534,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testTypedArrayValue_Float32Array() {
-        V8Object root = v8.executeObjectScript("var buf = new ArrayBuffer(100);\n"
+        V8Object root = v8Context.executeObjectScript("var buf = new ArrayBuffer(100);\n"
                 + "var floatsArray = new Float32Array(buf);\n"
                 + "floatsArray[0] = 16.2;\n"
                 + "var root = { 'items' : floatsArray };"
@@ -1564,7 +1550,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testTypedArrayValue_Float64Array() {
-        V8Object root = v8.executeObjectScript("var buf = new ArrayBuffer(80);\n"
+        V8Object root = v8Context.executeObjectScript("var buf = new ArrayBuffer(80);\n"
                 + "var floatsArray = new Float64Array(buf);\n"
                 + "floatsArray[0] = 16.2;\n"
                 + "var root = { 'items' : floatsArray };\n"
@@ -1581,7 +1567,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testTypedArrayInMap() {
-        TypedArray int8Array = new TypedArray(v8, new ArrayBuffer(v8, ByteBuffer.allocateDirect(8)), V8Value.INT_8_ARRAY, 0, 8);
+        TypedArray int8Array = new TypedArray(v8Context, new ArrayBuffer(v8Context, ByteBuffer.allocateDirect(8)), V8API.INT_8_ARRAY, 0, 8);
         V8TypedArray v8TypedArray = int8Array.getV8TypedArray();
         V8ArrayBuffer v8ArrayBuffer = v8TypedArray.getBuffer();
         v8ArrayBuffer.put(0, (byte) 7);
@@ -1590,38 +1576,38 @@ public class V8ObjectUtilsTest {
         HashMap<String, Object> map = new HashMap<String, Object>();
         map.put("array", int8Array);
 
-        V8Object object = V8ObjectUtils.toV8Object(v8, map);
+        V8Object object = V8ObjectUtils.toV8Object(v8Context, map);
 
         V8TypedArray v8Array = (V8TypedArray) object.get("array");
         assertEquals((byte) 7, v8Array.get(0));
-        assertEquals(V8Value.INT_8_ARRAY, v8Array.getType());
+        assertEquals(V8API.INT_8_ARRAY, v8Array.getType());
         v8Array.close();
         object.close();
     }
 
     @Test
     public void testGetTypedArray() {
-        TypedArray int8Array = new TypedArray(v8, new ArrayBuffer(v8, ByteBuffer.allocateDirect(8)), V8Value.INT_8_ARRAY, 0, 8);
+        TypedArray int8Array = new TypedArray(v8Context, new ArrayBuffer(v8Context, ByteBuffer.allocateDirect(8)), V8API.INT_8_ARRAY, 0, 8);
         V8TypedArray v8TypedArray = int8Array.getV8TypedArray();
         V8ArrayBuffer v8ArrayBuffer = v8TypedArray.getBuffer();
         v8ArrayBuffer.put(0, (byte) 7);
         v8TypedArray.close();
         v8ArrayBuffer.close();
 
-        V8TypedArray v8Array = (V8TypedArray) V8ObjectUtils.getV8Result(v8, int8Array);
+        V8TypedArray v8Array = (V8TypedArray) V8ObjectUtils.getV8Result(v8Context, int8Array);
 
         assertEquals((byte) 7, v8Array.get(0));
-        assertEquals(V8Value.INT_8_ARRAY, v8Array.getType());
+        assertEquals(V8API.INT_8_ARRAY, v8Array.getType());
         v8Array.close();
     }
 
     @Test
     public void testByteBufferInMap() {
-        ArrayBuffer arrayBuffer = new ArrayBuffer(v8, ByteBuffer.allocateDirect(8));
+        ArrayBuffer arrayBuffer = new ArrayBuffer(v8Context, ByteBuffer.allocateDirect(8));
         HashMap<String, Object> map = new HashMap<String, Object>();
         map.put("buffer", arrayBuffer);
 
-        V8Object object = V8ObjectUtils.toV8Object(v8, map);
+        V8Object object = V8ObjectUtils.toV8Object(v8Context, map);
 
         V8ArrayBuffer v8ArrayBuffer = (V8ArrayBuffer) object.get("buffer");
         assertEquals(arrayBuffer.getV8ArrayBuffer().setWeak(), v8ArrayBuffer);
@@ -1631,11 +1617,11 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testArrayBufferInList() {
-        ArrayBuffer arrayBuffer = new ArrayBuffer(v8, ByteBuffer.allocateDirect(8));
+        ArrayBuffer arrayBuffer = new ArrayBuffer(v8Context, ByteBuffer.allocateDirect(8));
         List<Object> list = new ArrayList<Object>();
         list.add(arrayBuffer);
 
-        V8Array array = V8ObjectUtils.toV8Array(v8, list);
+        V8Array array = V8ObjectUtils.toV8Array(v8Context, list);
 
         V8ArrayBuffer v8ArrayBuffer = (V8ArrayBuffer) array.get(0);
         assertEquals(arrayBuffer.getV8ArrayBuffer().setWeak(), v8ArrayBuffer);
@@ -1645,9 +1631,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testGetArrayBuffer() {
-        ArrayBuffer arrayBuffer = new ArrayBuffer(v8, ByteBuffer.allocateDirect(8));
+        ArrayBuffer arrayBuffer = new ArrayBuffer(v8Context, ByteBuffer.allocateDirect(8));
 
-        V8ArrayBuffer v8ArrayBuffer = (V8ArrayBuffer) V8ObjectUtils.getV8Result(v8, arrayBuffer);
+        V8ArrayBuffer v8ArrayBuffer = (V8ArrayBuffer) V8ObjectUtils.getV8Result(v8Context, arrayBuffer);
 
         assertEquals(arrayBuffer.getV8ArrayBuffer().setWeak(), v8ArrayBuffer);
         v8ArrayBuffer.close();
@@ -1655,9 +1641,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testGetArrayBufferNotReleased() {
-        ArrayBuffer arrayBuffer = new ArrayBuffer(v8, ByteBuffer.allocateDirect(8));
+        ArrayBuffer arrayBuffer = new ArrayBuffer(v8Context, ByteBuffer.allocateDirect(8));
 
-        V8ArrayBuffer v8ArrayBuffer = (V8ArrayBuffer) V8ObjectUtils.getV8Result(v8, arrayBuffer);
+        V8ArrayBuffer v8ArrayBuffer = (V8ArrayBuffer) V8ObjectUtils.getV8Result(v8Context, arrayBuffer);
 
         assertFalse(v8ArrayBuffer.isReleased());
         v8ArrayBuffer.close();
@@ -1665,7 +1651,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testTypedArrayInList() {
-        TypedArray int8Array = new TypedArray(v8, new ArrayBuffer(v8, ByteBuffer.allocateDirect(8)), V8Value.INT_8_ARRAY, 0, 8);
+        TypedArray int8Array = new TypedArray(v8Context, new ArrayBuffer(v8Context, ByteBuffer.allocateDirect(8)), V8API.INT_8_ARRAY, 0, 8);
         V8TypedArray v8TypedArray = int8Array.getV8TypedArray();
         V8ArrayBuffer v8ArrayBuffer = v8TypedArray.getBuffer();
         v8ArrayBuffer.put(0, (byte) 7);
@@ -1674,21 +1660,21 @@ public class V8ObjectUtilsTest {
         List<Object> list = new ArrayList<Object>();
         list.add(int8Array);
 
-        V8Array array = V8ObjectUtils.toV8Array(v8, list);
+        V8Array array = V8ObjectUtils.toV8Array(v8Context, list);
 
         V8Array v8Array = (V8Array) array.get(0);
         assertEquals((byte) 7, v8Array.get(0));
-        assertEquals(V8Value.INT_8_ARRAY, v8Array.getType());
+        assertEquals(V8API.INT_8_ARRAY, v8Array.getType());
         v8Array.close();
         array.close();
     }
 
     @Test
     public void testPushV8ArrayToArray() {
-        V8Array array = new V8Array(v8);
-        V8Array child = new V8Array(v8);
+        V8Array array = new V8Array(v8Context);
+        V8Array child = new V8Array(v8Context);
 
-        V8ObjectUtils.pushValue(v8, array, child);
+        V8ObjectUtils.pushValue(v8Context, array, child);
 
         V8Object result = (V8Object) array.get(0);
 
@@ -1700,10 +1686,10 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testPushV8ObjectToArray() {
-        V8Array array = new V8Array(v8);
-        V8Object child = new V8Object(v8);
+        V8Array array = new V8Array(v8Context);
+        V8Object child = new V8Object(v8Context);
 
-        V8ObjectUtils.pushValue(v8, array, child);
+        V8ObjectUtils.pushValue(v8Context, array, child);
 
         V8Object result = (V8Object) array.get(0);
 
@@ -1715,11 +1701,11 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testPushV8TypedArrayToArray() {
-        V8Array array = new V8Array(v8);
-        V8ArrayBuffer buffer = new V8ArrayBuffer(v8, 10);
-        V8Object child = new V8TypedArray(v8, buffer, V8Value.INT_8_ARRAY, 0, 10);
+        V8Array array = new V8Array(v8Context);
+        V8ArrayBuffer buffer = new V8ArrayBuffer(v8Context, 10);
+        V8Object child = new V8TypedArray(v8Context, buffer, V8API.INT_8_ARRAY, 0, 10);
 
-        V8ObjectUtils.pushValue(v8, array, child);
+        V8ObjectUtils.pushValue(v8Context, array, child);
 
         V8Object result = (V8Object) array.get(0);
 
@@ -1732,11 +1718,11 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testV8ArrayBufferInMap() {
-        V8ArrayBuffer buffer = new V8ArrayBuffer(v8, 10);
+        V8ArrayBuffer buffer = new V8ArrayBuffer(v8Context, 10);
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("buffer", buffer);
 
-        V8Object v8Object = V8ObjectUtils.toV8Object(v8, map);
+        V8Object v8Object = V8ObjectUtils.toV8Object(v8Context, map);
 
         V8Value result = (V8Value) v8Object.get("buffer");
         assertEquals(buffer, result);
@@ -1747,11 +1733,11 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testV8ArrayBufferInList() {
-        V8ArrayBuffer buffer = new V8ArrayBuffer(v8, 10);
+        V8ArrayBuffer buffer = new V8ArrayBuffer(v8Context, 10);
         List<Object> list = new ArrayList<Object>();
         list.add(buffer);
 
-        V8Array v8Array = V8ObjectUtils.toV8Array(v8, list);
+        V8Array v8Array = V8ObjectUtils.toV8Array(v8Context, list);
 
         V8Value result = (V8Value) v8Array.get(0);
         assertEquals(buffer, result);
@@ -1762,9 +1748,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testIntegerTypeAdapter_Map() {
-        V8Object object = v8.executeObjectScript("x = {a:1, b:3.14, c:false, d:'string'}; x");
+        V8Object object = v8Context.executeObjectScript("x = {a:1, b:3.14, c:false, d:'string'}; x");
 
-        Map<String, ? super Object> map = V8ObjectUtils.toMap(object, new SingleTypeAdapter(V8Value.INTEGER) {
+        Map<String, ? super Object> map = V8ObjectUtils.toMap(object, new SingleTypeAdapter(V8API.INTEGER) {
 
             @Override
             public Object adapt(final Object value) {
@@ -1783,9 +1769,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testDoubleTypeAdapter_Map() {
-        V8Object object = v8.executeObjectScript("x = {a:1, b:3.14, c:false, d:'string'}; x");
+        V8Object object = v8Context.executeObjectScript("x = {a:1, b:3.14, c:false, d:'string'}; x");
 
-        Map<String, ? super Object> map = V8ObjectUtils.toMap(object, new SingleTypeAdapter(V8Value.DOUBLE) {
+        Map<String, ? super Object> map = V8ObjectUtils.toMap(object, new SingleTypeAdapter(V8API.DOUBLE) {
 
             @Override
             public Object adapt(final Object value) {
@@ -1804,9 +1790,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testBooleanTypeAdapter_Map() {
-        V8Object object = v8.executeObjectScript("x = {a:1, b:3.14, c:false, d:'string'}; x");
+        V8Object object = v8Context.executeObjectScript("x = {a:1, b:3.14, c:false, d:'string'}; x");
 
-        Map<String, ? super Object> map = V8ObjectUtils.toMap(object, new SingleTypeAdapter(V8Value.BOOLEAN) {
+        Map<String, ? super Object> map = V8ObjectUtils.toMap(object, new SingleTypeAdapter(V8API.BOOLEAN) {
 
             @Override
             public Object adapt(final Object value) {
@@ -1825,9 +1811,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testStringTypeAdapter_Map() {
-        V8Object object = v8.executeObjectScript("x = {a:1, b:3.14, c:false, d:'string'}; x");
+        V8Object object = v8Context.executeObjectScript("x = {a:1, b:3.14, c:false, d:'string'}; x");
 
-        Map<String, ? super Object> map = V8ObjectUtils.toMap(object, new SingleTypeAdapter(V8Value.STRING) {
+        Map<String, ? super Object> map = V8ObjectUtils.toMap(object, new SingleTypeAdapter(V8API.STRING) {
 
             @Override
             public Object adapt(final Object value) {
@@ -1846,9 +1832,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testObjectTypeAdapter_Map() {
-        V8Object object = v8.executeObjectScript("x = {b:{a:{}}}; x");
+        V8Object object = v8Context.executeObjectScript("x = {b:{a:{}}}; x");
 
-        Map<String, ? super Object> map = V8ObjectUtils.toMap(object, new SingleTypeAdapter(V8Value.V8_OBJECT) {
+        Map<String, ? super Object> map = V8ObjectUtils.toMap(object, new SingleTypeAdapter(V8API.V8_OBJECT) {
 
             @Override
             public Object adapt(final Object value) {
@@ -1864,9 +1850,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testObjectNullTypeAdapter_Map() {
-        V8Object object = v8.executeObjectScript("x = {b:{a:{}}}; x");
+        V8Object object = v8Context.executeObjectScript("x = {b:{a:{}}}; x");
 
-        Map<String, ? super Object> map = V8ObjectUtils.toMap(object, new SingleTypeAdapter(V8Value.V8_OBJECT) {
+        Map<String, ? super Object> map = V8ObjectUtils.toMap(object, new SingleTypeAdapter(V8API.V8_OBJECT) {
 
             @Override
             public Object adapt(final Object value) {
@@ -1882,9 +1868,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testObjectUndefinedTypeAdapter_Map() {
-        V8Object object = v8.executeObjectScript("x = {b:{a:{}}}; x");
+        V8Object object = v8Context.executeObjectScript("x = {b:{a:{}}}; x");
 
-        Map<String, ? super Object> map = V8ObjectUtils.toMap(object, new SingleTypeAdapter(V8Value.V8_OBJECT) {
+        Map<String, ? super Object> map = V8ObjectUtils.toMap(object, new SingleTypeAdapter(V8API.V8_OBJECT) {
 
             @Override
             public Object adapt(final Object value) {
@@ -1900,9 +1886,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testIntegerTypeAdapter_List() {
-        V8Array array = v8.executeArrayScript("x = [1, 3.14, false, 'string']; x");
+        V8Array array = v8Context.executeArrayScript("x = [1, 3.14, false, 'string']; x");
 
-        List<? super Object> list = V8ObjectUtils.toList(array, new SingleTypeAdapter(V8Value.INTEGER) {
+        List<? super Object> list = V8ObjectUtils.toList(array, new SingleTypeAdapter(V8API.INTEGER) {
 
             @Override
             public Object adapt(final Object value) {
@@ -1921,9 +1907,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testDoubleTypeAdapter_List() {
-        V8Array array = v8.executeArrayScript("x = [1, 3.14, false, 'string']; x");
+        V8Array array = v8Context.executeArrayScript("x = [1, 3.14, false, 'string']; x");
 
-        List<? super Object> list = V8ObjectUtils.toList(array, new SingleTypeAdapter(V8Value.DOUBLE) {
+        List<? super Object> list = V8ObjectUtils.toList(array, new SingleTypeAdapter(V8API.DOUBLE) {
 
             @Override
             public Object adapt(final Object value) {
@@ -1942,9 +1928,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testBooleanTypeAdapter_List() {
-        V8Array array = v8.executeArrayScript("x = [1, 3.14, false, 'string']; x");
+        V8Array array = v8Context.executeArrayScript("x = [1, 3.14, false, 'string']; x");
 
-        List<? super Object> list = V8ObjectUtils.toList(array, new SingleTypeAdapter(V8Value.BOOLEAN) {
+        List<? super Object> list = V8ObjectUtils.toList(array, new SingleTypeAdapter(V8API.BOOLEAN) {
 
             @Override
             public Object adapt(final Object value) {
@@ -1963,9 +1949,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testStringTypeAdapter_List() {
-        V8Array array = v8.executeArrayScript("x = [1, 3.14, false, 'string']; x");
+        V8Array array = v8Context.executeArrayScript("x = [1, 3.14, false, 'string']; x");
 
-        List<? super Object> list = V8ObjectUtils.toList(array, new SingleTypeAdapter(V8Value.STRING) {
+        List<? super Object> list = V8ObjectUtils.toList(array, new SingleTypeAdapter(V8API.STRING) {
 
             @Override
             public Object adapt(final Object value) {
@@ -1984,9 +1970,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testObjectTypeAdapter_List() {
-        V8Array array = v8.executeArrayScript("x = [{a:{}}]; x");
+        V8Array array = v8Context.executeArrayScript("x = [{a:{}}]; x");
 
-        List<? super Object> list = V8ObjectUtils.toList(array, new SingleTypeAdapter(V8Value.V8_OBJECT) {
+        List<? super Object> list = V8ObjectUtils.toList(array, new SingleTypeAdapter(V8API.V8_OBJECT) {
 
             @Override
             public Object adapt(final Object value) {
@@ -2002,9 +1988,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testObjectNullTypeAdapter_List() {
-        V8Array array = v8.executeArrayScript("x = [{a:{}}]; x");
+        V8Array array = v8Context.executeArrayScript("x = [{a:{}}]; x");
 
-        List<? super Object> list = V8ObjectUtils.toList(array, new SingleTypeAdapter(V8Value.V8_OBJECT) {
+        List<? super Object> list = V8ObjectUtils.toList(array, new SingleTypeAdapter(V8API.V8_OBJECT) {
 
             @Override
             public Object adapt(final Object value) {
@@ -2020,9 +2006,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testObjectUndefinedTypeAdapter_List() {
-        V8Array array = v8.executeArrayScript("x = [{a:{}}]; x");
+        V8Array array = v8Context.executeArrayScript("x = [{a:{}}]; x");
 
-        List<? super Object> list = V8ObjectUtils.toList(array, new SingleTypeAdapter(V8Value.V8_OBJECT) {
+        List<? super Object> list = V8ObjectUtils.toList(array, new SingleTypeAdapter(V8API.V8_OBJECT) {
 
             @Override
             public Object adapt(final Object value) {
@@ -2038,10 +2024,10 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testCreateFunctionMapFromV8Object() {
-        V8Object object = v8.executeObjectScript("x = {a:function() {return 'a'}, b:function(){return 'b'}}; x");
+        V8Object object = v8Context.executeObjectScript("x = {a:function() {return 'a'}, b:function(){return 'b'}}; x");
         MemoryManager memoryManager = new MemoryManager(v8);
 
-        Map<String, ? super Object> map = V8ObjectUtils.toMap(object, new SingleTypeAdapter(V8Value.V8_FUNCTION) {
+        Map<String, ? super Object> map = V8ObjectUtils.toMap(object, new SingleTypeAdapter(V8API.V8_FUNCTION) {
 
             @Override
             public Object adapt(final Object value) {
@@ -2059,10 +2045,10 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testCreateFunctionListFromV8Object() {
-        V8Array object = v8.executeArrayScript("x = [function() {return 'a'}, function(){return 'b'}]; x");
+        V8Array object = v8Context.executeArrayScript("x = [function() {return 'a'}, function(){return 'b'}]; x");
         MemoryManager memoryManager = new MemoryManager(v8);
 
-        List<? super Object> list = V8ObjectUtils.toList(object, new SingleTypeAdapter(V8Value.V8_FUNCTION) {
+        List<? super Object> list = V8ObjectUtils.toList(object, new SingleTypeAdapter(V8API.V8_FUNCTION) {
 
             @Override
             public Object adapt(final Object value) {
@@ -2109,7 +2095,7 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testCreateIntegerMapFromV8Object_GetValue() {
-        V8Object object = v8.executeObjectScript("x = {a:1, b:2, c:3}; x");
+        V8Object object = v8Context.executeObjectScript("x = {a:1, b:2, c:3}; x");
 
         Map<String, ? super Object> map = (Map<String, ? super Object>) V8ObjectUtils.getValue(object);
 
@@ -2123,7 +2109,7 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testCreateMapWithFunction_GetValue() {
-        V8Object object = v8.executeObjectScript("x = {a : function() {return 1;}, b : 'foo'}; x;");
+        V8Object object = v8Context.executeObjectScript("x = {a : function() {return 1;}, b : 'foo'}; x;");
 
         Map<String, ? super Object> map = (Map<String, ? super Object>) V8ObjectUtils.getValue(object);
 
@@ -2135,7 +2121,7 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testCreateListWithFunction_GetValue() {
-        V8Array array = v8.executeArrayScript("x = [function() {return 1;}, 'foo']; x;");
+        V8Array array = v8Context.executeArrayScript("x = [function() {return 1;}, 'foo']; x;");
 
         List<Object> list = (List<Object>) V8ObjectUtils.getValue(array);
 
@@ -2147,7 +2133,7 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testCreateDoubleMapFromV8Object_GetValue() {
-        V8Object object = v8.executeObjectScript("x = {a:1.1, b:2.2, c:3.3, d:4.4}; x");
+        V8Object object = v8Context.executeObjectScript("x = {a:1.1, b:2.2, c:3.3, d:4.4}; x");
 
         Map<String, ? super Object> map = (Map<String, ? super Object>) V8ObjectUtils.getValue(object);
 
@@ -2162,7 +2148,7 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testCreateStringMapFromV8Object_GetValue() {
-        V8Object object = v8.executeObjectScript("x = {a:'foo', b:'bar', c:'baz', d:'boo'}; x");
+        V8Object object = v8Context.executeObjectScript("x = {a:'foo', b:'bar', c:'baz', d:'boo'}; x");
 
         Map<String, ? super Object> map = (Map<String, ? super Object>) V8ObjectUtils.getValue(object);
 
@@ -2177,7 +2163,7 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testCreateBooleanMapFromV8Object_GetValue() {
-        V8Object object = v8.executeObjectScript("x = {a:true, b:1==1, c:false, d:1!=1}; x");
+        V8Object object = v8Context.executeObjectScript("x = {a:true, b:1==1, c:false, d:1!=1}; x");
 
         Map<String, ? super Object> map = (Map<String, ? super Object>) V8ObjectUtils.getValue(object);
 
@@ -2192,7 +2178,7 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testCreateMixedMapFromV8Object_GetValue() {
-        V8Object object = v8.executeObjectScript("x = {boolean:true, integer:1, double:3.14159, string:'hello'}; x");
+        V8Object object = v8Context.executeObjectScript("x = {boolean:true, integer:1, double:3.14159, string:'hello'}; x");
 
         Map<String, ? super Object> map = (Map<String, ? super Object>) V8ObjectUtils.getValue(object);
 
@@ -2207,7 +2193,7 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Test
     public void testCreateNestedMapFromV8Object_GetValue() {
-        V8Object object = v8.executeObjectScript("x = { name : { first :'john', last: 'smith'}, age: 7}; x");
+        V8Object object = v8Context.executeObjectScript("x = { name : { first :'john', last: 'smith'}, age: 7}; x");
 
         Map<String, ? super Object> map = (Map<String, ? super Object>) V8ObjectUtils.getValue(object);
 
@@ -2221,7 +2207,7 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testCreateListFromV8Array_GetValue() {
-        V8Array array = v8.executeArrayScript("x = [1,2,3]; x");
+        V8Array array = v8Context.executeArrayScript("x = [1,2,3]; x");
 
         List<? super Object> list = (List<? super Object>) V8ObjectUtils.getValue(array);
 
@@ -2235,7 +2221,7 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testCreateListWithUndefinedFromV8Array_GetValue() {
-        V8Array array = v8.executeArrayScript("x = [1,2,3]; x[9] = 10; x");
+        V8Array array = v8Context.executeArrayScript("x = [1,2,3]; x[9] = 10; x");
 
         List<? super Object> list = (List<? super Object>) V8ObjectUtils.getValue(array);
 
@@ -2256,7 +2242,7 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testCreateListWithNullFromV8Array_GetValue() {
-        V8Array array = v8.executeArrayScript("x = [null]; x");
+        V8Array array = v8Context.executeArrayScript("x = [null]; x");
 
         List<? super Object> list = (List<? super Object>) V8ObjectUtils.getValue(array);
 
@@ -2268,7 +2254,7 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Test
     public void testCreateMatrixFromV8Array_GetValue() {
-        V8Array array = v8.executeArrayScript("x = [[1,2,3],[true,false,true],['this','that','other']]; x");
+        V8Array array = v8Context.executeArrayScript("x = [[1,2,3],[true,false,true],['this','that','other']]; x");
 
         List<? super Object> list = (List<? super Object>) V8ObjectUtils.getValue(array);
 
@@ -2291,7 +2277,7 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Test
     public void testCreateMapWithLists_GetValue() {
-        V8Object object = v8.executeObjectScript("x = {a:[1,2,3], b:[4,5,6]}; x;");
+        V8Object object = v8Context.executeObjectScript("x = {a:[1,2,3], b:[4,5,6]}; x;");
 
         Map<String, ? super Object> map = (Map<String, ? super Object>) V8ObjectUtils.getValue(object);
 
@@ -2308,7 +2294,7 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testCreateMapWithNulls_GetValue() {
-        V8Object object = v8.executeObjectScript("x = {a:null}; x;");
+        V8Object object = v8Context.executeObjectScript("x = {a:null}; x;");
 
         Map<String, ? super Object> map = (Map<String, ? super Object>) V8ObjectUtils.getValue(object);
 
@@ -2327,7 +2313,7 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testV8ArrayContainsSelf_GetValue() {
-        V8Array v8Array = new V8Array(v8);
+        V8Array v8Array = new V8Array(v8Context);
         v8Array.push(v8Array);
 
         List<Object> list = (List<Object>) V8ObjectUtils.getValue(v8Array);
@@ -2339,7 +2325,7 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testV8ObjectContainsSelf_GetValue() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("self", v8Object);
 
         Map<String, Object> map = (Map<String, Object>) V8ObjectUtils.getValue(v8Object);
@@ -2352,7 +2338,7 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testBackpointer_GetValue() {
-        V8Object parent = v8.executeObjectScript("var parent = {};\n"
+        V8Object parent = v8Context.executeObjectScript("var parent = {};\n"
                 + "var child = {parent : parent};\n"
                 + "parent.child = child\n;"
                 + "parent;");
@@ -2366,12 +2352,12 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testCloneV8Array_GetValue() {
-        V8Array list = v8.executeArrayScript("var l = [{first:'ian', last:'bull'}, {first:'sadie', last:'bull'}]; l;");
+        V8Array list = v8Context.executeArrayScript("var l = [{first:'ian', last:'bull'}, {first:'sadie', last:'bull'}]; l;");
 
-        V8Array v8Object = V8ObjectUtils.toV8Array(v8, (List<? extends Object>) V8ObjectUtils.getValue(list));
+        V8Array v8Object = V8ObjectUtils.toV8Array(v8Context, (List<? extends Object>) V8ObjectUtils.getValue(list));
 
         v8.add("l2", v8Object);
-        v8.executeBooleanScript("JSON.stringify(l) === JSON.stringify(l2);");
+        v8Context.executeBooleanScript("JSON.stringify(l) === JSON.stringify(l2);");
         list.close();
         v8Object.close();
     }
@@ -2379,12 +2365,12 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testCloneV8ObjectsWithCircularStructure_GetValue() {
-        V8Object parent = v8.executeObjectScript("var parent = {};\n"
+        V8Object parent = v8Context.executeObjectScript("var parent = {};\n"
                 + "var child = {parent : parent};\n"
                 + "parent.child = child\n;"
                 + "parent;");
 
-        V8Object v8Object = V8ObjectUtils.toV8Object(v8, (Map<String, ? extends Object>) V8ObjectUtils.getValue(parent));
+        V8Object v8Object = V8ObjectUtils.toV8Object(v8Context, (Map<String, ? extends Object>) V8ObjectUtils.getValue(parent));
 
         assertEquals(1, v8Object.getKeys().length);
         assertEquals("child", v8Object.getKeys()[0]);
@@ -2395,7 +2381,7 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testEqualSiblings_GetValue() {
-        V8Object parent = v8.executeObjectScript("var parent = {};\n"
+        V8Object parent = v8Context.executeObjectScript("var parent = {};\n"
                 + "var child = {parent : parent};\n"
                 + "parent.child1 = child\n;"
                 + "parent.child2 = child\n;"
@@ -2409,7 +2395,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testTypedArrayGetValue_Int8Array() {
-        V8Array intsArray = v8.executeArrayScript("var buf = new ArrayBuffer(100);\n"
+        V8Array intsArray = v8Context.executeArrayScript("var buf = new ArrayBuffer(100);\n"
                 + "var intsArray = new Int8Array(buf);\n"
                 + "intsArray[0] = 16;\n"
                 + "intsArray;\n");
@@ -2424,7 +2410,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testTypedArrayGetValue_Int8ArrayWithoutBackingStore() {
-        V8Array intsArray = v8.executeArrayScript(""
+        V8Array intsArray = v8Context.executeArrayScript(""
                 + "var intsArray = new Int8Array(24);\n"
                 + "intsArray");
 
@@ -2437,7 +2423,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testTypedArrayGetValue_Uint8Array() {
-        V8Array intsArray = v8.executeArrayScript("var buf = new ArrayBuffer(100);\n"
+        V8Array intsArray = v8Context.executeArrayScript("var buf = new ArrayBuffer(100);\n"
                 + "var intsArray = new Uint8Array(buf);\n"
                 + "intsArray[0] = 16;\n"
                 + "intsArray;\n");
@@ -2452,7 +2438,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testTypedArrayGetValue_Uint8ClampedArray() {
-        V8Array int8ClampedArray = v8.executeArrayScript("var buf = new ArrayBuffer(100);\n"
+        V8Array int8ClampedArray = v8Context.executeArrayScript("var buf = new ArrayBuffer(100);\n"
                 + "var int8ClampedArray = new Uint8ClampedArray(buf);\n"
                 + "int8ClampedArray[0] = 16;\n"
                 + "int8ClampedArray;\n");
@@ -2467,7 +2453,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testTypedArrayGetValue_Int16Array() {
-        V8Array intsArray = v8.executeArrayScript("var buf = new ArrayBuffer(100);\n"
+        V8Array intsArray = v8Context.executeArrayScript("var buf = new ArrayBuffer(100);\n"
                 + "var intsArray = new Int16Array(buf);\n"
                 + "intsArray[0] = 16;\n"
                 + "intsArray;\n");
@@ -2482,7 +2468,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testTypedArrayGetValue_Uint16Array() {
-        V8Array intsArray = v8.executeArrayScript("var buf = new ArrayBuffer(100);\n"
+        V8Array intsArray = v8Context.executeArrayScript("var buf = new ArrayBuffer(100);\n"
                 + "var intsArray = new Uint16Array(buf);\n"
                 + "intsArray[0] = 16;\n"
                 + "intsArray;\n");
@@ -2497,7 +2483,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testTypedArrayGetValue_Int32Array() {
-        V8Array intsArray = v8.executeArrayScript("var buf = new ArrayBuffer(100);\n"
+        V8Array intsArray = v8Context.executeArrayScript("var buf = new ArrayBuffer(100);\n"
                 + "var intsArray = new Int32Array(buf);\n"
                 + "intsArray[0] = 16;\n"
                 + "intsArray;\n");
@@ -2512,7 +2498,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testTypedArrayGetValue_Uint32Array() {
-        V8Array intsArray = v8.executeArrayScript("var buf = new ArrayBuffer(100);\n"
+        V8Array intsArray = v8Context.executeArrayScript("var buf = new ArrayBuffer(100);\n"
                 + "var intsArray = new Uint32Array(buf);\n"
                 + "intsArray[0] = 16;\n"
                 + "intsArray;\n");
@@ -2527,7 +2513,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testTypedArrayGetValue_Float32Array() {
-        V8Array floatsArray = v8.executeArrayScript("var buf = new ArrayBuffer(100);\n"
+        V8Array floatsArray = v8Context.executeArrayScript("var buf = new ArrayBuffer(100);\n"
                 + "var floatsArray = new Float32Array(buf);\n"
                 + "floatsArray[0] = 16.2;\n"
                 + "floatsArray;\n");
@@ -2542,7 +2528,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testTypedArrayGetValue_Float64Array() {
-        V8Array floatsArray = v8.executeArrayScript("var buf = new ArrayBuffer(80);\n"
+        V8Array floatsArray = v8Context.executeArrayScript("var buf = new ArrayBuffer(80);\n"
                 + "var floatsArray = new Float64Array(buf);\n"
                 + "floatsArray[0] = 16.2;\n"
                 + "floatsArray;\n");
@@ -2557,7 +2543,7 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testArrayBufferGetValue() {
-        V8ArrayBuffer buf = (V8ArrayBuffer) v8.executeScript("var buf = new ArrayBuffer(100);\n"
+        V8ArrayBuffer buf = (V8ArrayBuffer) v8Context.executeScript("var buf = new ArrayBuffer(100);\n"
                 + "buf;\n");
 
         V8ArrayBuffer result = ((ArrayBuffer) V8ObjectUtils.getValue(buf)).getV8ArrayBuffer();
@@ -2570,9 +2556,9 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testIntegerTypeAdapter_Map_GetValue() {
-        V8Object object = v8.executeObjectScript("x = {a:1, b:3.14, c:false, d:'string'}; x");
+        V8Object object = v8Context.executeObjectScript("x = {a:1, b:3.14, c:false, d:'string'}; x");
 
-        Map<String, ? super Object> map = (Map<String, ? super Object>) V8ObjectUtils.getValue(object, new SingleTypeAdapter(V8Value.INTEGER) {
+        Map<String, ? super Object> map = (Map<String, ? super Object>) V8ObjectUtils.getValue(object, new SingleTypeAdapter(V8API.INTEGER) {
 
             @Override
             public Object adapt(final Object value) {
@@ -2592,9 +2578,9 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testDoubleTypeAdapter_Map_GetValue() {
-        V8Object object = v8.executeObjectScript("x = {a:1, b:3.14, c:false, d:'string'}; x");
+        V8Object object = v8Context.executeObjectScript("x = {a:1, b:3.14, c:false, d:'string'}; x");
 
-        Map<String, ? super Object> map = (Map<String, ? super Object>) V8ObjectUtils.getValue(object, new SingleTypeAdapter(V8Value.DOUBLE) {
+        Map<String, ? super Object> map = (Map<String, ? super Object>) V8ObjectUtils.getValue(object, new SingleTypeAdapter(V8API.DOUBLE) {
 
             @Override
             public Object adapt(final Object value) {
@@ -2614,9 +2600,9 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testBooleanTypeAdapter_Map_GetValue() {
-        V8Object object = v8.executeObjectScript("x = {a:1, b:3.14, c:false, d:'string'}; x");
+        V8Object object = v8Context.executeObjectScript("x = {a:1, b:3.14, c:false, d:'string'}; x");
 
-        Map<String, ? super Object> map = (Map<String, ? super Object>) V8ObjectUtils.getValue(object, new SingleTypeAdapter(V8Value.BOOLEAN) {
+        Map<String, ? super Object> map = (Map<String, ? super Object>) V8ObjectUtils.getValue(object, new SingleTypeAdapter(V8API.BOOLEAN) {
 
             @Override
             public Object adapt(final Object value) {
@@ -2636,9 +2622,9 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testStringTypeAdapter_Map_GetValue() {
-        V8Object object = v8.executeObjectScript("x = {a:1, b:3.14, c:false, d:'string'}; x");
+        V8Object object = v8Context.executeObjectScript("x = {a:1, b:3.14, c:false, d:'string'}; x");
 
-        Map<String, ? super Object> map = (Map<String, ? super Object>) V8ObjectUtils.getValue(object, new SingleTypeAdapter(V8Value.STRING) {
+        Map<String, ? super Object> map = (Map<String, ? super Object>) V8ObjectUtils.getValue(object, new SingleTypeAdapter(V8API.STRING) {
 
             @Override
             public Object adapt(final Object value) {
@@ -2657,9 +2643,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testObjectTypeAdapter_Map_GetValue() {
-        V8Object object = v8.executeObjectScript("x = {b:{a:{}}}; x");
+        V8Object object = v8Context.executeObjectScript("x = {b:{a:{}}}; x");
 
-        Object result = V8ObjectUtils.getValue(object, new SingleTypeAdapter(V8Value.V8_OBJECT) {
+        Object result = V8ObjectUtils.getValue(object, new SingleTypeAdapter(V8API.V8_OBJECT) {
 
             @Override
             public Object adapt(final Object value) {
@@ -2674,9 +2660,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testObjectNullTypeAdapter_Map_GetValue() {
-        V8Object object = v8.executeObjectScript("x = {b:{a:{}}}; x");
+        V8Object object = v8Context.executeObjectScript("x = {b:{a:{}}}; x");
 
-        Object result = V8ObjectUtils.getValue(object, new SingleTypeAdapter(V8Value.V8_OBJECT) {
+        Object result = V8ObjectUtils.getValue(object, new SingleTypeAdapter(V8API.V8_OBJECT) {
 
             @Override
             public Object adapt(final Object value) {
@@ -2691,10 +2677,10 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testObjectUndefinedTypeAdapter_Map_GetValue() {
-        V8Object object = v8.executeObjectScript("x = {b:{a:{}}}; x");
+        V8Object object = v8Context.executeObjectScript("x = {b:{a:{}}}; x");
 
         @SuppressWarnings("resource")
-        V8Value result = (V8Value) V8ObjectUtils.getValue(object, new SingleTypeAdapter(V8Value.V8_OBJECT) {
+        V8Value result = (V8Value) V8ObjectUtils.getValue(object, new SingleTypeAdapter(V8API.V8_OBJECT) {
 
             @Override
             public Object adapt(final Object value) {
@@ -2710,9 +2696,9 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testIntegerTypeAdapter_List_GetValue() {
-        V8Array array = v8.executeArrayScript("x = [1, 3.14, false, 'string']; x");
+        V8Array array = v8Context.executeArrayScript("x = [1, 3.14, false, 'string']; x");
 
-        List<? super Object> list = (List<? super Object>) V8ObjectUtils.getValue(array, new SingleTypeAdapter(V8Value.INTEGER) {
+        List<? super Object> list = (List<? super Object>) V8ObjectUtils.getValue(array, new SingleTypeAdapter(V8API.INTEGER) {
 
             @Override
             public Object adapt(final Object value) {
@@ -2732,9 +2718,9 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testDoubleTypeAdapter_List_GetValue() {
-        V8Array array = v8.executeArrayScript("x = [1, 3.14, false, 'string']; x");
+        V8Array array = v8Context.executeArrayScript("x = [1, 3.14, false, 'string']; x");
 
-        List<? super Object> list = (List<? super Object>) V8ObjectUtils.getValue(array, new SingleTypeAdapter(V8Value.DOUBLE) {
+        List<? super Object> list = (List<? super Object>) V8ObjectUtils.getValue(array, new SingleTypeAdapter(V8API.DOUBLE) {
 
             @Override
             public Object adapt(final Object value) {
@@ -2754,9 +2740,9 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testBooleanTypeAdapter_List_GetValue() {
-        V8Array array = v8.executeArrayScript("x = [1, 3.14, false, 'string']; x");
+        V8Array array = v8Context.executeArrayScript("x = [1, 3.14, false, 'string']; x");
 
-        List<? super Object> list = (List<? super Object>) V8ObjectUtils.getValue(array, new SingleTypeAdapter(V8Value.BOOLEAN) {
+        List<? super Object> list = (List<? super Object>) V8ObjectUtils.getValue(array, new SingleTypeAdapter(V8API.BOOLEAN) {
 
             @Override
             public Object adapt(final Object value) {
@@ -2776,9 +2762,9 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testStringTypeAdapter_List_GetValue() {
-        V8Array array = v8.executeArrayScript("x = [1, 3.14, false, 'string']; x");
+        V8Array array = v8Context.executeArrayScript("x = [1, 3.14, false, 'string']; x");
 
-        List<? super Object> list = (List<? super Object>) V8ObjectUtils.getValue(array, new SingleTypeAdapter(V8Value.STRING) {
+        List<? super Object> list = (List<? super Object>) V8ObjectUtils.getValue(array, new SingleTypeAdapter(V8API.STRING) {
 
             @Override
             public Object adapt(final Object value) {
@@ -2798,9 +2784,9 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testObjectTypeAdapter_List_GetValue() {
-        V8Array array = v8.executeArrayScript("x = [{a:{}}]; x");
+        V8Array array = v8Context.executeArrayScript("x = [{a:{}}]; x");
 
-        List<? super Object> list = (List<? super Object>) V8ObjectUtils.getValue(array, new SingleTypeAdapter(V8Value.V8_OBJECT) {
+        List<? super Object> list = (List<? super Object>) V8ObjectUtils.getValue(array, new SingleTypeAdapter(V8API.V8_OBJECT) {
 
             @Override
             public Object adapt(final Object value) {
@@ -2817,9 +2803,9 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testObjectNullTypeAdapter_List_GetValue() {
-        V8Array array = v8.executeArrayScript("x = [{a:{}}]; x");
+        V8Array array = v8Context.executeArrayScript("x = [{a:{}}]; x");
 
-        List<? super Object> list = (List<? super Object>) V8ObjectUtils.getValue(array, new SingleTypeAdapter(V8Value.V8_OBJECT) {
+        List<? super Object> list = (List<? super Object>) V8ObjectUtils.getValue(array, new SingleTypeAdapter(V8API.V8_OBJECT) {
 
             @Override
             public Object adapt(final Object value) {
@@ -2836,9 +2822,9 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testObjectUndefinedTypeAdapter_List_GetValue() {
-        V8Array array = v8.executeArrayScript("x = [{a:{}}]; x");
+        V8Array array = v8Context.executeArrayScript("x = [{a:{}}]; x");
 
-        List<? super Object> list = (List<? super Object>) V8ObjectUtils.getValue(array, new SingleTypeAdapter(V8Value.V8_OBJECT) {
+        List<? super Object> list = (List<? super Object>) V8ObjectUtils.getValue(array, new SingleTypeAdapter(V8API.V8_OBJECT) {
 
             @Override
             public Object adapt(final Object value) {
@@ -2855,10 +2841,10 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testCreateFunctionMapFromV8Object_GetValue() {
-        V8Object object = v8.executeObjectScript("x = {a:function() {return 'a'}, b:function(){return 'b'}}; x");
+        V8Object object = v8Context.executeObjectScript("x = {a:function() {return 'a'}, b:function(){return 'b'}}; x");
         MemoryManager memoryManager = new MemoryManager(v8);
 
-        Map<String, ? super Object> map = (Map<String, ? super Object>) V8ObjectUtils.getValue(object, new SingleTypeAdapter(V8Value.V8_FUNCTION) {
+        Map<String, ? super Object> map = (Map<String, ? super Object>) V8ObjectUtils.getValue(object, new SingleTypeAdapter(V8API.V8_FUNCTION) {
 
             @Override
             public Object adapt(final Object value) {
@@ -2877,10 +2863,10 @@ public class V8ObjectUtilsTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testCreateFunctionListFromV8Object_GetValue() {
-        V8Array object = v8.executeArrayScript("x = [function() {return 'a'}, function(){return 'b'}]; x");
+        V8Array object = v8Context.executeArrayScript("x = [function() {return 'a'}, function(){return 'b'}]; x");
         MemoryManager memoryManager = new MemoryManager(v8);
 
-        List<? super Object> list = (List<? super Object>) V8ObjectUtils.getValue(object, new SingleTypeAdapter(V8Value.V8_FUNCTION) {
+        List<? super Object> list = (List<? super Object>) V8ObjectUtils.getValue(object, new SingleTypeAdapter(V8API.V8_FUNCTION) {
 
             @Override
             public Object adapt(final Object value) {
@@ -2897,7 +2883,7 @@ public class V8ObjectUtilsTest {
     }
 
     private int registerAndRelease(final String name, final List<? extends Object> list) {
-        V8Array array = V8ObjectUtils.toV8Array(v8, list);
+        V8Array array = V8ObjectUtils.toV8Array(v8Context, list);
         v8.add(name, array);
         int size = array.length();
         array.close();
@@ -2905,7 +2891,7 @@ public class V8ObjectUtilsTest {
     }
 
     private int registerAndRelease(final String name, final Map<String, ? extends Object> map) {
-        V8Object object = V8ObjectUtils.toV8Object(v8, map);
+        V8Object object = V8ObjectUtils.toV8Object(v8Context, map);
         v8.add(name, object);
         int size = getNumberOfProperties(object);
         object.close();

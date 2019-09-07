@@ -103,7 +103,7 @@ def rm(args):
 # Uniform build-steps (cross-platform)
 #-----------------------------------------------------------------------
 def build_j2v8_jni(config):
-    java_class_id = "com.eclipsesource.v8.V8"
+    java_class_id = "com.eclipsesource.v8.V8API"
     java_class_parts = java_class_id.split(".")
     java_class_filepath = "./target/classes/" + "/".join(java_class_parts) + ".class"
 
@@ -117,7 +117,7 @@ def build_j2v8_jni(config):
         "echo Generating JNI header files...",
         "cd ./target/classes",
         "javah " + java_class_id,
-        ] + cp("com_eclipsesource_v8_V8.h ../../jni/com_eclipsesource_v8_V8Impl.h") + [
+        ] + cp("com_eclipsesource_v8_V8API.h ../../jni/com_eclipsesource_v8_V8APIImpl.h") + [
         "echo Done",
     ]
 #-----------------------------------------------------------------------

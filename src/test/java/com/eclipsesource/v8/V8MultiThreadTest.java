@@ -10,17 +10,16 @@
  ******************************************************************************/
 package com.eclipsesource.v8;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import com.eclipsesource.v8.utils.V8ObjectUtils;
+import com.eclipsesource.v8.utils.V8Runnable;
+import com.eclipsesource.v8.utils.V8Thread;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Test;
-
-import com.eclipsesource.v8.utils.V8ObjectUtils;
-import com.eclipsesource.v8.utils.V8Runnable;
-import com.eclipsesource.v8.utils.V8Thread;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class V8MultiThreadTest {
 
@@ -67,11 +66,11 @@ public class V8MultiThreadTest {
             V8Thread t = new V8Thread(new V8Runnable() {
 
                 @Override
-                public void run(final V8 runtime) {
-                    runtime.registerJavaMethod(new Sort(), "_sort");
-                    runtime.executeVoidScript(sortAlgorithm);
-                    V8Array parameters = V8ObjectUtils.toV8Array(runtime, data);
-                    V8Array _result = runtime.executeArrayFunction("sort", parameters);
+                public void run(final V8Context v8Context) {
+                    v8Context.registerJavaMethod(new Sort(), "_sort");
+                    v8Context.executeVoidScript(sortAlgorithm);
+                    V8Array parameters = V8ObjectUtils.toV8Array(v8Context, data);
+                    V8Array _result = v8Context.executeArrayFunction("sort", parameters);
                     result = V8ObjectUtils.toList(_result);
                     _result.close();
                     parameters.close();
@@ -83,7 +82,7 @@ public class V8MultiThreadTest {
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-            return V8ObjectUtils.toV8Array(parameters.getRuntime(), result);
+            return V8ObjectUtils.toV8Array(parameters.getContext(), result);
         }
     }
 
@@ -138,17 +137,17 @@ public class V8MultiThreadTest {
             V8Thread t = new V8Thread(new V8Runnable() {
 
                 @Override
-                public void run(final V8 v8) {
-                    v8.registerJavaMethod(new Sort(), "_sort");
-                    v8.executeVoidScript(sortAlgorithm);
-                    V8Array data = new V8Array(v8);
+                public void run(final V8Context v8Context) {
+                    v8Context.registerJavaMethod(new Sort(), "_sort");
+                    v8Context.executeVoidScript(sortAlgorithm);
+                    V8Array data = new V8Array(v8Context);
                     int max = 100;
                     for (int i = 0; i < max; i++) {
                         data.push(max - i);
                     }
-                    V8Array parameters = new V8Array(v8);
+                    V8Array parameters = new V8Array(v8Context);
                     parameters.push(data);
-                    V8Array result = v8.executeArrayFunction("sort", parameters);
+                    V8Array result = v8Context.executeArrayFunction("sort", parameters);
                     synchronized (threads) {
                         mergeSortResults.add(V8ObjectUtils.toList(result));
                     }

@@ -10,19 +10,18 @@
  ******************************************************************************/
 package com.eclipsesource.v8;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 public class V8ScriptCompilationExceptionTest {
 
     private V8ScriptCompilationException exception;
 
     private V8                           v8;
+    private V8Context                    v8Context;
 
     String                               script = "x = [1,2,3];\n"
                                                         + "y = 0;\n"
@@ -36,6 +35,7 @@ public class V8ScriptCompilationExceptionTest {
     public void seutp() {
         exception = createV8ScriptCompilationException();
         v8 = V8.createV8Runtime();
+        v8Context = v8.getDefaultContext();
     }
 
     @After
@@ -103,7 +103,7 @@ public class V8ScriptCompilationExceptionTest {
     @Test
     public void testV8ScriptCompilationExceptionCreated() {
         try {
-            v8.executeVoidScript(script, "file", 0);
+            v8Context.executeVoidScript(script, "file", 0);
         } catch (V8ScriptCompilationException e) {
             assertEquals("file", e.getFileName());
             assertEquals(5, e.getLineNumber());
@@ -119,7 +119,7 @@ public class V8ScriptCompilationExceptionTest {
     @Test
     public void testV8ScriptCompilationExceptionCreatedUndefinedFile() {
         try {
-            v8.executeVoidScript(script);
+            v8Context.executeVoidScript(script);
         } catch (V8ScriptCompilationException e) {
             assertEquals("undefined", e.getFileName());
             return;
@@ -130,7 +130,7 @@ public class V8ScriptCompilationExceptionTest {
     @Test
     public void testV8ScriptCompilationException() {
         try {
-            v8.executeVoidScript("'a");
+            v8Context.executeVoidScript("'a");
         } catch (V8ScriptCompilationException e) {
             assertEquals("SyntaxError: Invalid or unexpected token", e.getJSMessage());
             return;
@@ -141,7 +141,7 @@ public class V8ScriptCompilationExceptionTest {
     @Test
     public void testV8ScriptCompilationExceptionUnexpectedEnd() {
         try {
-            v8.executeVoidScript("for (i");
+            v8Context.executeVoidScript("for (i");
         } catch (V8ScriptCompilationException e) {
             assertEquals("SyntaxError: Unexpected end of input", e.getJSMessage());
             return;
@@ -151,36 +151,36 @@ public class V8ScriptCompilationExceptionTest {
 
     @Test(expected = V8ScriptCompilationException.class)
     public void testV8ScriptCompilationExceptionForVoidScript() {
-        v8.executeVoidScript(script);
+        v8Context.executeVoidScript(script);
     }
 
     @Test(expected = V8ScriptCompilationException.class)
     public void testV8ScriptCompilationExceptionForIntScript() {
-        v8.executeIntegerScript(script);
+        v8Context.executeIntegerScript(script);
     }
 
     @Test(expected = V8ScriptCompilationException.class)
     public void testV8ScriptCompilationExceptionForDoubleScript() {
-        v8.executeDoubleScript(script);
+        v8Context.executeDoubleScript(script);
     }
 
     @Test(expected = V8ScriptCompilationException.class)
     public void testV8ScriptCompilationExceptionForBooleanScript() {
-        v8.executeBooleanScript(script);
+        v8Context.executeBooleanScript(script);
     }
 
     @Test(expected = V8ScriptCompilationException.class)
     public void testV8ScriptCompilationExceptionForStringScript() {
-        v8.executeStringScript(script);
+        v8Context.executeStringScript(script);
     }
 
     @Test(expected = V8ScriptCompilationException.class)
     public void testV8ScriptCompilationExceptionForObjectScript() {
-        v8.executeObjectScript(script);
+        v8Context.executeObjectScript(script);
     }
 
     @Test(expected = V8ScriptCompilationException.class)
     public void testV8ScriptCompilationExceptionForArrayScript() {
-        v8.executeArrayScript(script);
+        v8Context.executeArrayScript(script);
     }
 }

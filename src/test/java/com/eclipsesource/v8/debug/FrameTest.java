@@ -10,27 +10,23 @@
  ******************************************************************************/
 package com.eclipsesource.v8.debug;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-
+import com.eclipsesource.v8.V8;
+import com.eclipsesource.v8.V8Context;
+import com.eclipsesource.v8.V8Object;
+import com.eclipsesource.v8.debug.DebugHandler.DebugEvent;
+import com.eclipsesource.v8.debug.mirror.*;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import com.eclipsesource.v8.V8;
-import com.eclipsesource.v8.V8Object;
-import com.eclipsesource.v8.debug.DebugHandler.DebugEvent;
-import com.eclipsesource.v8.debug.mirror.Frame;
-import com.eclipsesource.v8.debug.mirror.FunctionMirror;
-import com.eclipsesource.v8.debug.mirror.Scope;
-import com.eclipsesource.v8.debug.mirror.SourceLocation;
-import com.eclipsesource.v8.debug.mirror.ValueMirror;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 
 public class FrameTest {
 
@@ -43,6 +39,7 @@ public class FrameTest {
             + "foo(1,2,'yes');          // 7 \n";
     private Object        result;
     private V8            v8;
+    private V8Context     v8Context;
     private DebugHandler  debugHandler;
     private BreakHandler  breakHandler;
 
@@ -50,7 +47,8 @@ public class FrameTest {
     public void setup() {
         V8.setFlags("--expose-debug-as=" + DebugHandler.DEBUG_OBJECT_NAME);
         v8 = V8.createV8Runtime();
-        debugHandler = new DebugHandler(v8);
+        v8Context = v8.getDefaultContext();
+        debugHandler = new DebugHandler(v8.getDefaultContext());
         debugHandler.setScriptBreakpoint("script", 5);
         breakHandler = mock(BreakHandler.class);
         debugHandler.addBreakHandler(breakHandler);
@@ -81,7 +79,7 @@ public class FrameTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertEquals("foo", ((FunctionMirror) result).getName());
         ((FunctionMirror) result).close();
@@ -99,7 +97,7 @@ public class FrameTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertEquals(5, ((SourceLocation) result).getLine());
         assertEquals("script", ((SourceLocation) result).getScriptName());
@@ -118,7 +116,7 @@ public class FrameTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertEquals(3, result);
     }
@@ -135,7 +133,7 @@ public class FrameTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertEquals(3, result);
     }
@@ -152,7 +150,7 @@ public class FrameTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertEquals(3, result);
     }
@@ -173,7 +171,7 @@ public class FrameTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertTrue((Boolean) result);
     }
@@ -197,7 +195,7 @@ public class FrameTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertTrue((Boolean) result);
     }
@@ -221,7 +219,7 @@ public class FrameTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertTrue((Boolean) result);
     }
@@ -248,7 +246,7 @@ public class FrameTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertTrue((Boolean) result);
     }
@@ -277,7 +275,7 @@ public class FrameTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertTrue((Boolean) result);
     }

@@ -10,28 +10,24 @@
  ******************************************************************************/
 package com.eclipsesource.v8.utils;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import java.util.ConcurrentModificationException;
-
+import com.eclipsesource.v8.*;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.eclipsesource.v8.ReferenceHandler;
-import com.eclipsesource.v8.V8;
-import com.eclipsesource.v8.V8Object;
-import com.eclipsesource.v8.V8Value;
+import java.util.ConcurrentModificationException;
+
+import static org.junit.Assert.*;
 
 public class MemoryManagerTest {
 
     private V8 v8;
+    private V8Context v8Context;
 
     @Before
-    public void seutp() {
+    public void setup() {
         v8 = V8.createV8Runtime();
+        v8Context = v8.getDefaultContext();
     }
 
     @After
@@ -53,7 +49,7 @@ public class MemoryManagerTest {
     public void testMemoryManagerReleasesObjects() {
         MemoryManager memoryManager = new MemoryManager(v8);
 
-        new V8Object(v8);
+        new V8Object(v8Context);
         memoryManager.release();
 
         assertEquals(0, v8.getObjectReferenceCount());
@@ -64,7 +60,7 @@ public class MemoryManagerTest {
     public void testObjectIsReleased() {
         MemoryManager memoryManager = new MemoryManager(v8);
 
-        V8Object object = new V8Object(v8);
+        V8Object object = new V8Object(v8Context);
         memoryManager.release();
 
         assertTrue(object.isReleased());
@@ -74,7 +70,7 @@ public class MemoryManagerTest {
     public void testMemoryManagerReleasesFunctions() {
         MemoryManager memoryManager = new MemoryManager(v8);
 
-        v8.executeScript("(function() {})");
+        v8Context.executeScript("(function() {})");
         memoryManager.release();
 
         assertEquals(0, v8.getObjectReferenceCount());
@@ -91,7 +87,7 @@ public class MemoryManagerTest {
     public void testMemoryReferenceCount0_AfterRemove() {
         MemoryManager memoryManager = new MemoryManager(v8);
 
-        new V8Object(v8).close();
+        new V8Object(v8Context).close();
 
         assertEquals(0, memoryManager.getObjectReferenceCount());
     }
@@ -100,7 +96,7 @@ public class MemoryManagerTest {
     public void testMemoryReferenceCount() {
         MemoryManager memoryManager = new MemoryManager(v8);
 
-        v8.executeScript("(function() {})");
+        v8Context.executeScript("(function() {})");
         assertEquals(1, memoryManager.getObjectReferenceCount());
         memoryManager.release();
 
@@ -111,7 +107,7 @@ public class MemoryManagerTest {
     public void testMemoryManagerReleasesReturnedObjects() {
         MemoryManager memoryManager = new MemoryManager(v8);
 
-        v8.executeScript("foo = {}; foo");
+        v8Context.executeScript("foo = {}; foo");
 
         assertEquals(1, v8.getObjectReferenceCount());
         memoryManager.release();
@@ -123,7 +119,7 @@ public class MemoryManagerTest {
         MemoryManager memoryManager = new MemoryManager(v8);
 
         memoryManager.release();
-        V8Object object = new V8Object(v8);
+        V8Object object = new V8Object(v8Context);
 
         assertEquals(1, v8.getObjectReferenceCount());
         object.close();
@@ -135,9 +131,9 @@ public class MemoryManagerTest {
         MemoryManager memoryManager1 = new MemoryManager(v8);
         MemoryManager memoryManager2 = new MemoryManager(v8);
 
-        new V8Object(v8);
+        new V8Object(v8Context);
         memoryManager2.release();
-        new V8Object(v8);
+        new V8Object(v8Context);
 
         assertEquals(1, v8.getObjectReferenceCount());
         memoryManager1.release();
@@ -149,9 +145,9 @@ public class MemoryManagerTest {
     public void testNestedMemoryManagerHasProperObjectCount() {
         MemoryManager memoryManager1 = new MemoryManager(v8);
 
-        new V8Object(v8);
+        new V8Object(v8Context);
         MemoryManager memoryManager2 = new MemoryManager(v8);
-        new V8Object(v8);
+        new V8Object(v8Context);
 
         assertEquals(2, memoryManager1.getObjectReferenceCount());
         assertEquals(1, memoryManager2.getObjectReferenceCount());
@@ -166,9 +162,9 @@ public class MemoryManagerTest {
     public void testNestedMemoryManager_ReverseReleaseOrder() {
         MemoryManager memoryManager1 = new MemoryManager(v8);
 
-        new V8Object(v8);
+        new V8Object(v8Context);
         MemoryManager memoryManager2 = new MemoryManager(v8);
-        new V8Object(v8);
+        new V8Object(v8Context);
 
         assertEquals(2, memoryManager1.getObjectReferenceCount());
         assertEquals(1, memoryManager2.getObjectReferenceCount());
@@ -215,7 +211,7 @@ public class MemoryManagerTest {
     public void testPersistObject() {
         MemoryManager memoryManager = new MemoryManager(v8);
 
-        V8Object object = new V8Object(v8);
+        V8Object object = new V8Object(v8Context);
         memoryManager.persist(object);
         memoryManager.release();
 
@@ -225,7 +221,7 @@ public class MemoryManagerTest {
 
     @Test
     public void testPersistNonManagedObject() {
-        V8Object object = new V8Object(v8);
+        V8Object object = new V8Object(v8Context);
         MemoryManager memoryManager = new MemoryManager(v8);
 
         memoryManager.persist(object);
@@ -240,7 +236,7 @@ public class MemoryManagerTest {
     public void testTwins() {
         MemoryManager memoryManager = new MemoryManager(v8);
 
-        V8Object object = new V8Object(v8);
+        V8Object object = new V8Object(v8Context);
         object.twin();
 
         assertEquals(2, memoryManager.getObjectReferenceCount());
@@ -251,7 +247,7 @@ public class MemoryManagerTest {
     public void testTwinsReleaseOne() {
         MemoryManager memoryManager = new MemoryManager(v8);
 
-        V8Object object = new V8Object(v8);
+        V8Object object = new V8Object(v8Context);
         object.twin();
         object.close();
 
@@ -261,7 +257,7 @@ public class MemoryManagerTest {
 
     @Test
     public void testGetObjectTwice() {
-        v8.executeVoidScript("foo = {}");
+        v8Context.executeVoidScript("foo = {}");
         MemoryManager memoryManager = new MemoryManager(v8);
 
         V8Object foo1 = v8.getObject("foo");
@@ -276,7 +272,7 @@ public class MemoryManagerTest {
     public void testCannotCallPersistOnReleasedManager() {
         MemoryManager memoryManager = new MemoryManager(v8);
 
-        V8Object object = new V8Object(v8);
+        V8Object object = new V8Object(v8Context);
         memoryManager.release();
         memoryManager.persist(object);
     }
@@ -301,7 +297,7 @@ public class MemoryManagerTest {
         };
         v8.addReferenceHandler(handler);
 
-        new V8Object(v8);
+        new V8Object(v8Context);
         try {
             memoryManager.release();
         } catch (ConcurrentModificationException e) {

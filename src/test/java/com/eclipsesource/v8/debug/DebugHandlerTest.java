@@ -10,23 +10,19 @@
  ******************************************************************************/
 package com.eclipsesource.v8.debug;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
+import com.eclipsesource.v8.V8;
+import com.eclipsesource.v8.V8Context;
+import com.eclipsesource.v8.V8Function;
+import com.eclipsesource.v8.V8Object;
+import com.eclipsesource.v8.debug.DebugHandler.DebugEvent;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.eclipsesource.v8.V8;
-import com.eclipsesource.v8.V8Function;
-import com.eclipsesource.v8.V8Object;
-import com.eclipsesource.v8.debug.DebugHandler.DebugEvent;
+import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 public class DebugHandlerTest {
 
@@ -37,12 +33,14 @@ public class DebugHandlerTest {
             + "}                    // 5 \n"
             + "foo();               // 6 \n";
     private V8            v8;
+    private V8Context     v8Context;
     private Object        result = false;
 
     @Before
     public void setup() {
         V8.setFlags("--expose-debug-as=" + DebugHandler.DEBUG_OBJECT_NAME);
         v8 = V8.createV8Runtime();
+        v8Context = v8.getDefaultContext();
     }
 
     @After
@@ -59,7 +57,7 @@ public class DebugHandlerTest {
 
     @Test
     public void testCreateDebugHandler() {
-        DebugHandler handler = new DebugHandler(v8);
+        DebugHandler handler = new DebugHandler(v8Context);
 
         assertNotNull(handler);
         handler.close();
@@ -67,12 +65,12 @@ public class DebugHandlerTest {
 
     @Test
     public void testDebugEvents() {
-        DebugHandler handler = new DebugHandler(v8);
+        DebugHandler handler = new DebugHandler(v8Context);
         BreakHandler breakHandler = mock(BreakHandler.class);
         handler.setScriptBreakpoint("script", 3);
         handler.addBreakHandler(breakHandler);
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         verify(breakHandler).onBreak(eq(DebugEvent.BeforeCompile), any(ExecutionState.class), any(CompileEvent.class), any(V8Object.class));
         verify(breakHandler).onBreak(eq(DebugEvent.AfterCompile), any(ExecutionState.class), any(CompileEvent.class), any(V8Object.class));
@@ -82,7 +80,7 @@ public class DebugHandlerTest {
 
     @Test
     public void testBeforeCompileEvent() {
-        DebugHandler handler = new DebugHandler(v8);
+        DebugHandler handler = new DebugHandler(v8Context);
         handler.setScriptBreakpoint("script", 3);
         handler.addBreakHandler(new BreakHandler() {
 
@@ -94,7 +92,7 @@ public class DebugHandlerTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertTrue((Boolean) result);
         handler.close();
@@ -102,7 +100,7 @@ public class DebugHandlerTest {
 
     @Test
     public void testAfterCompileEvent() {
-        DebugHandler handler = new DebugHandler(v8);
+        DebugHandler handler = new DebugHandler(v8Context);
         handler.setScriptBreakpoint("script", 3);
         handler.addBreakHandler(new BreakHandler() {
 
@@ -114,7 +112,7 @@ public class DebugHandlerTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertTrue((Boolean) result);
         handler.close();
@@ -122,7 +120,7 @@ public class DebugHandlerTest {
 
     @Test
     public void testBreakEvent() {
-        DebugHandler handler = new DebugHandler(v8);
+        DebugHandler handler = new DebugHandler(v8Context);
         handler.setScriptBreakpoint("script", 3);
         handler.addBreakHandler(new BreakHandler() {
 
@@ -134,7 +132,7 @@ public class DebugHandlerTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertTrue((Boolean) result);
         handler.close();
@@ -142,12 +140,12 @@ public class DebugHandlerTest {
 
     @Test
     public void testSetBreakpoint() {
-        DebugHandler handler = new DebugHandler(v8);
+        DebugHandler handler = new DebugHandler(v8Context);
         handler.setScriptBreakpoint("script", 3);
         BreakHandler breakHandler = mock(BreakHandler.class);
         handler.addBreakHandler(breakHandler);
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         verify(breakHandler, times(1)).onBreak(eq(DebugEvent.Break), any(ExecutionState.class), any(EventData.class), any(V8Object.class));
         handler.close();
@@ -155,14 +153,14 @@ public class DebugHandlerTest {
 
     @Test
     public void testClearBreakpoint() {
-        DebugHandler handler = new DebugHandler(v8);
+        DebugHandler handler = new DebugHandler(v8Context);
         int breakpointID = handler.setScriptBreakpoint("script", 3);
         BreakHandler breakHandler = mock(BreakHandler.class);
         handler.addBreakHandler(breakHandler);
 
         handler.clearBreakPoint(breakpointID);
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
         int breakpointCount = handler.getScriptBreakPointCount();
         verify(breakHandler, times(0)).onBreak(eq(DebugEvent.Break), any(ExecutionState.class), any(EventData.class), any(V8Object.class));
         assertEquals(0, breakpointCount);
@@ -171,7 +169,7 @@ public class DebugHandlerTest {
 
     @Test
     public void testGetBreakpoints() {
-        DebugHandler handler = new DebugHandler(v8);
+        DebugHandler handler = new DebugHandler(v8Context);
         handler.setScriptBreakpoint("script", 3);
 
         int[] ids = handler.getScriptBreakPointIDs();
@@ -183,7 +181,7 @@ public class DebugHandlerTest {
 
     @Test
     public void testGetBreakpoint() {
-        DebugHandler handler = new DebugHandler(v8);
+        DebugHandler handler = new DebugHandler(v8Context);
         int breakpoint_0 = handler.setScriptBreakpoint("script", 3);
         int breakpoint_1 = handler.setScriptBreakpoint("script", 4);
         handler.clearBreakPoint(breakpoint_0);
@@ -197,7 +195,7 @@ public class DebugHandlerTest {
 
     @Test
     public void testChangeBreakPointCondition() {
-        DebugHandler handler = new DebugHandler(v8);
+        DebugHandler handler = new DebugHandler(v8Context);
         int breakpointID = handler.setScriptBreakpoint("script", 3);
         handler.changeBreakPointCondition(breakpointID, "x=8;");
 
@@ -209,13 +207,13 @@ public class DebugHandlerTest {
 
     @Test
     public void testDisableBreakpoint() {
-        DebugHandler handler = new DebugHandler(v8);
+        DebugHandler handler = new DebugHandler(v8Context);
         int breakpointID = handler.setScriptBreakpoint("script", 3);
         BreakHandler breakHandler = mock(BreakHandler.class);
         handler.addBreakHandler(breakHandler);
         handler.disableScriptBreakPoint(breakpointID);
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         verify(breakHandler, times(0)).onBreak(eq(DebugEvent.Break), any(ExecutionState.class), any(EventData.class), any(V8Object.class));
         handler.close();
@@ -223,28 +221,28 @@ public class DebugHandlerTest {
 
     @Test
     public void testDisableAllBreakpoints() {
-        DebugHandler handler = new DebugHandler(v8);
+        DebugHandler handler = new DebugHandler(v8Context);
         handler.setScriptBreakpoint("script", 3);
         BreakHandler breakHandler = mock(BreakHandler.class);
         handler.addBreakHandler(breakHandler);
 
         handler.disableAllBreakPoints();
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
         verify(breakHandler, times(0)).onBreak(eq(DebugEvent.Break), any(ExecutionState.class), any(EventData.class), any(V8Object.class));
         handler.close();
     }
 
     @Test
     public void testEnableBreakpoint() {
-        DebugHandler handler = new DebugHandler(v8);
+        DebugHandler handler = new DebugHandler(v8Context);
         int breakpointID = handler.setScriptBreakpoint("script", 3);
         BreakHandler breakHandler = mock(BreakHandler.class);
         handler.addBreakHandler(breakHandler);
         handler.disableScriptBreakPoint(breakpointID);
         handler.enableScriptBreakPoint(breakpointID);
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         verify(breakHandler, times(1)).onBreak(eq(DebugEvent.Break), any(ExecutionState.class), any(EventData.class), any(V8Object.class));
         handler.close();
@@ -252,7 +250,7 @@ public class DebugHandlerTest {
 
     @Test
     public void testSetBreakpointReturnsID() {
-        DebugHandler handler = new DebugHandler(v8);
+        DebugHandler handler = new DebugHandler(v8Context);
 
         int breakpointID = handler.setScriptBreakpoint("script", 3);
 
@@ -262,8 +260,8 @@ public class DebugHandlerTest {
 
     @Test
     public void testSetBreakpointByFunction() {
-        DebugHandler handler = new DebugHandler(v8);
-        v8.executeScript(script, "script", 0);
+        DebugHandler handler = new DebugHandler(v8Context);
+        v8Context.executeScript(script, "script", 0);
         V8Function function = (V8Function) v8.get("foo");
         handler.setBreakpoint(function);
         BreakHandler breakHandler = mock(BreakHandler.class);
@@ -278,8 +276,8 @@ public class DebugHandlerTest {
 
     @Test
     public void testSetBreakpointByFunctionReturnsID() {
-        DebugHandler handler = new DebugHandler(v8);
-        v8.executeScript(script, "script", 0);
+        DebugHandler handler = new DebugHandler(v8Context);
+        v8Context.executeScript(script, "script", 0);
         V8Function function = (V8Function) v8.get("foo");
 
         int breakpointID = handler.setBreakpoint(function);
@@ -291,7 +289,7 @@ public class DebugHandlerTest {
 
     @Test
     public void testRemoveBreakHandlerBeforeSet() {
-        DebugHandler handler = new DebugHandler(v8);
+        DebugHandler handler = new DebugHandler(v8Context);
         BreakHandler breakHandler = mock(BreakHandler.class);
 
         handler.removeBreakHandler(breakHandler); // Test should not throw NPE

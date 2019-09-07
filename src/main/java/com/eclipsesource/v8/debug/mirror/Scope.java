@@ -57,7 +57,7 @@ public class Scope extends Mirror {
      * @param value The value
      */
     public void setVariableValue(final String name, final int value) {
-        V8Array parameters = new V8Array(v8Object.getRuntime());
+        V8Array parameters = new V8Array(v8Object.getContext());
         parameters.push(name);
         parameters.push(value);
         try {
@@ -74,7 +74,7 @@ public class Scope extends Mirror {
      * @param value The value
      */
     public void setVariableValue(final String name, final V8Value value) {
-        V8Array parameters = new V8Array(v8Object.getRuntime());
+        V8Array parameters = new V8Array(v8Object.getContext());
         parameters.push(name);
         parameters.push(value);
         try {
@@ -91,7 +91,7 @@ public class Scope extends Mirror {
      * @param value The value
      */
     public void setVariableValue(final String name, final boolean value) {
-        V8Array parameters = new V8Array(v8Object.getRuntime());
+        V8Array parameters = new V8Array(v8Object.getContext());
         parameters.push(name);
         parameters.push(value);
         try {
@@ -108,7 +108,7 @@ public class Scope extends Mirror {
      * @param value The value
      */
     public void setVariableValue(final String name, final String value) {
-        V8Array parameters = new V8Array(v8Object.getRuntime());
+        V8Array parameters = new V8Array(v8Object.getContext());
         parameters.push(name);
         parameters.push(value);
         try {
@@ -125,7 +125,7 @@ public class Scope extends Mirror {
      * @param value The value
      */
     public void setVariableValue(final String name, final double value) {
-        V8Array parameters = new V8Array(v8Object.getRuntime());
+        V8Array parameters = new V8Array(v8Object.getContext());
         parameters.push(name);
         parameters.push(value);
         try {

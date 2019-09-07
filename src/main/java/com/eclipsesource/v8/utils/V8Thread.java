@@ -43,7 +43,7 @@ public class V8Thread extends Thread {
     public void run() {
         runtime = V8.createV8Runtime();
         try {
-            target.run(runtime);
+            target.run(runtime.getDefaultContext());
         } finally {
             synchronized (this) {
                 if (runtime.getLocker().hasLock()) {

@@ -10,30 +10,28 @@
  ******************************************************************************/
 package com.eclipsesource.v8.utils;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import com.eclipsesource.v8.V8;
+import com.eclipsesource.v8.V8Context;
+import com.eclipsesource.v8.V8Object;
+import com.eclipsesource.v8.V8Value;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.Collection;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
-import com.eclipsesource.v8.V8;
-import com.eclipsesource.v8.V8Object;
-import com.eclipsesource.v8.V8Value;
+import static org.junit.Assert.*;
 
 public class V8MapTest {
     private V8 v8;
+    private V8Context v8Context;
 
     @Before
     public void seutp() {
         v8 = V8.createV8Runtime();
+        v8Context = v8.getDefaultContext();
     }
 
     @After
@@ -77,7 +75,7 @@ public class V8MapTest {
     @Test
     public void testPutUndefined() {
         V8Map<Object> map = new V8Map<Object>();
-        V8Object v1 = new V8Object(v8);
+        V8Object v1 = new V8Object(v8Context);
         map.put(v1, V8.getUndefined());
 
         assertEquals(V8.getUndefined(), map.get(v1));
@@ -88,7 +86,7 @@ public class V8MapTest {
     @Test
     public void testIsNotEmpty() {
         V8Map<String> map = new V8Map<String>();
-        V8Object v1 = new V8Object(v8);
+        V8Object v1 = new V8Object(v8Context);
         map.put(v1, "foo");
         v1.close();
 
@@ -99,9 +97,9 @@ public class V8MapTest {
     @Test
     public void testSize() {
         V8Map<String> map = new V8Map<String>();
-        V8Object v1 = new V8Object(v8);
-        V8Object v2 = new V8Object(v8);
-        V8Object v3 = new V8Object(v8);
+        V8Object v1 = new V8Object(v8Context);
+        V8Object v2 = new V8Object(v8Context);
+        V8Object v3 = new V8Object(v8Context);
         map.put(v1, "foo");
         map.put(v2, "bar");
         map.put(v3, "baz");
@@ -116,9 +114,9 @@ public class V8MapTest {
     @Test
     public void testClear() {
         V8Map<String> map = new V8Map<String>();
-        V8Object v1 = new V8Object(v8);
-        V8Object v2 = new V8Object(v8);
-        V8Object v3 = new V8Object(v8);
+        V8Object v1 = new V8Object(v8Context);
+        V8Object v2 = new V8Object(v8Context);
+        V8Object v3 = new V8Object(v8Context);
         map.put(v1, "foo");
         map.put(v2, "bar");
         map.put(v3, "baz");
@@ -134,7 +132,7 @@ public class V8MapTest {
     @Test
     public void testAddDuplicateKey() {
         V8Map<String> map = new V8Map<String>();
-        V8Object v1 = new V8Object(v8);
+        V8Object v1 = new V8Object(v8Context);
         map.put(v1, "foo");
         map.put(v1, "bar");
 
@@ -146,7 +144,7 @@ public class V8MapTest {
     @Test
     public void testGet() {
         V8Map<String> map = new V8Map<String>();
-        v8.executeVoidScript("var x = {}");
+        v8Context.executeVoidScript("var x = {}");
         V8Object v8Object = v8.getObject("x");
         map.put(v8Object, "foo");
 
@@ -159,7 +157,7 @@ public class V8MapTest {
     @Test
     public void testGetMissing() {
         V8Map<String> map = new V8Map<String>();
-        v8.executeVoidScript("var x = {}");
+        v8Context.executeVoidScript("var x = {}");
         V8Object v8Object = v8.getObject("x");
 
         assertNull(map.get(v8Object));
@@ -171,7 +169,7 @@ public class V8MapTest {
     @Test
     public void testContainsKey() {
         V8Map<String> map = new V8Map<String>();
-        v8.executeVoidScript("var x = {}");
+        v8Context.executeVoidScript("var x = {}");
         V8Object v8Object = v8.getObject("x");
         map.put(v8Object, "foo");
 
@@ -184,7 +182,7 @@ public class V8MapTest {
     @Test
     public void testDoesNotContainKey() {
         V8Map<String> map = new V8Map<String>();
-        v8.executeVoidScript("var x = {}");
+        v8Context.executeVoidScript("var x = {}");
         V8Object v8Object = v8.getObject("x");
 
         assertFalse(map.containsKey(v8Object));
@@ -196,7 +194,7 @@ public class V8MapTest {
     @Test
     public void testContainsValue() {
         V8Map<String> map = new V8Map<String>();
-        v8.executeVoidScript("var x = {}");
+        v8Context.executeVoidScript("var x = {}");
         V8Object v8Object = v8.getObject("x");
         map.put(v8Object, "foo");
 
@@ -209,7 +207,7 @@ public class V8MapTest {
     @Test
     public void testDoesNotContainValue() {
         V8Map<String> map = new V8Map<String>();
-        v8.executeVoidScript("var x = {}");
+        v8Context.executeVoidScript("var x = {}");
 
         assertFalse(map.containsValue("foo"));
 
@@ -219,7 +217,7 @@ public class V8MapTest {
     @Test
     public void testRemove() {
         V8Map<String> map = new V8Map<String>();
-        v8.executeVoidScript("var x = {}");
+        v8Context.executeVoidScript("var x = {}");
         V8Object v8Object = v8.getObject("x");
         map.put(v8Object, "foo");
 
@@ -232,7 +230,7 @@ public class V8MapTest {
     @Test
     public void testRemoveMissing() {
         V8Map<String> map = new V8Map<String>();
-        v8.executeVoidScript("var x = {}");
+        v8Context.executeVoidScript("var x = {}");
         V8Object v8Object = v8.getObject("x");
 
         assertNull(map.remove(v8Object));
@@ -243,7 +241,7 @@ public class V8MapTest {
 
     @Test
     public void testReleaseMapReleasesKeys() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         V8Map<String> map = new V8Map<String>();
         map.put(v8Object, "foo");
         v8Object.close();
@@ -254,7 +252,7 @@ public class V8MapTest {
     @Test
     public void testRemoveKeyReleasesKey() {
         V8Map<String> map = new V8Map<String>();
-        v8.executeScript("var x = {}");
+        v8Context.executeScript("var x = {}");
         V8Object v8Object = v8.getObject("x");
         map.put(v8Object, "foo");
 
@@ -267,7 +265,7 @@ public class V8MapTest {
     @Test
     public void testAddItemStoresACopy() {
         V8 v8 = V8.createV8Runtime();
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         V8Map<String> map = new V8Map<String>();
         map.put(v8Object, "foo");
         v8Object.close();
@@ -284,7 +282,7 @@ public class V8MapTest {
     @Test
     public void testKeyset() {
         V8Map<String> map = new V8Map<String>();
-        V8Object v1 = new V8Object(v8);
+        V8Object v1 = new V8Object(v8Context);
         map.put(v1, "foo");
 
         Set<V8Value> keySet = map.keySet();
@@ -298,7 +296,7 @@ public class V8MapTest {
     @Test
     public void testEntrySet() {
         V8Map<String> map = new V8Map<String>();
-        V8Object v1 = new V8Object(v8);
+        V8Object v1 = new V8Object(v8Context);
         map.put(v1, "foo");
 
         Set<Entry<V8Value, String>> entrySet = map.entrySet();
@@ -313,7 +311,7 @@ public class V8MapTest {
     @Test
     public void testValues() {
         V8Map<String> map = new V8Map<String>();
-        V8Object v1 = new V8Object(v8);
+        V8Object v1 = new V8Object(v8Context);
         map.put(v1, "foo");
 
         Collection<String> values = map.values();
@@ -327,7 +325,7 @@ public class V8MapTest {
     @Test
     public void testKeysetNotReleased() {
         V8Map<String> map = new V8Map<String>();
-        V8Object v1 = new V8Object(v8);
+        V8Object v1 = new V8Object(v8Context);
         map.put(v1, "foo");
         v1.close();
 
@@ -341,11 +339,11 @@ public class V8MapTest {
     @Test
     public void testAddAll() {
         V8Map<String> map = new V8Map<String>();
-        V8Object v1 = new V8Object(v8);
+        V8Object v1 = new V8Object(v8Context);
         map.put(v1, "foo");
         v1.close();
         V8Map<String> newMap = new V8Map<String>();
-        V8Object v2 = new V8Object(v8);
+        V8Object v2 = new V8Object(v8Context);
         newMap.put(v2, "bar");
         v2.close();
 
@@ -359,7 +357,7 @@ public class V8MapTest {
     @Test
     public void testAddAllWithDuplicates() {
         V8Map<String> map = new V8Map<String>();
-        V8Object v1 = new V8Object(v8);
+        V8Object v1 = new V8Object(v8Context);
         map.put(v1, "foo");
         V8Map<String> newMap = new V8Map<String>();
         newMap.put(v1, "bar");

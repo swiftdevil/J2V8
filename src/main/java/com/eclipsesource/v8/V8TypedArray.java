@@ -21,50 +21,50 @@ public class V8TypedArray extends V8Array {
      * example, a V8Int32Array is a typed array where each value is a 32-bit integer. The
      * typed array is backed by the V8ArrayBuffer.
      *
-     * @param v8 The V8Runtime on which to create this Int32Array
+     * @param v8Context The V8Context on which to create this Int32Array
      * @param type The type of Array to create. Currently Integer and Byte are supported.
      * @param buffer The buffer used to back the typed array
      * @param offset The offset into the buffer at which to start the the array
      * @param size The size of the typed array
      */
-    public V8TypedArray(final V8 v8, final V8ArrayBuffer buffer, final int type, final int offset, final int size) {
-        super(v8, new V8ArrayData(buffer, offset, size, type));
+    public V8TypedArray(final V8Context v8Context, final V8ArrayBuffer buffer, final int type, final int offset, final int size) {
+        super(v8Context, new V8ArrayData(buffer, offset, size, type));
     }
 
-    private V8TypedArray(final V8 v8) {
-        super(v8);
+    private V8TypedArray(final V8Context v8Context) {
+        super(v8Context);
     }
 
     @Override
     protected V8Value createTwin() {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
-        return new V8TypedArray(v8);
+        return new V8TypedArray(getContext());
     }
 
     @Override
     public Object get(final int index) {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
         int type = getType();
         switch (type) {
-            case FLOAT_32_ARRAY:
+            case V8API.FLOAT_32_ARRAY:
                 return ((Number) super.get(index)).floatValue();
-            case FLOAT_64_ARRAY:
+            case V8API.FLOAT_64_ARRAY:
                 return super.get(index);
-            case INT_32_ARRAY:
+            case V8API.INT_32_ARRAY:
                 return super.get(index);
-            case INT_16_ARRAY:
+            case V8API.INT_16_ARRAY:
                 return ((Number) super.get(index)).shortValue();
-            case INT_8_ARRAY:
+            case V8API.INT_8_ARRAY:
                 return ((Number) super.get(index)).byteValue();
-            case UNSIGNED_INT_16_ARRAY:
+            case V8API.UNSIGNED_INT_16_ARRAY:
                 return 0xFFFF & (Integer) super.get(index);
-            case UNSIGNED_INT_32_ARRAY:
+            case V8API.UNSIGNED_INT_32_ARRAY:
                 return 0x00000000FFFFFFFF & ((Number) super.get(index)).longValue();
-            case UNSIGNED_INT_8_CLAMPED_ARRAY:
+            case V8API.UNSIGNED_INT_8_CLAMPED_ARRAY:
                 return (short) (0x00FF & ((Number) super.get(index)).byteValue());
-            case UNSIGNED_INT_8_ARRAY:
+            case V8API.UNSIGNED_INT_8_ARRAY:
                 return (short) (0x00FF & ((Number) super.get(index)).shortValue());
         }
         return null;
@@ -81,39 +81,39 @@ public class V8TypedArray extends V8Array {
     }
 
     @Override
-    protected void initialize(final long runtimePtr, final Object data) {
-        v8.checkThread();
+    protected void initialize(final Object data) {
+        getRuntime().checkThread();
         if (data == null) {
-            super.initialize(runtimePtr, data);
+            super.initialize(data);
             return;
         }
         V8ArrayData arrayData = (V8ArrayData) data;
         checkArrayProperties(arrayData);
-        long handle = createTypedArray(runtimePtr, arrayData);
+        long handle = createTypedArray(arrayData);
         released = false;
         addObjectReference(handle);
     }
 
-    private long createTypedArray(final long runtimePtr, final V8ArrayData arrayData) {
+    private long createTypedArray(final V8ArrayData arrayData) {
         switch (arrayData.type) {
-            case V8Value.FLOAT_32_ARRAY:
-                return v8.initNewV8Float32Array(runtimePtr, arrayData.buffer.objectHandle, arrayData.offset, arrayData.size);
-            case V8Value.FLOAT_64_ARRAY:
-                return v8.initNewV8Float64Array(runtimePtr, arrayData.buffer.objectHandle, arrayData.offset, arrayData.size);
-            case V8Value.UNSIGNED_INT_32_ARRAY:
-                return v8.initNewV8UInt32Array(runtimePtr, arrayData.buffer.objectHandle, arrayData.offset, arrayData.size);
-            case V8Value.INT_16_ARRAY:
-                return v8.initNewV8Int16Array(runtimePtr, arrayData.buffer.objectHandle, arrayData.offset, arrayData.size);
-            case V8Value.UNSIGNED_INT_16_ARRAY:
-                return v8.initNewV8UInt16Array(runtimePtr, arrayData.buffer.objectHandle, arrayData.offset, arrayData.size);
-            case V8Value.INTEGER:
-                return v8.initNewV8Int32Array(runtimePtr, arrayData.buffer.objectHandle, arrayData.offset, arrayData.size);
-            case V8Value.UNSIGNED_INT_8_ARRAY:
-                return v8.initNewV8UInt8Array(runtimePtr, arrayData.buffer.objectHandle, arrayData.offset, arrayData.size);
-            case V8Value.INT_8_ARRAY:
-                return v8.initNewV8Int8Array(runtimePtr, arrayData.buffer.objectHandle, arrayData.offset, arrayData.size);
-            case V8Value.UNSIGNED_INT_8_CLAMPED_ARRAY:
-                return v8.initNewV8UInt8ClampedArray(runtimePtr, arrayData.buffer.objectHandle, arrayData.offset, arrayData.size);
+            case V8API.FLOAT_32_ARRAY:
+                return getContext().initNewV8Float32Array(arrayData.buffer.objectHandle, arrayData.offset, arrayData.size);
+            case V8API.FLOAT_64_ARRAY:
+                return getContext().initNewV8Float64Array(arrayData.buffer.objectHandle, arrayData.offset, arrayData.size);
+            case V8API.UNSIGNED_INT_32_ARRAY:
+                return getContext().initNewV8UInt32Array(arrayData.buffer.objectHandle, arrayData.offset, arrayData.size);
+            case V8API.INT_16_ARRAY:
+                return getContext().initNewV8Int16Array(arrayData.buffer.objectHandle, arrayData.offset, arrayData.size);
+            case V8API.UNSIGNED_INT_16_ARRAY:
+                return getContext().initNewV8UInt16Array(arrayData.buffer.objectHandle, arrayData.offset, arrayData.size);
+            case V8API.INTEGER:
+                return getContext().initNewV8Int32Array(arrayData.buffer.objectHandle, arrayData.offset, arrayData.size);
+            case V8API.UNSIGNED_INT_8_ARRAY:
+                return getContext().initNewV8UInt8Array(arrayData.buffer.objectHandle, arrayData.offset, arrayData.size);
+            case V8API.INT_8_ARRAY:
+                return getContext().initNewV8Int8Array(arrayData.buffer.objectHandle, arrayData.offset, arrayData.size);
+            case V8API.UNSIGNED_INT_8_CLAMPED_ARRAY:
+                return getContext().initNewV8UInt8ClampedArray(arrayData.buffer.objectHandle, arrayData.offset, arrayData.size);
             default:
                 throw new IllegalArgumentException("Cannot create a typed array of type " + V8Value.getStringRepresentation(arrayData.type));
         }
@@ -127,18 +127,18 @@ public class V8TypedArray extends V8Array {
      */
     public static int getStructureSize(final int type) {
         switch (type) {
-            case V8Value.FLOAT_64_ARRAY:
+            case V8API.FLOAT_64_ARRAY:
                 return 8;
-            case V8Value.INT_32_ARRAY:
-            case V8Value.UNSIGNED_INT_32_ARRAY:
-            case V8Value.FLOAT_32_ARRAY:
+            case V8API.INT_32_ARRAY:
+            case V8API.UNSIGNED_INT_32_ARRAY:
+            case V8API.FLOAT_32_ARRAY:
                 return 4;
-            case V8Value.UNSIGNED_INT_16_ARRAY:
-            case V8Value.INT_16_ARRAY:
+            case V8API.UNSIGNED_INT_16_ARRAY:
+            case V8API.INT_16_ARRAY:
                 return 2;
-            case V8Value.INT_8_ARRAY:
-            case V8Value.UNSIGNED_INT_8_ARRAY:
-            case V8Value.UNSIGNED_INT_8_CLAMPED_ARRAY:
+            case V8API.INT_8_ARRAY:
+            case V8API.UNSIGNED_INT_8_ARRAY:
+            case V8API.UNSIGNED_INT_8_CLAMPED_ARRAY:
                 return 1;
             default:
                 throw new IllegalArgumentException("Cannot create a typed array of type " + V8Value.getStringRepresentation(type));

@@ -10,21 +10,8 @@
  ******************************************************************************/
 package com.eclipsesource.v8.debug;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import com.eclipsesource.v8.V8;
+import com.eclipsesource.v8.V8Context;
 import com.eclipsesource.v8.V8Object;
 import com.eclipsesource.v8.debug.DebugHandler.DebugEvent;
 import com.eclipsesource.v8.debug.mirror.Frame;
@@ -32,6 +19,17 @@ import com.eclipsesource.v8.debug.mirror.ObjectMirror;
 import com.eclipsesource.v8.debug.mirror.ObjectMirror.PropertyKind;
 import com.eclipsesource.v8.debug.mirror.Scope;
 import com.eclipsesource.v8.debug.mirror.Scope.ScopeType;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
+import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 
 public class ScopeTest {
 
@@ -48,6 +46,7 @@ public class ScopeTest {
             + "foo(1,2,3)();            // 11 \n";
     private Object        result = false;
     private V8            v8;
+    private V8Context     v8Context;
     private DebugHandler  debugHandler;
     private BreakHandler  breakHandler;
 
@@ -55,7 +54,8 @@ public class ScopeTest {
     public void setup() {
         V8.setFlags("--expose-debug-as=" + DebugHandler.DEBUG_OBJECT_NAME);
         v8 = V8.createV8Runtime();
-        debugHandler = new DebugHandler(v8);
+        v8Context = v8.getDefaultContext();
+        debugHandler = new DebugHandler(v8Context);
         debugHandler.setScriptBreakpoint("script", 7);
         breakHandler = mock(BreakHandler.class);
         debugHandler.addBreakHandler(breakHandler);
@@ -88,7 +88,7 @@ public class ScopeTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertEquals(ScopeType.Local, result);
     }
@@ -107,7 +107,7 @@ public class ScopeTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertEquals(ScopeType.Script, result);
     }
@@ -126,7 +126,7 @@ public class ScopeTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertEquals(ScopeType.Global, result);
     }
@@ -145,7 +145,7 @@ public class ScopeTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertEquals(ScopeType.Closure, result);
     }
@@ -164,7 +164,7 @@ public class ScopeTest {
             }
         });
 
-        int result = v8.executeIntegerScript(script, "script", 0);
+        int result = v8Context.executeIntegerScript(script, "script", 0);
 
         assertEquals(0, result);
     }
@@ -177,7 +177,7 @@ public class ScopeTest {
             public void onBreak(final DebugEvent event, final ExecutionState state, final EventData eventData, final V8Object data) {
                 Frame frame = state.getFrame(0);
                 Scope scope = frame.getScope(0);
-                V8Object newValue = new V8Object(v8);
+                V8Object newValue = new V8Object(v8Context);
                 newValue.add("foo", "bar");
                 scope.setVariableValue("z", newValue);
                 newValue.close();
@@ -186,7 +186,7 @@ public class ScopeTest {
             }
         });
 
-        V8Object result = v8.executeObjectScript(script, "script", 0);
+        V8Object result = v8Context.executeObjectScript(script, "script", 0);
 
         assertEquals("bar", result.getString("foo"));
         result.close();
@@ -206,7 +206,7 @@ public class ScopeTest {
             }
         });
 
-        boolean result = (Boolean) v8.executeScript(script, "script", 0);
+        boolean result = (Boolean) v8Context.executeScript(script, "script", 0);
 
         assertFalse(result);
     }
@@ -225,7 +225,7 @@ public class ScopeTest {
             }
         });
 
-        double result = (Double) v8.executeScript(script, "script", 0);
+        double result = (Double) v8Context.executeScript(script, "script", 0);
 
         assertEquals(3.14, result, 0.0001);
     }
@@ -244,7 +244,7 @@ public class ScopeTest {
             }
         });
 
-        String result = (String) v8.executeScript(script, "script", 0);
+        String result = (String) v8Context.executeScript(script, "script", 0);
 
         assertEquals("someString", result);
     }
@@ -268,7 +268,7 @@ public class ScopeTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertTrue((Boolean) result);
     }

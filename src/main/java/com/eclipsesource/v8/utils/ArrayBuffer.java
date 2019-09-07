@@ -10,10 +10,10 @@ package com.eclipsesource.v8.utils;
  *    EclipseSource - initial API and implementation
  ******************************************************************************/
 
-import java.nio.ByteBuffer;
-
-import com.eclipsesource.v8.V8;
 import com.eclipsesource.v8.V8ArrayBuffer;
+import com.eclipsesource.v8.V8Context;
+
+import java.nio.ByteBuffer;
 
 /**
  * A lightweight handle to a V8TypedArray. This handle provides
@@ -36,11 +36,11 @@ public class ArrayBuffer {
     /**
      * Create a new ArrayBuffer from a java.nio.ByteBuffer
      *
-     * @param v8 the Runtime on which to create the ArrayBuffer
+     * @param v8Context the Runtime context on which to create the ArrayBuffer
      * @param byteBuffer the ByteBuffer to use to back the ArrayBuffer
      */
-    public ArrayBuffer(final V8 v8, final ByteBuffer byteBuffer) {
-        V8ArrayBuffer v8ArrayBuffer = new V8ArrayBuffer(v8, byteBuffer);
+    public ArrayBuffer(final V8Context v8Context, final ByteBuffer byteBuffer) {
+        V8ArrayBuffer v8ArrayBuffer = new V8ArrayBuffer(v8Context, byteBuffer);
         try {
             arrayBuffer = (V8ArrayBuffer) v8ArrayBuffer.twin().setWeak();
         } finally {

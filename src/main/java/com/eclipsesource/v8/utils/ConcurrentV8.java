@@ -11,6 +11,7 @@
 package com.eclipsesource.v8.utils;
 
 import com.eclipsesource.v8.V8;
+import com.eclipsesource.v8.V8Context;
 
 /**
  * Wrapper class for an {@link com.eclipsesource.v8.V8} instance that allows
@@ -60,7 +61,7 @@ public final class ConcurrentV8 {
     public synchronized void run(final V8Runnable runnable) {
         try {
             v8.getLocker().acquire();
-            runnable.run(v8);
+            runnable.run(v8.getDefaultContext());
         } finally {
             if ((v8 != null) && (v8.getLocker() != null) && v8.getLocker().hasLock()) {
                 v8.getLocker().release();
@@ -83,9 +84,9 @@ public final class ConcurrentV8 {
             // Release the V8 instance from the V8 thread context.
             run(new V8Runnable() {
                 @Override
-                public void run(final V8 v8) {
-                    if ((v8 != null) && !v8.isReleased()) {
-                        v8.close();
+                public void run(final V8Context v8Context) {
+                    if ((v8Context != null) && !v8Context.isReleased()) {
+                        v8Context.close();
                     }
                 }
             });

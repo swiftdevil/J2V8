@@ -1,25 +1,27 @@
 package com.eclipsesource.v8.utils;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
-import java.nio.ByteBuffer;
-
+import com.eclipsesource.v8.V8;
+import com.eclipsesource.v8.V8API;
+import com.eclipsesource.v8.V8Context;
+import com.eclipsesource.v8.V8TypedArray;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.eclipsesource.v8.V8;
-import com.eclipsesource.v8.V8TypedArray;
-import com.eclipsesource.v8.V8Value;
+import java.nio.ByteBuffer;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class TypedArrayTest {
 
     private V8 v8;
+    private V8Context v8Context;
 
     @Before
-    public void seutp() {
+    public void setup() {
         v8 = V8.createV8Runtime();
+        v8Context = v8.getDefaultContext();
     }
 
     @After
@@ -34,7 +36,7 @@ public class TypedArrayTest {
 
     @Test
     public void testGetV8TypedArray() {
-        TypedArray typedArray = new TypedArray(v8, new ArrayBuffer(v8, ByteBuffer.allocateDirect(8)), V8Value.INT_8_ARRAY, 0, 8);
+        TypedArray typedArray = new TypedArray(v8Context, new ArrayBuffer(v8Context, ByteBuffer.allocateDirect(8)), V8API.INT_8_ARRAY, 0, 8);
 
         V8TypedArray v8TypedArray = typedArray.getV8TypedArray();
 
@@ -44,7 +46,7 @@ public class TypedArrayTest {
 
     @Test
     public void testV8TypedArrayAvailable() {
-        TypedArray typedArray = new TypedArray(v8, new ArrayBuffer(v8, ByteBuffer.allocateDirect(8)), V8Value.INT_8_ARRAY, 0, 8);
+        TypedArray typedArray = new TypedArray(v8Context, new ArrayBuffer(v8Context, ByteBuffer.allocateDirect(8)), V8API.INT_8_ARRAY, 0, 8);
 
         assertTrue(typedArray.isAvailable());
     }

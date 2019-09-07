@@ -10,7 +10,7 @@
  ******************************************************************************/
 package com.eclipsesource.v8.utils;
 
-import com.eclipsesource.v8.V8;
+import com.eclipsesource.v8.V8Context;
 
 /**
  * Classes can implement this interface to execute arbitrary code on
@@ -22,8 +22,8 @@ public interface V8Runnable {
     /**
      * Execute the code on the provided runtime.
      *
-     * @param runtime The V8 runtime assigned to this runnable.
+     * @param v8Context The V8 runtime context assigned to this runnable.
      */
-    public void run(final V8 runtime);
+    public void run(final V8Context v8Context);
 
 }

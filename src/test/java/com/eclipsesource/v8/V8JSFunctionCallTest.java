@@ -10,23 +10,22 @@
  ******************************************************************************/
 package com.eclipsesource.v8;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.*;
+
 public class V8JSFunctionCallTest {
 
-    private V8     v8;
-    private Object result;
+    private V8        v8;
+    private V8Context v8Context;
+    private Object    result;
 
     @Before
-    public void seutp() {
+    public void setup() {
         v8 = V8.createV8Runtime();
+        v8Context = v8.getDefaultContext();
     }
 
     @After
@@ -46,10 +45,10 @@ public class V8JSFunctionCallTest {
 
     @Test(expected = IllegalStateException.class)
     public void testHandleReleasedReceiver() {
-        V8Object object = v8.executeObjectScript("var x = { a: function() { return 10; } }; x;");
+        V8Object object = v8Context.executeObjectScript("var x = { a: function() { return 10; } }; x;");
         V8Function function = (V8Function) object.get("a");
         object.close();
-        V8Array parameters = new V8Array(v8);
+        V8Array parameters = new V8Array(v8Context);
         try {
             function.call(object, parameters);
         } finally {
@@ -60,9 +59,9 @@ public class V8JSFunctionCallTest {
 
     @Test(expected = IllegalStateException.class)
     public void testHandleReleasedParameters() {
-        V8Object object = v8.executeObjectScript("var x = { a: function() { return 10; } }; x;");
+        V8Object object = v8Context.executeObjectScript("var x = { a: function() { return 10; } }; x;");
         V8Function function = (V8Function) object.get("a");
-        V8Array parameters = new V8Array(v8);
+        V8Array parameters = new V8Array(v8Context);
         parameters.close();
         try {
             function.call(object, parameters);
@@ -74,9 +73,9 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testGetFunction() {
-        v8.executeVoidScript("function add(x, y) {return x+y;}");
+        v8Context.executeVoidScript("function add(x, y) {return x+y;}");
 
-        V8Object result = v8.getObject("add");
+        V8Object result = v8Context.getObject("add");
 
         assertTrue(result instanceof V8Function);
         result.close();
@@ -84,12 +83,12 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testCallFunction() {
-        v8.executeVoidScript("function add(x, y) {return x+y;}");
-        V8Function function = (V8Function) v8.getObject("add");
-        V8Array parameters = new V8Array(v8);
+        v8Context.executeVoidScript("function add(x, y) {return x+y;}");
+        V8Function function = (V8Function) v8Context.getObject("add");
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(7).push(8);
 
-        Object result = function.call(v8, parameters);
+        Object result = function.call(v8Context, parameters);
 
         assertEquals(15, result);
         function.close();
@@ -98,8 +97,8 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testCallFunctionNullParameters() {
-        v8.executeVoidScript("function call() {return true;}");
-        V8Function function = (V8Function) v8.getObject("call");
+        v8Context.executeVoidScript("function call() {return true;}");
+        V8Function function = (V8Function) v8Context.getObject("call");
 
         boolean result = (Boolean) function.call(v8, null);
 
@@ -109,8 +108,8 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testCallFunctionNullReceiver() {
-        v8.executeVoidScript("function call() {return this;}");
-        V8Function function = (V8Function) v8.getObject("call");
+        v8Context.executeVoidScript("function call() {return this;}");
+        V8Function function = (V8Function) v8Context.getObject("call");
 
         Object result = function.call(null, null);
 
@@ -121,9 +120,9 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testCallFunctionOnUndefined() {
-        v8.executeVoidScript("function add(x, y) {return x+y;}");
-        V8Function function = (V8Function) v8.getObject("add");
-        V8Array parameters = new V8Array(v8);
+        v8Context.executeVoidScript("function add(x, y) {return x+y;}");
+        V8Function function = (V8Function) v8Context.getObject("add");
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(7).push(8);
 
         Object result = function.call(new V8Object.Undefined(), parameters);
@@ -135,11 +134,11 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testFunctionScope() {
-        v8.executeVoidScript("function say() { return this.name + ' say meow!'} ");
-        V8Function function = (V8Function) v8.getObject("say");
-        V8Object ginger = new V8Object(v8);
+        v8Context.executeVoidScript("function say() { return this.name + ' say meow!'} ");
+        V8Function function = (V8Function) v8Context.getObject("say");
+        V8Object ginger = new V8Object(v8Context);
         ginger.add("name", "ginger");
-        V8Object felix = new V8Object(v8);
+        V8Object felix = new V8Object(v8Context);
         felix.add("name", "felix");
 
         Object result1 = function.call(ginger, null);
@@ -154,12 +153,12 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testIntFunction() {
-        v8.executeVoidScript("function add(x, y) {return x+y;}");
-        V8Array parameters = new V8Array(v8);
+        v8Context.executeVoidScript("function add(x, y) {return x+y;}");
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(7);
         parameters.push(8);
 
-        int result = v8.executeIntegerFunction("add", parameters);
+        int result = v8Context.executeIntegerFunction("add", parameters);
 
         assertEquals(15, result);
         parameters.close();
@@ -167,13 +166,13 @@ public class V8JSFunctionCallTest {
 
     @Test(expected = V8ResultUndefined.class)
     public void testIntegerFunctionNotInteger() {
-        v8.executeVoidScript("function add(x, y) {return 'bar';}");
-        V8Array parameters = new V8Array(v8);
+        v8Context.executeVoidScript("function add(x, y) {return 'bar';}");
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(7);
         parameters.push(8);
 
         try {
-            v8.executeIntegerFunction("add", parameters);
+            v8Context.executeIntegerFunction("add", parameters);
         } finally {
             parameters.close();
         }
@@ -181,13 +180,13 @@ public class V8JSFunctionCallTest {
 
     @Test(expected = V8ResultUndefined.class)
     public void testIntegerFunctionNoReturn() {
-        v8.executeVoidScript("function add(x, y) {;}");
-        V8Array parameters = new V8Array(v8);
+        v8Context.executeVoidScript("function add(x, y) {;}");
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(7);
         parameters.push(8);
 
         try {
-            v8.executeIntegerFunction("add", parameters);
+            v8Context.executeIntegerFunction("add", parameters);
         } finally {
             parameters.close();
         }
@@ -195,12 +194,12 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testDoubleFunctionCall() {
-        v8.executeVoidScript("function add(x, y) {return x+y;}");
-        V8Array parameters = new V8Array(v8);
+        v8Context.executeVoidScript("function add(x, y) {return x+y;}");
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(1.1);
         parameters.push(2.2);
 
-        double result = v8.executeDoubleFunction("add", parameters);
+        double result = v8Context.executeDoubleFunction("add", parameters);
 
         assertEquals(3.3, result, 0.000001);
         parameters.close();
@@ -208,13 +207,13 @@ public class V8JSFunctionCallTest {
 
     @Test(expected = V8ResultUndefined.class)
     public void testDoubleFunctionNotDouble() {
-        v8.executeVoidScript("function add(x, y) {return 'bar';}");
-        V8Array parameters = new V8Array(v8);
+        v8Context.executeVoidScript("function add(x, y) {return 'bar';}");
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(7);
         parameters.push(8);
 
         try {
-            v8.executeDoubleFunction("add", parameters);
+            v8Context.executeDoubleFunction("add", parameters);
         } finally {
             parameters.close();
         }
@@ -222,13 +221,13 @@ public class V8JSFunctionCallTest {
 
     @Test(expected = V8ResultUndefined.class)
     public void testDoubleFunctionNoReturn() {
-        v8.executeVoidScript("function add(x, y) {;}");
-        V8Array parameters = new V8Array(v8);
+        v8Context.executeVoidScript("function add(x, y) {;}");
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(7);
         parameters.push(8);
 
         try {
-            v8.executeDoubleFunction("add", parameters);
+            v8Context.executeDoubleFunction("add", parameters);
         } finally {
             parameters.close();
         }
@@ -236,12 +235,12 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testStringFunctionCall() {
-        v8.executeVoidScript("function add(x, y) {return x+y;}");
-        V8Array parameters = new V8Array(v8);
+        v8Context.executeVoidScript("function add(x, y) {return x+y;}");
+        V8Array parameters = new V8Array(v8Context);
         parameters.push("hello, ");
         parameters.push("world!");
 
-        String result = v8.executeStringFunction("add", parameters);
+        String result = v8Context.executeStringFunction("add", parameters);
 
         assertEquals("hello, world!", result);
         parameters.close();
@@ -249,13 +248,13 @@ public class V8JSFunctionCallTest {
 
     @Test(expected = V8ResultUndefined.class)
     public void testStringFunctionNotString() {
-        v8.executeVoidScript("function add(x, y) {return 7;}");
-        V8Array parameters = new V8Array(v8);
+        v8Context.executeVoidScript("function add(x, y) {return 7;}");
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(7);
         parameters.push(8);
 
         try {
-            v8.executeStringFunction("add", parameters);
+            v8Context.executeStringFunction("add", parameters);
         } finally {
             parameters.close();
         }
@@ -263,13 +262,13 @@ public class V8JSFunctionCallTest {
 
     @Test(expected = V8ResultUndefined.class)
     public void testStringFunctionNoReturn() {
-        v8.executeVoidScript("function add(x, y) {;}");
-        V8Array parameters = new V8Array(v8);
+        v8Context.executeVoidScript("function add(x, y) {;}");
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(7);
         parameters.push(8);
 
         try {
-            v8.executeStringFunction("add", parameters);
+            v8Context.executeStringFunction("add", parameters);
         } finally {
             parameters.close();
         }
@@ -277,13 +276,13 @@ public class V8JSFunctionCallTest {
 
     @Test(expected = V8ResultUndefined.class)
     public void testBooleanFunctionNotBoolean() {
-        v8.executeVoidScript("function add(x, y) {return 'bar';}");
-        V8Array parameters = new V8Array(v8);
+        v8Context.executeVoidScript("function add(x, y) {return 'bar';}");
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(7);
         parameters.push(8);
 
         try {
-            v8.executeBooleanFunction("add", parameters);
+            v8Context.executeBooleanFunction("add", parameters);
         } finally {
             parameters.close();
         }
@@ -291,13 +290,13 @@ public class V8JSFunctionCallTest {
 
     @Test(expected = V8ResultUndefined.class)
     public void testBooleanFunctionNoReturn() {
-        v8.executeVoidScript("function add(x, y) {;}");
-        V8Array parameters = new V8Array(v8);
+        v8Context.executeVoidScript("function add(x, y) {;}");
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(7);
         parameters.push(8);
 
         try {
-            v8.executeBooleanFunction("add", parameters);
+            v8Context.executeBooleanFunction("add", parameters);
         } finally {
             parameters.close();
         }
@@ -305,12 +304,12 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testBooleanFunctionCall() {
-        v8.executeVoidScript("function add(x, y) {return x&&y;}");
-        V8Array parameters = new V8Array(v8);
+        v8Context.executeVoidScript("function add(x, y) {return x&&y;}");
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(true);
         parameters.push(true);
 
-        boolean result = v8.executeBooleanFunction("add", parameters);
+        boolean result = v8Context.executeBooleanFunction("add", parameters);
 
         assertTrue(result);
         parameters.close();
@@ -318,14 +317,14 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testArrayFunctionCall() {
-        v8.executeVoidScript("function add(a,b,c,d) {return [a,b,c,d];}");
-        V8Array parameters = new V8Array(v8);
+        v8Context.executeVoidScript("function add(a,b,c,d) {return [a,b,c,d];}");
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(true);
         parameters.push(false);
         parameters.push(7);
         parameters.push("foo");
 
-        V8Array result = v8.executeArrayFunction("add", parameters);
+        V8Array result = v8Context.executeArrayFunction("add", parameters);
 
         assertTrue(result.getBoolean(0));
         assertFalse(result.getBoolean(1));
@@ -337,13 +336,13 @@ public class V8JSFunctionCallTest {
 
     @Test(expected = V8ResultUndefined.class)
     public void testArrayFunctionNotArray() {
-        v8.executeVoidScript("function add(x, y) {return 7;}");
-        V8Array parameters = new V8Array(v8);
+        v8Context.executeVoidScript("function add(x, y) {return 7;}");
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(7);
         parameters.push(8);
 
         try {
-            v8.executeArrayFunction("add", parameters);
+            v8Context.executeArrayFunction("add", parameters);
         } finally {
             parameters.close();
         }
@@ -351,13 +350,13 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testObjectFunctionCall() {
-        v8.executeVoidScript("function getPerson(first, last, age) {return {'first':first, 'last':last, 'age':age};}");
-        V8Array parameters = new V8Array(v8);
+        v8Context.executeVoidScript("function getPerson(first, last, age) {return {'first':first, 'last':last, 'age':age};}");
+        V8Array parameters = new V8Array(v8Context);
         parameters.push("John");
         parameters.push("Smith");
         parameters.push(7);
 
-        V8Object result = v8.executeObjectFunction("getPerson", parameters);
+        V8Object result = v8Context.executeObjectFunction("getPerson", parameters);
 
         assertEquals("John", result.getString("first"));
         assertEquals("Smith", result.getString("last"));
@@ -368,13 +367,13 @@ public class V8JSFunctionCallTest {
 
     @Test(expected = V8ResultUndefined.class)
     public void testObjectFunctionNotObject() {
-        v8.executeVoidScript("function add(x, y) {return 7;}");
-        V8Array parameters = new V8Array(v8);
+        v8Context.executeVoidScript("function add(x, y) {return 7;}");
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(7);
         parameters.push(8);
 
         try {
-            v8.executeObjectFunction("add", parameters);
+            v8Context.executeObjectFunction("add", parameters);
         } finally {
             parameters.close();
         }
@@ -382,13 +381,13 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testFunctionCallWithObjectReturn() {
-        v8.executeVoidScript("function getPerson(first, last, age) {return {'first':first, 'last':last, 'age':age};}");
-        V8Array parameters = new V8Array(v8);
+        v8Context.executeVoidScript("function getPerson(first, last, age) {return {'first':first, 'last':last, 'age':age};}");
+        V8Array parameters = new V8Array(v8Context);
         parameters.push("John");
         parameters.push("Smith");
         parameters.push(7);
 
-        Object result = v8.executeFunction("getPerson", parameters);
+        Object result = v8Context.executeFunction("getPerson", parameters);
 
         assertTrue(result instanceof V8Object);
         V8Object v8Object = (V8Object) result;
@@ -401,13 +400,13 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testFunctionCallWithIntegerReturn() {
-        v8.executeVoidScript("function getAge(first, last, age) {return age;}");
-        V8Array parameters = new V8Array(v8);
+        v8Context.executeVoidScript("function getAge(first, last, age) {return age;}");
+        V8Array parameters = new V8Array(v8Context);
         parameters.push("John");
         parameters.push("Smith");
         parameters.push(7);
 
-        Object result = v8.executeFunction("getAge", parameters);
+        Object result = v8Context.executeFunction("getAge", parameters);
 
         assertTrue(result instanceof Integer);
         assertEquals(7, result);
@@ -416,54 +415,54 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testFunctionCallWithDoubleReturn() {
-        v8.executeVoidScript("function getFoo() {return 33.3;}");
+        v8Context.executeVoidScript("function getFoo() {return 33.3;}");
 
-        Object result = v8.executeFunction("getFoo", null);
+        Object result = v8Context.executeFunction("getFoo", null);
 
         assertEquals(33.3, (Double) result, 0.000001);
     }
 
     @Test
     public void testFunctionCallWithStringReturn() {
-        v8.executeVoidScript("function getFoo() {return 'bar';}");
+        v8Context.executeVoidScript("function getFoo() {return 'bar';}");
 
-        Object result = v8.executeFunction("getFoo", null);
+        Object result = v8Context.executeFunction("getFoo", null);
 
         assertEquals("bar", result);
     }
 
     @Test
     public void testFunctionCallWithBooleanReturn() {
-        v8.executeVoidScript("function getFoo() {return true;}");
+        v8Context.executeVoidScript("function getFoo() {return true;}");
 
-        Object result = v8.executeFunction("getFoo", null);
+        Object result = v8Context.executeFunction("getFoo", null);
 
         assertTrue((Boolean) result);
     }
 
     @Test
     public void testFunctionCallWithNullReturn() {
-        v8.executeVoidScript("function getFoo() {return null;}");
+        v8Context.executeVoidScript("function getFoo() {return null;}");
 
-        Object result = v8.executeFunction("getFoo", null);
+        Object result = v8Context.executeFunction("getFoo", null);
 
         assertNull(result);
     }
 
     @Test
     public void testFunctionCallWithUndefinedReturn() {
-        v8.executeVoidScript("function getFoo() {return undefined;}");
+        v8Context.executeVoidScript("function getFoo() {return undefined;}");
 
-        Object result = v8.executeFunction("getFoo", null);
+        Object result = v8Context.executeFunction("getFoo", null);
 
         assertEquals(V8.getUndefined(), result);
     }
 
     @Test
     public void testFunctionCallWithArrayReturn() {
-        v8.executeVoidScript("function getFoo() {return [1,2,3];}");
+        v8Context.executeVoidScript("function getFoo() {return [1,2,3];}");
 
-        Object result = v8.executeFunction("getFoo", null);
+        Object result = v8Context.executeFunction("getFoo", null);
 
         assertTrue(result instanceof V8Array);
         V8Array v8Array = (V8Array) result;
@@ -476,23 +475,23 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testFunctionCallWithNoReturn() {
-        v8.executeVoidScript("function getAge(first, last, age) {}");
+        v8Context.executeVoidScript("function getAge(first, last, age) {}");
 
-        Object result = v8.executeFunction("getAge", null);
+        Object result = v8Context.executeFunction("getAge", null);
 
         assertEquals(V8.getUndefined(), result);
     }
 
     @Test
     public void testVoidFunctionCall() {
-        v8.executeVoidScript("function setPerson(first, last, age) {person = {'first':first, 'last':last, 'age':age};}");
-        V8Array parameters = new V8Array(v8);
+        v8Context.executeVoidScript("function setPerson(first, last, age) {person = {'first':first, 'last':last, 'age':age};}");
+        V8Array parameters = new V8Array(v8Context);
         parameters.push("John");
         parameters.push("Smith");
         parameters.push(7);
 
-        v8.executeVoidFunction("setPerson", parameters);
-        V8Object result = v8.getObject("person");
+        v8Context.executeVoidFunction("setPerson", parameters);
+        V8Object result = v8Context.getObject("person");
 
         assertEquals("John", result.getString("first"));
         assertEquals("Smith", result.getString("last"));
@@ -503,10 +502,10 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testIntFunctionCallNoParameters() {
-        v8.executeVoidScript("function foo() {return 7;}");
-        V8Array parameters = new V8Array(v8);
+        v8Context.executeVoidScript("function foo() {return 7;}");
+        V8Array parameters = new V8Array(v8Context);
 
-        int result = v8.executeIntegerFunction("foo", parameters);
+        int result = v8Context.executeIntegerFunction("foo", parameters);
 
         assertEquals(7, result);
         parameters.close();
@@ -514,10 +513,10 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testDoubleFunctionCallNoParameters() {
-        v8.executeVoidScript("function foo() {return 7.2;}");
-        V8Array parameters = new V8Array(v8);
+        v8Context.executeVoidScript("function foo() {return 7.2;}");
+        V8Array parameters = new V8Array(v8Context);
 
-        double result = v8.executeDoubleFunction("foo", parameters);
+        double result = v8Context.executeDoubleFunction("foo", parameters);
 
         assertEquals(7.2, result, 0.0000001);
         parameters.close();
@@ -525,10 +524,10 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testStringFunctionCallNoParameters() {
-        v8.executeVoidScript("function foo() {return 'hello';}");
-        V8Array parameters = new V8Array(v8);
+        v8Context.executeVoidScript("function foo() {return 'hello';}");
+        V8Array parameters = new V8Array(v8Context);
 
-        String result = v8.executeStringFunction("foo", parameters);
+        String result = v8Context.executeStringFunction("foo", parameters);
 
         assertEquals("hello", result);
         parameters.close();
@@ -536,10 +535,10 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testBooleanFunctionCallNoParameters() {
-        v8.executeVoidScript("function foo() {return true;}");
-        V8Array parameters = new V8Array(v8);
+        v8Context.executeVoidScript("function foo() {return true;}");
+        V8Array parameters = new V8Array(v8Context);
 
-        boolean result = v8.executeBooleanFunction("foo", parameters);
+        boolean result = v8Context.executeBooleanFunction("foo", parameters);
 
         assertTrue(result);
         parameters.close();
@@ -547,10 +546,10 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testArrayFunctionCallNoParameters() {
-        v8.executeVoidScript("function foo() {return [];}");
-        V8Array parameters = new V8Array(v8);
+        v8Context.executeVoidScript("function foo() {return [];}");
+        V8Array parameters = new V8Array(v8Context);
 
-        V8Array result = v8.executeArrayFunction("foo", parameters);
+        V8Array result = v8Context.executeArrayFunction("foo", parameters);
 
         assertEquals(0, result.length());
         parameters.close();
@@ -559,10 +558,10 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testObjectFunctionCallNoParameters() {
-        v8.executeVoidScript("function foo() {return {bar:8};}");
-        V8Array parameters = new V8Array(v8);
+        v8Context.executeVoidScript("function foo() {return {bar:8};}");
+        V8Array parameters = new V8Array(v8Context);
 
-        V8Object result = v8.executeObjectFunction("foo", parameters);
+        V8Object result = v8Context.executeObjectFunction("foo", parameters);
 
         assertEquals(8, result.getInteger("bar"));
         parameters.close();
@@ -571,56 +570,56 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testVoidFunctionCallNoParameters() {
-        v8.executeVoidScript("function foo() {x=7;}");
-        V8Array parameters = new V8Array(v8);
+        v8Context.executeVoidScript("function foo() {x=7;}");
+        V8Array parameters = new V8Array(v8Context);
 
-        v8.executeVoidFunction("foo", parameters);
+        v8Context.executeVoidFunction("foo", parameters);
 
-        assertEquals(7, v8.getInteger("x"));
+        assertEquals(7, v8Context.getInteger("x"));
         parameters.close();
     }
 
     @Test
     public void testIntFunctionCallNullParameters() {
-        v8.executeVoidScript("function foo() {return 7;}");
+        v8Context.executeVoidScript("function foo() {return 7;}");
 
-        int result = v8.executeIntegerFunction("foo", null);
+        int result = v8Context.executeIntegerFunction("foo", null);
 
         assertEquals(7, result);
     }
 
     @Test
     public void testDoubleFunctionCallNullParameters() {
-        v8.executeVoidScript("function foo() {return 7.1;}");
+        v8Context.executeVoidScript("function foo() {return 7.1;}");
 
-        double result = v8.executeDoubleFunction("foo", null);
+        double result = v8Context.executeDoubleFunction("foo", null);
 
         assertEquals(7.1, result, 0.000001);
     }
 
     @Test
     public void testStringFunctionCallNullParameters() {
-        v8.executeVoidScript("function foo() {return 'hello';}");
+        v8Context.executeVoidScript("function foo() {return 'hello';}");
 
-        String result = v8.executeStringFunction("foo", null);
+        String result = v8Context.executeStringFunction("foo", null);
 
         assertEquals("hello", result);
     }
 
     @Test
     public void testBooleanFunctionCallNullParameters() {
-        v8.executeVoidScript("function foo() {return true;}");
+        v8Context.executeVoidScript("function foo() {return true;}");
 
-        boolean result = v8.executeBooleanFunction("foo", null);
+        boolean result = v8Context.executeBooleanFunction("foo", null);
 
         assertTrue(result);
     }
 
     @Test
     public void testArrayFunctionCallNullParameters() {
-        v8.executeVoidScript("function foo() {return [1,2];}");
+        v8Context.executeVoidScript("function foo() {return [1,2];}");
 
-        V8Array result = v8.executeArrayFunction("foo", null);
+        V8Array result = v8Context.executeArrayFunction("foo", null);
 
         assertEquals(2, result.length());
         result.close();
@@ -628,9 +627,9 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testObjectFunctionCallNullParameters() {
-        v8.executeVoidScript("function foo() {return {a:'b'};}");
+        v8Context.executeVoidScript("function foo() {return {a:'b'};}");
 
-        V8Object result = v8.executeObjectFunction("foo", null);
+        V8Object result = v8Context.executeObjectFunction("foo", null);
 
         assertEquals("b", result.getString("a"));
         result.close();
@@ -638,21 +637,21 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testVoidFunctionCallNullParameters() {
-        v8.executeVoidScript("function foo() {x=7;}");
+        v8Context.executeVoidScript("function foo() {x=7;}");
 
-        v8.executeVoidFunction("foo", null);
+        v8Context.executeVoidFunction("foo", null);
 
-        assertEquals(7, v8.getInteger("x"));
+        assertEquals(7, v8Context.getInteger("x"));
     }
 
     @Test
     public void testIntFunctionCallOnObject() {
-        v8.executeVoidScript("function add(x, y) {return x + y;}");
-        v8.executeVoidScript("adder = {};");
-        v8.executeVoidScript("adder.addFuction = add;");
-        V8Object object = v8.getObject("adder");
+        v8Context.executeVoidScript("function add(x, y) {return x + y;}");
+        v8Context.executeVoidScript("adder = {};");
+        v8Context.executeVoidScript("adder.addFuction = add;");
+        V8Object object = v8Context.getObject("adder");
 
-        V8Array parameters = new V8Array(v8);
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(7);
         parameters.push(8);
         int result = object.executeIntegerFunction("addFuction", parameters);
@@ -664,12 +663,12 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testDoubleFunctionCallOnObject() {
-        v8.executeVoidScript("function add(x, y) {return x + y;}");
-        v8.executeVoidScript("adder = {};");
-        v8.executeVoidScript("adder.addFuction = add;");
-        V8Object object = v8.getObject("adder");
+        v8Context.executeVoidScript("function add(x, y) {return x + y;}");
+        v8Context.executeVoidScript("adder = {};");
+        v8Context.executeVoidScript("adder.addFuction = add;");
+        V8Object object = v8Context.getObject("adder");
 
-        V8Array parameters = new V8Array(v8);
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(7.1);
         parameters.push(8.1);
         double result = object.executeDoubleFunction("addFuction", parameters);
@@ -681,12 +680,12 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testStringFunctionCallOnObject() {
-        v8.executeVoidScript("function add(x, y) {return x + y;}");
-        v8.executeVoidScript("adder = {};");
-        v8.executeVoidScript("adder.addFuction = add;");
-        V8Object object = v8.getObject("adder");
+        v8Context.executeVoidScript("function add(x, y) {return x + y;}");
+        v8Context.executeVoidScript("adder = {};");
+        v8Context.executeVoidScript("adder.addFuction = add;");
+        V8Object object = v8Context.getObject("adder");
 
-        V8Array parameters = new V8Array(v8);
+        V8Array parameters = new V8Array(v8Context);
         parameters.push("hello, ");
         parameters.push("world!");
         String result = object.executeStringFunction("addFuction", parameters);
@@ -698,12 +697,12 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testBooleanFunctionCallOnObject() {
-        v8.executeVoidScript("function add(x, y) {return x && y;}");
-        v8.executeVoidScript("adder = {};");
-        v8.executeVoidScript("adder.addFuction = add;");
-        V8Object object = v8.getObject("adder");
+        v8Context.executeVoidScript("function add(x, y) {return x && y;}");
+        v8Context.executeVoidScript("adder = {};");
+        v8Context.executeVoidScript("adder.addFuction = add;");
+        V8Object object = v8Context.getObject("adder");
 
-        V8Array parameters = new V8Array(v8);
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(true);
         parameters.push(false);
         boolean result = object.executeBooleanFunction("addFuction", parameters);
@@ -715,12 +714,12 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testArrayFunctionCallOnObject() {
-        v8.executeVoidScript("function add(x, y) {return [x,y];}");
-        v8.executeVoidScript("adder = {};");
-        v8.executeVoidScript("adder.addFuction = add;");
-        V8Object object = v8.getObject("adder");
+        v8Context.executeVoidScript("function add(x, y) {return [x,y];}");
+        v8Context.executeVoidScript("adder = {};");
+        v8Context.executeVoidScript("adder.addFuction = add;");
+        V8Object object = v8Context.getObject("adder");
 
-        V8Array parameters = new V8Array(v8);
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(true);
         parameters.push(false);
         V8Array result = object.executeArrayFunction("addFuction", parameters);
@@ -734,12 +733,12 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testObjectFunctionCallOnObject() {
-        v8.executeVoidScript("function getPoint(x, y) {return {'x':x, 'y':y};}");
-        v8.executeVoidScript("pointer = {};");
-        v8.executeVoidScript("pointer.pointGetter = getPoint;");
-        V8Object object = v8.getObject("pointer");
+        v8Context.executeVoidScript("function getPoint(x, y) {return {'x':x, 'y':y};}");
+        v8Context.executeVoidScript("pointer = {};");
+        v8Context.executeVoidScript("pointer.pointGetter = getPoint;");
+        V8Object object = v8Context.getObject("pointer");
 
-        V8Array parameters = new V8Array(v8);
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(8);
         parameters.push(9);
         V8Object result = object.executeObjectFunction("pointGetter", parameters);
@@ -753,12 +752,12 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testVoidFunctionCallOnObject() {
-        v8.executeVoidScript("pointer = {'x':0,'y':0};");
-        v8.executeVoidScript("function setPoint(x, y) {pointer.x = x;pointer.y=y;}");
-        v8.executeVoidScript("pointer.pointSetter = setPoint;");
-        V8Object object = v8.getObject("pointer");
+        v8Context.executeVoidScript("pointer = {'x':0,'y':0};");
+        v8Context.executeVoidScript("function setPoint(x, y) {pointer.x = x;pointer.y=y;}");
+        v8Context.executeVoidScript("pointer.pointSetter = setPoint;");
+        V8Object object = v8Context.getObject("pointer");
 
-        V8Array parameters = new V8Array(v8);
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(8);
         parameters.push(9);
         object.executeVoidFunction("pointSetter", parameters);
@@ -771,31 +770,31 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testStringParameter() {
-        v8.executeVoidScript("function countLength(str) {return str.length;}");
+        v8Context.executeVoidScript("function countLength(str) {return str.length;}");
 
-        V8Array parameters = new V8Array(v8);
+        V8Array parameters = new V8Array(v8Context);
         parameters.push("abcdefghijklmnopqrstuvwxyz");
 
-        assertEquals(26, v8.executeIntegerFunction("countLength", parameters));
+        assertEquals(26, v8Context.executeIntegerFunction("countLength", parameters));
         parameters.close();
     }
 
     @Test
     public void testObjectParameter() {
-        V8Object obj1 = new V8Object(v8);
-        V8Object obj2 = new V8Object(v8);
+        V8Object obj1 = new V8Object(v8Context);
+        V8Object obj2 = new V8Object(v8Context);
         obj1.add("first", "John");
         obj1.add("last", "Smith");
         obj1.add("age", 7);
         obj2.add("first", "Tim");
         obj2.add("last", "Jones");
         obj2.add("age", 8);
-        V8Array parameters = new V8Array(v8);
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(obj1);
         parameters.push(obj2);
 
-        v8.executeVoidScript("function add(p1, p2) {return p1.age + p2['age'];}");
-        int result = v8.executeIntegerFunction("add", parameters);
+        v8Context.executeVoidScript("function add(p1, p2) {return p1.age + p2['age'];}");
+        int result = v8Context.executeIntegerFunction("add", parameters);
 
         assertEquals(15, result);
         obj1.close();
@@ -805,81 +804,81 @@ public class V8JSFunctionCallTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testExecuteJSFunction_InvalidArg() {
-        v8.executeVoidScript("function add(p1, p2) {return p1 + p2;}");
+        v8Context.executeVoidScript("function add(p1, p2) {return p1 + p2;}");
 
-        v8.executeJSFunction("add", new Object(), 8);
+        v8Context.executeJSFunction("add", new Object(), 8);
     }
 
     @Test
     public void testExecuteJSFunction_VarArgs() {
-        v8.executeVoidScript("function add() {return arguments.length;}");
+        v8Context.executeVoidScript("function add() {return arguments.length;}");
 
-        int result = (Integer) v8.executeJSFunction("add", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        int result = (Integer) v8Context.executeJSFunction("add", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
 
         assertEquals(10, result);
     }
 
     @Test
     public void testExecuteJSFunction_Integer() {
-        v8.executeVoidScript("function add(p1, p2) {return p1 + p2;}");
+        v8Context.executeVoidScript("function add(p1, p2) {return p1 + p2;}");
 
-        int result = (Integer) v8.executeJSFunction("add", 7, 8);
+        int result = (Integer) v8Context.executeJSFunction("add", 7, 8);
 
         assertEquals(15, result);
     }
 
     @Test
     public void testExecuteJSFunction_Float() {
-        v8.executeVoidScript("function add(p1, p2) {return p1 + p2;}");
+        v8Context.executeVoidScript("function add(p1, p2) {return p1 + p2;}");
 
-        double result = (Double) v8.executeJSFunction("add", 3.1f, 2.2f);
+        double result = (Double) v8Context.executeJSFunction("add", 3.1f, 2.2f);
 
         assertEquals(5.3, result, 0.00001);
     }
 
     @Test
     public void testExecuteJSFunction_Double() {
-        v8.executeVoidScript("function add(p1, p2) {return p1 + p2;}");
+        v8Context.executeVoidScript("function add(p1, p2) {return p1 + p2;}");
 
-        double result = (Double) v8.executeJSFunction("add", 3.1d, 2.2d);
+        double result = (Double) v8Context.executeJSFunction("add", 3.1d, 2.2d);
 
         assertEquals(5.3, result, 0.00001);
     }
 
     @Test
     public void testExecuteJSFunction_IntegerSingleParam() {
-        v8.executeVoidScript("function add(p1) {return p1;}");
+        v8Context.executeVoidScript("function add(p1) {return p1;}");
 
-        int result = (Integer) v8.executeJSFunction("add", 7);
+        int result = (Integer) v8Context.executeJSFunction("add", 7);
 
         assertEquals(7, result);
     }
 
     @Test
     public void testExecuteJSFunction_BooleanSingleParam() {
-        v8.executeVoidScript("function add(p1) {return p1;}");
+        v8Context.executeVoidScript("function add(p1) {return p1;}");
 
-        boolean result = (Boolean) v8.executeJSFunction("add", false);
+        boolean result = (Boolean) v8Context.executeJSFunction("add", false);
 
         assertFalse(result);
     }
 
     @Test
     public void testExecuteJSFunction_String() {
-        v8.executeVoidScript("function add(p1, p2) {return p1 + p2;}");
+        v8Context.executeVoidScript("function add(p1, p2) {return p1 + p2;}");
 
-        String result = (String) v8.executeJSFunction("add", "seven", "eight");
+        String result = (String) v8Context.executeJSFunction("add", "seven", "eight");
 
         assertEquals("seveneight", result);
     }
 
     @Test
     public void testExecuteJSFunction_V8Object() {
-        V8Object object = new V8Object(v8);
+        V8Object object = new V8Object(v8Context);
         object.add("first", 7).add("second", 8);
-        v8.executeVoidScript("function add(p1) {return p1.first + p1.second;}");
+        v8Context.executeVoidScript("function add(p1) {return p1.first + p1.second;}");
 
-        int result = (Integer) v8.executeJSFunction("add", object);
+        int result = (Integer) v8Context.executeJSFunction("add", object);
 
         assertEquals(15, result);
         object.close();
@@ -887,11 +886,11 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testExecuteJSFunction_V8Array() {
-        V8Array array = new V8Array(v8);
+        V8Array array = new V8Array(v8Context);
         array.push(7).push(8);
-        v8.executeVoidScript("function add(p1) {return p1[0] + p1[1];}");
+        v8Context.executeVoidScript("function add(p1) {return p1[0] + p1[1];}");
 
-        int result = (Integer) v8.executeJSFunction("add", array);
+        int result = (Integer) v8Context.executeJSFunction("add", array);
 
         assertEquals(15, result);
         array.close();
@@ -899,13 +898,13 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testExecuteJSFunction_Mixed() {
-        V8Array array = new V8Array(v8);
+        V8Array array = new V8Array(v8Context);
         array.push(7).push(8);
-        V8Object object = new V8Object(v8);
+        V8Object object = new V8Object(v8Context);
         object.add("first", 7).add("second", 8);
-        v8.executeVoidScript("function add(p1, p2) {return p1[0] + p1[1] + p2.first + p2.second ;}");
+        v8Context.executeVoidScript("function add(p1, p2) {return p1[0] + p1[1] + p2.first + p2.second ;}");
 
-        int result = (Integer) v8.executeJSFunction("add", array, object);
+        int result = (Integer) v8Context.executeJSFunction("add", array, object);
 
         assertEquals(30, result);
         object.close();
@@ -914,8 +913,8 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testExecuteJSFunction_Function() {
-        v8.executeVoidScript("function add(p1, p2) {return p1();}");
-        V8Function function = new V8Function(v8, new JavaCallback() {
+        v8Context.executeVoidScript("function add(p1, p2) {return p1();}");
+        V8Function function = new V8Function(v8Context, new JavaCallback() {
 
             @Override
             public Object invoke(final V8Object receiver, final V8Array parameters) {
@@ -923,7 +922,7 @@ public class V8JSFunctionCallTest {
             }
         });
 
-        int result = (Integer) v8.executeJSFunction("add", function);
+        int result = (Integer) v8Context.executeJSFunction("add", function);
 
         assertEquals(7, result);
         function.close();
@@ -931,34 +930,34 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testExecuteJSFunction_null() {
-        v8.executeVoidScript("function test(p1) { if (!p1) { return 'passed';} }");
+        v8Context.executeVoidScript("function test(p1) { if (!p1) { return 'passed';} }");
 
-        String result = (String) v8.executeJSFunction("test", new Object[] { null });
+        String result = (String) v8Context.executeJSFunction("test", new Object[] { null });
 
         assertEquals("passed", result);
     }
 
     @Test
     public void testExecuteJSFunction_nullArray() {
-        v8.executeVoidScript("function test() { return 'passed';}");
+        v8Context.executeVoidScript("function test() { return 'passed';}");
 
-        String result = (String) v8.executeJSFunction("test", (Object[]) null);
+        String result = (String) v8Context.executeJSFunction("test", (Object[]) null);
 
         assertEquals("passed", result);
     }
 
     @Test
     public void testExecuteJSFunction_NoParameters() {
-        v8.executeVoidScript("function test() { return 'passed';}");
+        v8Context.executeVoidScript("function test() { return 'passed';}");
 
-        String result = (String) v8.executeJSFunction("test");
+        String result = (String) v8Context.executeJSFunction("test");
 
         assertEquals("passed", result);
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testExecuteJSFunction_UndefinedReceiver() {
-        v8.executeVoidScript("function test() { }");
+        v8Context.executeVoidScript("function test() { }");
         V8Object undefined = new V8Object.Undefined();
 
         undefined.executeJSFunction("test", (Object[]) null);
@@ -967,7 +966,7 @@ public class V8JSFunctionCallTest {
 
     @Test(expected = UnsupportedOperationException.class)
     public void testExecuteFunction_UndefinedReceiver() {
-        v8.executeVoidScript("function test() { }");
+        v8Context.executeVoidScript("function test() { }");
         V8Object undefined = new V8Object.Undefined();
 
         undefined.executeFunction("test", null);
@@ -976,16 +975,16 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testExecuteJSFunction_undefined() {
-        v8.executeVoidScript("function test(p1) { if (!p1) { return 'passed';} }");
+        v8Context.executeVoidScript("function test(p1) { if (!p1) { return 'passed';} }");
 
-        String result = (String) v8.executeJSFunction("test", V8.getUndefined());
+        String result = (String) v8Context.executeJSFunction("test", V8.getUndefined());
 
         assertEquals("passed", result);
     }
 
     @Test
     public void testCallFunctionWithEmojiParamter() {
-        V8Function v8Function = new V8Function(v8, new JavaCallback() {
+        V8Function v8Function = new V8Function(v8Context, new JavaCallback() {
 
             @Override
             public Object invoke(final V8Object receiver, final V8Array parameters) {
@@ -993,7 +992,7 @@ public class V8JSFunctionCallTest {
             }
         });
 
-        V8Array paramters = new V8Array(v8);
+        V8Array paramters = new V8Array(v8Context);
         paramters.push("👄");
         Object result = v8Function.call(null, paramters);
 
@@ -1004,7 +1003,7 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testCreateV8Function() {
-        V8Function function = new V8Function(v8, new JavaCallback() {
+        V8Function function = new V8Function(v8Context, new JavaCallback() {
 
             @Override
             public Object invoke(final V8Object receiver, final V8Array parameters) {
@@ -1020,8 +1019,8 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testCreateV8Function_CalledFromJS() {
-        v8.executeScript("function doSomething(callback) { callback(); }");
-        V8Function function = new V8Function(v8, new JavaCallback() {
+        v8Context.executeScript("function doSomething(callback) { callback(); }");
+        V8Function function = new V8Function(v8Context, new JavaCallback() {
 
             @Override
             public Object invoke(final V8Object receiver, final V8Array parameters) {
@@ -1029,9 +1028,9 @@ public class V8JSFunctionCallTest {
                 return null;
             }
         });
-        V8Array parameters = new V8Array(v8);
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(function);
-        v8.executeVoidFunction("doSomething", parameters);
+        v8Context.executeVoidFunction("doSomething", parameters);
         function.close();
         parameters.close();
 
@@ -1040,8 +1039,8 @@ public class V8JSFunctionCallTest {
 
     @Test
     public void testCreateV8Function_CalledFromJS_AfterFunctionReleased() {
-        v8.executeScript("function doSomething(callback) { callback(); }");
-        V8Function function = new V8Function(v8, new JavaCallback() {
+        v8Context.executeScript("function doSomething(callback) { callback(); }");
+        V8Function function = new V8Function(v8Context, new JavaCallback() {
 
             @Override
             public Object invoke(final V8Object receiver, final V8Array parameters) {
@@ -1049,10 +1048,10 @@ public class V8JSFunctionCallTest {
                 return null;
             }
         });
-        V8Array parameters = new V8Array(v8);
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(function);
         function.close();
-        v8.executeVoidFunction("doSomething", parameters);
+        v8Context.executeVoidFunction("doSomething", parameters);
         parameters.close();
 
         assertEquals("passed", result);
@@ -1065,14 +1064,14 @@ public class V8JSFunctionCallTest {
         try {
             engine = V8.createV8Runtime();
             engine2 = V8.createV8Runtime();
-            V8Function function = new V8Function(engine, new JavaCallback() {
+            V8Function function = new V8Function(engine.getDefaultContext(), new JavaCallback() {
 
                 @Override
                 public Object invoke(final V8Object receiver, final V8Array parameters) {
                     return parameters.getInteger(0) + parameters.getInteger(1);
                 }
             });
-            engine2.executeScript("a = [3, 4];");
+            engine2.getDefaultContext().executeScript("a = [3, 4];");
             V8Array a = (V8Array) engine2.get("a");
 
             function.call(null, a);
@@ -1090,7 +1089,7 @@ public class V8JSFunctionCallTest {
         try {
             engine = V8.createV8Runtime();
             engine2 = V8.createV8Runtime();
-            V8Function function = new V8Function(engine, new JavaCallback() {
+            V8Function function = new V8Function(engine.getDefaultContext(), new JavaCallback() {
 
                 @Override
                 public Object invoke(final V8Object receiver, final V8Array parameters) {
@@ -1098,7 +1097,7 @@ public class V8JSFunctionCallTest {
                     return receiver.get("name");
                 }
             });
-            engine2.executeScript("a = {name: 'joe'};");
+            engine2.getDefaultContext().executeScript("a = {name: 'joe'};");
             V8Object a = (V8Object) engine2.get("a");
 
             function.call(a, null);

@@ -10,38 +10,24 @@
  ******************************************************************************/
 package com.eclipsesource.v8;
 
-import static com.eclipsesource.v8.V8Value.BOOLEAN;
-import static com.eclipsesource.v8.V8Value.DOUBLE;
-import static com.eclipsesource.v8.V8Value.INTEGER;
-import static com.eclipsesource.v8.V8Value.NULL;
-import static com.eclipsesource.v8.V8Value.STRING;
-import static com.eclipsesource.v8.V8Value.UNDEFINED;
-import static com.eclipsesource.v8.V8Value.V8_ARRAY;
-import static com.eclipsesource.v8.V8Value.V8_FUNCTION;
-import static com.eclipsesource.v8.V8Value.V8_OBJECT;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-
+import com.eclipsesource.v8.V8Object.Undefined;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.eclipsesource.v8.V8Object.Undefined;
+import static com.eclipsesource.v8.V8API.*;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
 
 public class V8ObjectTest {
 
     private V8 v8;
+    private V8Context v8Context;
 
     @Before
-    public void seutp() {
+    public void setup() {
         v8 = V8.createV8Runtime();
+        v8Context = v8.getDefaultContext();
     }
 
     @After
@@ -168,7 +154,7 @@ public class V8ObjectTest {
     @Test
     public void testCreateReleaseObject() {
         for (int i = 0; i < 1000; i++) {
-            V8Object persistentV8Object = new V8Object(v8);
+            V8Object persistentV8Object = new V8Object(v8Context);
             persistentV8Object.close();
         }
     }
@@ -177,7 +163,7 @@ public class V8ObjectTest {
     @Test
     public void testReleaseRuntimeDoesNotReleaseObject() {
         try {
-            new V8Object(v8);
+            new V8Object(v8Context);
             v8.close();
         } catch (IllegalStateException e) {
             v8 = V8.createV8Runtime();
@@ -188,7 +174,7 @@ public class V8ObjectTest {
 
     @Test
     public void testToStringWorksOnReleasedV8Object() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
 
         v8Object.close();
 
@@ -197,7 +183,7 @@ public class V8ObjectTest {
 
     @Test
     public void testToStringWorksOnReleasedV8Function() {
-        V8Object v8Object = new V8Function(v8);
+        V8Object v8Object = new V8Function(v8Context);
 
         v8Object.close();
 
@@ -206,7 +192,7 @@ public class V8ObjectTest {
 
     @Test
     public void testToStringWorksOnReleasedV8Array() {
-        V8Object v8Object = new V8Array(v8);
+        V8Object v8Object = new V8Array(v8Context);
 
         v8Object.close();
 
@@ -216,7 +202,7 @@ public class V8ObjectTest {
     @Test
     public void testToStringWorksOnReleasedV8Runtime_V8Object() {
         @SuppressWarnings("resource")
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8.release(false);
 
         assertEquals("[Object released]", v8Object.toString());
@@ -226,8 +212,8 @@ public class V8ObjectTest {
     @Test
     public void testToStringWorksOnReleasedV8Runtime_V8Function() {
         @SuppressWarnings("resource")
-        V8Object v8Object = new V8Function(v8);
-        v8.release(false);
+        V8Object v8Object = new V8Function(v8Context);
+        v8Context.close(true);
 
         assertEquals("[Function released]", v8Object.toString());
         v8 = V8.createV8Runtime();
@@ -236,7 +222,7 @@ public class V8ObjectTest {
     @Test
     public void testToStringWorksOnReleasedV8Runtime_V8Array() {
         @SuppressWarnings("resource")
-        V8Object v8Object = new V8Array(v8);
+        V8Object v8Object = new V8Array(v8Context);
         v8.release(false);
 
         assertEquals("[Array released]", v8Object.toString());
@@ -245,7 +231,7 @@ public class V8ObjectTest {
 
     @Test(expected = IllegalStateException.class)
     public void testAccessReleasedObjectThrowsException2() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
 
         v8Object.close();
 
@@ -254,7 +240,7 @@ public class V8ObjectTest {
 
     @Test
     public void testGetIsInteger() {
-        V8Object object = v8.executeObjectScript("foo = {key: 7}");
+        V8Object object = v8Context.executeObjectScript("foo = {key: 7}");
 
         Object result = object.get("key");
 
@@ -265,7 +251,7 @@ public class V8ObjectTest {
 
     @Test
     public void testGetIsDouble() {
-        V8Object object = v8.executeObjectScript("foo = {key: 7.7}");
+        V8Object object = v8Context.executeObjectScript("foo = {key: 7.7}");
 
         Object result = object.get("key");
 
@@ -276,7 +262,7 @@ public class V8ObjectTest {
 
     @Test
     public void testGetIsString() {
-        V8Object object = v8.executeObjectScript("foo = {key: 'bar'}");
+        V8Object object = v8Context.executeObjectScript("foo = {key: 'bar'}");
 
         Object result = object.get("key");
 
@@ -287,7 +273,7 @@ public class V8ObjectTest {
 
     @Test
     public void testGetIsBoolean() {
-        V8Object object = v8.executeObjectScript("foo = {key: true}");
+        V8Object object = v8Context.executeObjectScript("foo = {key: true}");
 
         Object result = object.get("key");
 
@@ -298,7 +284,7 @@ public class V8ObjectTest {
 
     @Test
     public void testGetIsObject() {
-        V8Object object = v8.executeObjectScript("foo = {key: {}}");
+        V8Object object = v8Context.executeObjectScript("foo = {key: {}}");
 
         Object result = object.get("key");
 
@@ -309,7 +295,7 @@ public class V8ObjectTest {
 
     @Test
     public void testGetIsArray() {
-        V8Object object = v8.executeObjectScript("foo = {key: []}");
+        V8Object object = v8Context.executeObjectScript("foo = {key: []}");
 
         Object result = object.get("key");
 
@@ -320,7 +306,7 @@ public class V8ObjectTest {
 
     @Test
     public void testGetIsNull() {
-        V8Object object = v8.executeObjectScript("foo = {key: null}");
+        V8Object object = v8Context.executeObjectScript("foo = {key: null}");
 
         Object result = object.get("key");
 
@@ -330,7 +316,7 @@ public class V8ObjectTest {
 
     @Test
     public void testGetIsUndefined() {
-        V8Object object = v8.executeObjectScript("foo = {}");
+        V8Object object = v8Context.executeObjectScript("foo = {}");
 
         Object result = object.get("key");
 
@@ -340,7 +326,7 @@ public class V8ObjectTest {
 
     @Test
     public void testGetIsFunction() {
-        V8Object object = v8.executeObjectScript("foo = {key: function(){}}");
+        V8Object object = v8Context.executeObjectScript("foo = {key: function(){}}");
 
         Object result = object.get("key");
 
@@ -351,9 +337,9 @@ public class V8ObjectTest {
 
     @Test
     public void testGetV8Object() {
-        v8.executeVoidScript("foo = {key: 'value'}");
+        v8Context.executeVoidScript("foo = {key: 'value'}");
 
-        V8Object object = v8.getObject("foo");
+        V8Object object = v8Context.getObject("foo");
 
         assertTrue(object.contains("key"));
         assertFalse(object.contains("noKey"));
@@ -362,10 +348,10 @@ public class V8ObjectTest {
 
     @Test
     public void testGetMultipleV8Object() {
-        v8.executeVoidScript("foo = {key: 'value'}; " + "bar={key : 'value'}");
+        v8Context.executeVoidScript("foo = {key: 'value'}; " + "bar={key : 'value'}");
 
-        V8Object fooObject = v8.getObject("foo");
-        V8Object barObject = v8.getObject("bar");
+        V8Object fooObject = v8Context.getObject("foo");
+        V8Object barObject = v8Context.getObject("bar");
 
         assertTrue(fooObject.contains("key"));
         assertFalse(fooObject.contains("noKey"));
@@ -378,10 +364,10 @@ public class V8ObjectTest {
 
     @Test
     public void testGetNestedV8Object() {
-        v8.executeVoidScript("foo = {nested: {key : 'value'}}");
+        v8Context.executeVoidScript("foo = {nested: {key : 'value'}}");
 
         for (int i = 0; i < 1000; i++) {
-            V8Object fooObject = v8.getObject("foo");
+            V8Object fooObject = v8Context.getObject("foo");
             V8Object nested = fooObject.getObject("nested");
 
             assertTrue(fooObject.contains("nested"));
@@ -395,9 +381,9 @@ public class V8ObjectTest {
     /*** Get Array ***/
     @Test
     public void testGetV8ArrayV8Object() {
-        v8.executeVoidScript("foo = {array : [1,2,3]}");
+        v8Context.executeVoidScript("foo = {array : [1,2,3]}");
 
-        V8Object object = v8.getObject("foo");
+        V8Object object = v8Context.getObject("foo");
         V8Array array = object.getArray("array");
 
         assertEquals(3, array.length());
@@ -411,9 +397,9 @@ public class V8ObjectTest {
     /*** Get Primitives ***/
     @Test
     public void testGetIntegerV8Object() {
-        v8.executeVoidScript("foo = {bar: 7}");
+        v8Context.executeVoidScript("foo = {bar: 7}");
 
-        V8Object foo = v8.getObject("foo");
+        V8Object foo = v8Context.getObject("foo");
 
         assertEquals(7, foo.getInteger("bar"));
         foo.close();
@@ -421,9 +407,9 @@ public class V8ObjectTest {
 
     @Test
     public void testNestedInteger() {
-        v8.executeVoidScript("foo = {bar: {key:6}}");
+        v8Context.executeVoidScript("foo = {bar: {key:6}}");
 
-        V8Object foo = v8.getObject("foo");
+        V8Object foo = v8Context.getObject("foo");
         V8Object bar = foo.getObject("bar");
 
         assertEquals(6, bar.getInteger("key"));
@@ -433,9 +419,9 @@ public class V8ObjectTest {
 
     @Test
     public void testGetDoubleV8Object() {
-        v8.executeVoidScript("foo = {bar: 7.1}");
+        v8Context.executeVoidScript("foo = {bar: 7.1}");
 
-        V8Object foo = v8.getObject("foo");
+        V8Object foo = v8Context.getObject("foo");
 
         assertEquals(7.1, foo.getDouble("bar"), 0.0001);
         foo.close();
@@ -443,9 +429,9 @@ public class V8ObjectTest {
 
     @Test
     public void testNestedDouble() {
-        v8.executeVoidScript("foo = {bar: {key:6.1}}");
+        v8Context.executeVoidScript("foo = {bar: {key:6.1}}");
 
-        V8Object foo = v8.getObject("foo");
+        V8Object foo = v8Context.getObject("foo");
         V8Object bar = foo.getObject("bar");
 
         assertEquals(6.1, bar.getDouble("key"), 0.0001);
@@ -455,9 +441,9 @@ public class V8ObjectTest {
 
     @Test
     public void testGetBooleanV8Object() {
-        v8.executeVoidScript("foo = {bar: false}");
+        v8Context.executeVoidScript("foo = {bar: false}");
 
-        V8Object foo = v8.getObject("foo");
+        V8Object foo = v8Context.getObject("foo");
 
         assertFalse(foo.getBoolean("bar"));
         foo.close();
@@ -465,9 +451,9 @@ public class V8ObjectTest {
 
     @Test
     public void testNestedBoolean() {
-        v8.executeVoidScript("foo = {bar: {key:true}}");
+        v8Context.executeVoidScript("foo = {bar: {key:true}}");
 
-        V8Object foo = v8.getObject("foo");
+        V8Object foo = v8Context.getObject("foo");
         V8Object bar = foo.getObject("bar");
 
         assertTrue(bar.getBoolean("key"));
@@ -477,9 +463,9 @@ public class V8ObjectTest {
 
     @Test
     public void testGetStringV8Object() {
-        v8.executeVoidScript("foo = {bar: 'string'}");
+        v8Context.executeVoidScript("foo = {bar: 'string'}");
 
-        V8Object foo = v8.getObject("foo");
+        V8Object foo = v8Context.getObject("foo");
 
         assertEquals("string", foo.getString("bar"));
         foo.close();
@@ -487,9 +473,9 @@ public class V8ObjectTest {
 
     @Test
     public void testNestedString() {
-        v8.executeVoidScript("foo = {bar: {key:'string'}}");
+        v8Context.executeVoidScript("foo = {bar: {key:'string'}}");
 
-        V8Object foo = v8.getObject("foo");
+        V8Object foo = v8Context.getObject("foo");
         V8Object bar = foo.getObject("bar");
 
         assertEquals("string", bar.getString("key"));
@@ -500,9 +486,9 @@ public class V8ObjectTest {
     /*** Execute Object Function ***/
     @Test
     public void testObjectScript() {
-        v8.executeVoidScript("function foo() { return { x : 7 }} ");
+        v8Context.executeVoidScript("function foo() { return { x : 7 }} ");
 
-        V8Object result = v8.executeObjectFunction("foo", null);
+        V8Object result = v8Context.executeObjectFunction("foo", null);
 
         assertEquals(7, result.getInteger("x"));
         result.close();
@@ -511,7 +497,7 @@ public class V8ObjectTest {
     /*** Add Primitives ***/
     @Test
     public void testAddString() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("hello", "world");
 
         assertEquals("world", v8Object.getString("hello"));
@@ -520,7 +506,7 @@ public class V8ObjectTest {
 
     @Test(expected = V8ResultUndefined.class)
     public void testGetStringNotFound() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("hello", "string");
 
         try {
@@ -532,7 +518,7 @@ public class V8ObjectTest {
 
     @Test(expected = V8ResultUndefined.class)
     public void testGetStringNotString() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("hello", 7);
 
         try {
@@ -544,7 +530,7 @@ public class V8ObjectTest {
 
     @Test
     public void testAddInt() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("hello", 7);
 
         assertEquals(7, v8Object.getInteger("hello"));
@@ -553,7 +539,7 @@ public class V8ObjectTest {
 
     @Test(expected = V8ResultUndefined.class)
     public void testGetIntegerNotFound() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("hello", 7);
 
         try {
@@ -565,7 +551,7 @@ public class V8ObjectTest {
 
     @Test(expected = V8ResultUndefined.class)
     public void testGetIntegerNotInteger() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("hello", "string");
 
         try {
@@ -577,7 +563,7 @@ public class V8ObjectTest {
 
     @Test
     public void testAddDouble() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("hello", 3.14159);
 
         assertEquals(3.14159, v8Object.getDouble("hello"), 0.000001);
@@ -586,7 +572,7 @@ public class V8ObjectTest {
 
     @Test(expected = V8ResultUndefined.class)
     public void testGetDoubleNotFound() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("hello", 7.7);
 
         try {
@@ -598,7 +584,7 @@ public class V8ObjectTest {
 
     @Test(expected = V8ResultUndefined.class)
     public void testGetDoubleNotDouble() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("hello", "string");
 
         try {
@@ -610,7 +596,7 @@ public class V8ObjectTest {
 
     @Test
     public void testAddBoolean() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("hello", true);
 
         assertTrue(v8Object.getBoolean("hello"));
@@ -619,7 +605,7 @@ public class V8ObjectTest {
 
     @Test(expected = V8ResultUndefined.class)
     public void testGetBooleanNotFound() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("hello", false);
 
         try {
@@ -631,7 +617,7 @@ public class V8ObjectTest {
 
     @Test(expected = V8ResultUndefined.class)
     public void testGetBooleanNotBoolean() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("hello", "string");
 
         try {
@@ -643,11 +629,11 @@ public class V8ObjectTest {
 
     @Test
     public void testObjectChangedFromJS() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("hello", "world");
-        v8.add("object", v8Object);
+        v8Context.add("object", v8Object);
 
-        v8.executeVoidScript("object.world = 'goodbye'");
+        v8Context.executeVoidScript("object.world = 'goodbye'");
 
         assertEquals("goodbye", v8Object.getString("world"));
         v8Object.close();
@@ -655,9 +641,9 @@ public class V8ObjectTest {
 
     @Test
     public void testObjectChangedFromAPI() {
-        v8.executeVoidScript("object = {world : 'goodbye'}");
+        v8Context.executeVoidScript("object = {world : 'goodbye'}");
 
-        V8Object v8Object = v8.getObject("object").add("world", "hello");
+        V8Object v8Object = v8Context.getObject("object").add("world", "hello");
 
         assertEquals("hello", v8Object.getString("world"));
         v8Object.close();
@@ -665,7 +651,7 @@ public class V8ObjectTest {
 
     @Test
     public void testAddUndefined() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.addUndefined("foo");
 
         assertEquals("foo", v8Object.getKeys()[0]);
@@ -675,7 +661,7 @@ public class V8ObjectTest {
 
     @Test
     public void testAddNull() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.addNull("foo");
 
         assertEquals("foo", v8Object.getKeys()[0]);
@@ -686,7 +672,7 @@ public class V8ObjectTest {
 
     @Test
     public void testGetUndefined() {
-        V8Object v8Object = v8.executeObjectScript("x = {a : undefined}; x;");
+        V8Object v8Object = v8Context.executeObjectScript("x = {a : undefined}; x;");
 
         assertEquals(UNDEFINED, v8Object.getType("a"));
         v8Object.close();
@@ -703,12 +689,12 @@ public class V8ObjectTest {
     /*** Add Object ***/
     @Test
     public void testAddObject() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("hello", true);
 
-        v8.add("foo", v8Object);
+        v8Context.add("foo", v8Object);
 
-        V8Object foo = v8.getObject("foo");
+        V8Object foo = v8Context.getObject("foo");
         assertTrue(foo.getBoolean("hello"));
         foo.close();
         v8Object.close();
@@ -716,7 +702,7 @@ public class V8ObjectTest {
 
     @Test(expected = V8ResultUndefined.class)
     public void testGetObjectNotObject() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("hello", 7);
 
         try {
@@ -728,61 +714,61 @@ public class V8ObjectTest {
 
     @Test
     public void testAddObjectWithString() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("hello", "world");
 
-        v8.add("foo", v8Object);
+        v8Context.add("foo", v8Object);
 
-        String result = v8.executeStringScript("foo.hello");
+        String result = v8Context.executeStringScript("foo.hello");
         assertEquals("world", result);
         v8Object.close();
     }
 
     @Test
     public void testAddObjectWithBoolean() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("boolean", false);
 
-        v8.add("foo", v8Object);
+        v8Context.add("foo", v8Object);
 
-        boolean result = v8.executeBooleanScript("foo.boolean");
+        boolean result = v8Context.executeBooleanScript("foo.boolean");
         assertFalse(result);
         v8Object.close();
     }
 
     @Test
     public void testAddObjectWithInt() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("integer", 75);
 
-        v8.add("foo", v8Object);
+        v8Context.add("foo", v8Object);
 
-        int result = v8.executeIntegerScript("foo.integer");
+        int result = v8Context.executeIntegerScript("foo.integer");
         assertEquals(75, result);
         v8Object.close();
     }
 
     @Test
     public void testAddObjectWithDouble() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("double", 75.5);
 
-        v8.add("foo", v8Object);
+        v8Context.add("foo", v8Object);
 
-        double result = v8.executeDoubleScript("foo.double");
+        double result = v8Context.executeDoubleScript("foo.double");
         assertEquals(75.5, result, 0.000001);
         v8Object.close();
     }
 
     @Test
     public void testAddObjectToObject() {
-        V8Object nested = new V8Object(v8);
+        V8Object nested = new V8Object(v8Context);
         nested.add("foo", "bar");
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("nested", nested);
-        v8.add("foo", v8Object);
+        v8Context.add("foo", v8Object);
 
-        String result = v8.executeStringScript("foo.nested.foo");
+        String result = v8Context.executeStringScript("foo.nested.foo");
 
         assertEquals("bar", result);
         v8Object.close();
@@ -792,12 +778,12 @@ public class V8ObjectTest {
     /*** Add Array ***/
     @Test
     public void testAddArrayToObject() {
-        V8Array array = new V8Array(v8);
-        V8Object v8Object = new V8Object(v8);
+        V8Array array = new V8Array(v8Context);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("array", array);
-        v8.add("foo", v8Object);
+        v8Context.add("foo", v8Object);
 
-        V8Array result = v8.executeArrayScript("foo.array");
+        V8Array result = v8Context.executeArrayScript("foo.array");
 
         assertNotNull(result);
         v8Object.close();
@@ -807,7 +793,7 @@ public class V8ObjectTest {
 
     @Test(expected = V8ResultUndefined.class)
     public void testGetArrayNotArray() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("hello", 7);
 
         try {
@@ -820,23 +806,23 @@ public class V8ObjectTest {
     /*** Undefined ***/
     @Test
     public void testUndefinedObjectProperty() {
-        V8Object result = v8.getObject("object");
+        V8Object result = v8Context.getObject("object");
 
         assertTrue(result.isUndefined());
     }
 
     @Test
     public void testUndefinedEqual() {
-        V8Object undefined1 = v8.getObject("foo");
-        V8Object undefined2 = v8.getObject("bar");
+        V8Object undefined1 = v8Context.getObject("foo");
+        V8Object undefined2 = v8Context.getObject("bar");
 
         assertEquals(undefined1, undefined2);
     }
 
     @Test
     public void testUndefinedNotEquals() {
-        V8Object undefined = v8.getObject("foo");
-        V8Object object = new V8Object(v8);
+        V8Object undefined = v8Context.getObject("foo");
+        V8Object object = new V8Object(v8Context);
 
         assertNotEquals(undefined, object);
         assertNotEquals(object, undefined);
@@ -845,65 +831,65 @@ public class V8ObjectTest {
 
     @Test
     public void testStaticUndefined() {
-        V8Object undefined = v8.getObject("foo");
+        V8Object undefined = v8Context.getObject("foo");
 
         assertEquals(undefined, V8.getUndefined());
     }
 
     @Test
     public void testUndefinedHashCodeEquals() {
-        V8Object undefined1 = v8.getObject("foo");
-        V8Object undefined2 = v8.getObject("bar");
+        V8Object undefined1 = v8Context.getObject("foo");
+        V8Object undefined2 = v8Context.getObject("bar");
 
         assertEquals(undefined1.hashCode(), undefined2.hashCode());
     }
 
     @Test
     public void testUndefinedToString() {
-        V8Object undefined = v8.getObject("object");
+        V8Object undefined = v8Context.getObject("object");
 
         assertEquals("undefined", undefined.toString());
     }
 
     @Test
     public void testUndefinedRelease() {
-        V8Object undefined = v8.getObject("object");
+        V8Object undefined = v8Context.getObject("object");
 
         undefined.close();
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testAddIntUndefined() {
-        V8Object undefined = v8.getObject("object");
+        V8Object undefined = v8Context.getObject("object");
 
         undefined.add("foo", 7);
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testAddBooleanUndefined() {
-        V8Object undefined = v8.getObject("object");
+        V8Object undefined = v8Context.getObject("object");
 
         undefined.add("foo", false);
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testAddStringUndefined() {
-        V8Object undefined = v8.getObject("object");
+        V8Object undefined = v8Context.getObject("object");
 
         undefined.add("foo", "bar");
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testAddDoubleUndefined() {
-        V8Object undefined = v8.getObject("object");
+        V8Object undefined = v8Context.getObject("object");
 
         undefined.add("foo", 7.7);
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testAddObjectUndefined() {
-        V8Object undefined = v8.getObject("object");
-        V8Object object = new V8Object(v8);
+        V8Object undefined = v8Context.getObject("object");
+        V8Object object = new V8Object(v8Context);
 
         try {
             undefined.add("foo", object);
@@ -914,8 +900,8 @@ public class V8ObjectTest {
 
     @Test(expected = UnsupportedOperationException.class)
     public void testAddArrayUndefined() {
-        V8Object undefined = v8.getObject("object");
-        V8Array array = new V8Array(v8);
+        V8Object undefined = v8Context.getObject("object");
+        V8Array array = new V8Array(v8Context);
 
         try {
             undefined.add("foo", array);
@@ -926,127 +912,127 @@ public class V8ObjectTest {
 
     @Test(expected = UnsupportedOperationException.class)
     public void testAddUndefinedUndefined() {
-        V8Object undefined = v8.getObject("object");
+        V8Object undefined = v8Context.getObject("object");
 
         undefined.addUndefined("foo");
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testContainsUndefined() {
-        V8Object undefined = v8.getObject("object");
+        V8Object undefined = v8Context.getObject("object");
 
         undefined.contains("foo");
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testExecuteIntFunctionUndefined() {
-        V8Object undefined = v8.getObject("object");
+        V8Object undefined = v8Context.getObject("object");
 
         undefined.executeIntegerFunction("foo", null);
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testExecuteBooleanFunctionUndefined() {
-        V8Object undefined = v8.getObject("object");
+        V8Object undefined = v8Context.getObject("object");
 
         undefined.executeBooleanFunction("foo", null);
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testExecuteDoubleFunctionUndefined() {
-        V8Object undefined = v8.getObject("object");
+        V8Object undefined = v8Context.getObject("object");
 
         undefined.executeDoubleFunction("foo", null);
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testExecuteStringFunctionUndefined() {
-        V8Object undefined = v8.getObject("object");
+        V8Object undefined = v8Context.getObject("object");
 
         undefined.executeStringFunction("foo", null);
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testExecuteObjectFunctionUndefined() {
-        V8Object undefined = v8.getObject("object");
+        V8Object undefined = v8Context.getObject("object");
 
         undefined.executeObjectFunction("foo", null);
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testExecuteArrayFunctionUndefined() {
-        V8Object undefined = v8.getObject("object");
+        V8Object undefined = v8Context.getObject("object");
 
         undefined.executeArrayFunction("foo", null);
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testExecuteVoidFunctionUndefined() {
-        V8Object undefined = v8.getObject("object");
+        V8Object undefined = v8Context.getObject("object");
 
         undefined.executeVoidFunction("foo", null);
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testGetIntegerUndefined() {
-        V8Object undefined = v8.getObject("object");
+        V8Object undefined = v8Context.getObject("object");
 
         undefined.getInteger("foo");
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testGetBooleanUndefined() {
-        V8Object undefined = v8.getObject("object");
+        V8Object undefined = v8Context.getObject("object");
 
         undefined.getBoolean("foo");
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testGetDoubleUndefined() {
-        V8Object undefined = v8.getObject("object");
+        V8Object undefined = v8Context.getObject("object");
 
         undefined.getDouble("foo");
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testGetStringUndefined() {
-        V8Object undefined = v8.getObject("object");
+        V8Object undefined = v8Context.getObject("object");
 
         undefined.getString("foo");
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testGetObjectUndefined() {
-        V8Object undefined = v8.getObject("object");
+        V8Object undefined = v8Context.getObject("object");
 
         undefined.getObject("foo");
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testGetArrayUndefined() {
-        V8Object undefined = v8.getObject("object");
+        V8Object undefined = v8Context.getObject("object");
 
         undefined.getArray("foo");
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testGetKeysUndefined() {
-        V8Object undefined = v8.getObject("object");
+        V8Object undefined = v8Context.getObject("object");
 
         undefined.getKeys();
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testGetTypeUndefined() {
-        V8Object undefined = v8.getObject("object");
+        V8Object undefined = v8Context.getObject("object");
 
         undefined.getType("bar");
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testSetPrototype() {
-        V8Object undefined = v8.getObject("object");
-        V8Object prototype = new V8Object(v8);
+        V8Object undefined = v8Context.getObject("object");
+        V8Object prototype = new V8Object(v8Context);
 
         try {
             undefined.setPrototype(prototype);
@@ -1057,28 +1043,28 @@ public class V8ObjectTest {
 
     @Test(expected = UnsupportedOperationException.class)
     public void testRegisterJavaMethod() {
-        V8Object undefined = v8.getObject("object");
+        V8Object undefined = v8Context.getObject("object");
 
         undefined.registerJavaMethod(mock(JavaCallback.class), "name");
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testRegisterVoidJavaMethod() {
-        V8Object undefined = v8.getObject("object");
+        V8Object undefined = v8Context.getObject("object");
 
         undefined.registerJavaMethod(mock(JavaVoidCallback.class), "name");
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testRegisterAnyJavaMethod() {
-        V8Object undefined = v8.getObject("object");
+        V8Object undefined = v8Context.getObject("object");
 
         undefined.registerJavaMethod(new Object(), "toString", "toString", new Class<?>[0]);
     }
 
     @Test
     public void testAddUndefinedAsObject() {
-        V8Object object = new V8Object(v8);
+        V8Object object = new V8Object(v8Context);
         object.add("foo", V8.getUndefined());
 
         assertEquals(V8.getUndefined(), object.getObject("foo"));
@@ -1087,7 +1073,7 @@ public class V8ObjectTest {
 
     @Test
     public void testAddUndefinedIsUndefined() {
-        V8Object object = new V8Object(v8);
+        V8Object object = new V8Object(v8Context);
         object.add("foo", V8.getUndefined());
 
         assertEquals(UNDEFINED, object.getType("foo"));
@@ -1097,14 +1083,14 @@ public class V8ObjectTest {
     /*** Null ***/
     @Test
     public void testStringIsNull() {
-        v8.add("nullString", (V8Object) null);
+        v8Context.add("nullString", (V8Object) null);
 
-        assertNull(v8.getString("nullString"));
+        assertNull(v8Context.getString("nullString"));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testGetTypeNull() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         try {
             v8Object.getType(null);
         } finally {
@@ -1114,7 +1100,7 @@ public class V8ObjectTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testContainsNull() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         try {
             v8Object.contains(null);
         } finally {
@@ -1124,7 +1110,7 @@ public class V8ObjectTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testGetNullKey() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         try {
             v8Object.get(null);
         } finally {
@@ -1134,7 +1120,7 @@ public class V8ObjectTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testGetNullKey_Integer() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         try {
             v8Object.getInteger(null);
         } finally {
@@ -1144,7 +1130,7 @@ public class V8ObjectTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testGetNullKey_String() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         try {
             v8Object.getString(null);
         } finally {
@@ -1154,7 +1140,7 @@ public class V8ObjectTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testGetNullKey_Double() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         try {
             v8Object.getDouble(null);
         } finally {
@@ -1164,7 +1150,7 @@ public class V8ObjectTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testGetNullKey_Boolean() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         try {
             v8Object.getBoolean(null);
         } finally {
@@ -1174,7 +1160,7 @@ public class V8ObjectTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testGetNullKey_Object() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         try {
             v8Object.getObject(null);
         } finally {
@@ -1184,7 +1170,7 @@ public class V8ObjectTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testGetNullKey_Array() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         try {
             v8Object.getArray(null);
         } finally {
@@ -1194,12 +1180,12 @@ public class V8ObjectTest {
 
     @Test
     public void testStringScript() {
-        assertNull(v8.executeStringScript("null;"));
+        assertNull(v8Context.executeStringScript("null;"));
     }
 
     @Test
     public void testIsNull() {
-        V8Object v8Object = v8.executeObjectScript("x = {a : null}; x;");
+        V8Object v8Object = v8Context.executeObjectScript("x = {a : null}; x;");
 
         assertEquals(NULL, v8Object.getType("a"));
         v8Object.close();
@@ -1207,7 +1193,7 @@ public class V8ObjectTest {
 
     @Test
     public void testGetNull() {
-        V8Object v8Object = v8.executeObjectScript("x = {a : null}; x;");
+        V8Object v8Object = v8Context.executeObjectScript("x = {a : null}; x;");
 
         assertNull(v8Object.getObject("a"));
         v8Object.close();
@@ -1215,7 +1201,7 @@ public class V8ObjectTest {
 
     @Test
     public void testAddNullAsObject() {
-        V8Object object = new V8Object(v8);
+        V8Object object = new V8Object(v8Context);
         object.add("foo", (V8Object) null);
 
         assertNull(object.getObject("foo"));
@@ -1224,7 +1210,7 @@ public class V8ObjectTest {
 
     @Test
     public void testAddNullAsString() {
-        V8Object object = new V8Object(v8);
+        V8Object object = new V8Object(v8Context);
         object.add("foo", (String) null);
 
         assertNull(object.getObject("foo"));
@@ -1233,7 +1219,7 @@ public class V8ObjectTest {
 
     @Test
     public void testAddNullAsArray() {
-        V8Object object = new V8Object(v8);
+        V8Object object = new V8Object(v8Context);
         object.add("foo", (V8Array) null);
 
         assertNull(object.getArray("foo"));
@@ -1243,7 +1229,7 @@ public class V8ObjectTest {
     /*** Test Types ***/
     @Test
     public void testGetTypeInt() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("key", 1);
 
         assertEquals(INTEGER, v8Object.getType("key"));
@@ -1252,7 +1238,7 @@ public class V8ObjectTest {
 
     @Test
     public void testGetTypeDouble() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("key", 1.1);
 
         assertEquals(DOUBLE, v8Object.getType("key"));
@@ -1261,7 +1247,7 @@ public class V8ObjectTest {
 
     @Test
     public void testGetTypeString() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("key", "String");
 
         assertEquals(STRING, v8Object.getType("key"));
@@ -1270,7 +1256,7 @@ public class V8ObjectTest {
 
     @Test
     public void testGetTypeBoolean() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("key", false);
 
         assertEquals(BOOLEAN, v8Object.getType("key"));
@@ -1279,8 +1265,8 @@ public class V8ObjectTest {
 
     @Test
     public void testGetTypeArray() {
-        V8Array value = new V8Array(v8);
-        V8Object v8Object = new V8Object(v8);
+        V8Array value = new V8Array(v8Context);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("key", value);
 
         assertEquals(V8_ARRAY, v8Object.getType("key"));
@@ -1290,8 +1276,8 @@ public class V8ObjectTest {
 
     @Test
     public void testGetTypeObject() {
-        V8Object value = new V8Object(v8);
-        V8Object v8Object = new V8Object(v8);
+        V8Object value = new V8Object(v8Context);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("key", value);
 
         assertEquals(V8_OBJECT, v8Object.getType("key"));
@@ -1301,9 +1287,9 @@ public class V8ObjectTest {
 
     @Test
     public void testGetTypeFunction() {
-        v8.executeVoidScript("var foo = function() {};");
-        V8Object function = v8.getObject("foo");
-        V8Object v8Object = new V8Object(v8);
+        v8Context.executeVoidScript("var foo = function() {};");
+        V8Object function = v8Context.getObject("foo");
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("key", function);
 
         int type = v8Object.getType("key");
@@ -1315,7 +1301,7 @@ public class V8ObjectTest {
 
     @Test
     public void testGetKeysOnObject() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("integer", 1).add("double", 1.1).add("boolean", true)
                         .add("string", "hello, world!");
 
@@ -1328,7 +1314,7 @@ public class V8ObjectTest {
 
     @Test
     public void testGetTypeKeyDoesNotExist() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
 
         int result = v8Object.getType("key");
 
@@ -1346,9 +1332,9 @@ public class V8ObjectTest {
                 called[0] = true;
             }
         };
-        v8.registerJavaMethod(r, "run", "run", new Class<?>[0]);
+        v8Context.registerJavaMethod(r, "run", "run", new Class<?>[0]);
 
-        v8.executeVoidFunction("run", null);
+        v8Context.executeVoidFunction("run", null);
 
         assertTrue(called[0]);
     }
@@ -1356,14 +1342,14 @@ public class V8ObjectTest {
     /*** Manipulate Prototypes ***/
     @Test
     public void testSetPrototypeOfObject() {
-        v8.executeVoidScript("function Mammal(){}; Mammal.prototype.breathe=function(){return 'breathe';};");
-        V8Object mammal = v8.executeObjectScript("new Mammal();");
-        V8Object cat = new V8Object(v8);
+        v8Context.executeVoidScript("function Mammal(){}; Mammal.prototype.breathe=function(){return 'breathe';};");
+        V8Object mammal = v8Context.executeObjectScript("new Mammal();");
+        V8Object cat = new V8Object(v8Context);
         cat.setPrototype(mammal);
 
-        v8.add("cat", cat);
+        v8Context.add("cat", cat);
 
-        assertTrue(v8.executeBooleanScript("cat instanceof Mammal"));
+        assertTrue(v8Context.executeBooleanScript("cat instanceof Mammal"));
         assertEquals("breathe", cat.executeStringFunction("breathe", null));
         cat.close();
         mammal.close();
@@ -1371,9 +1357,9 @@ public class V8ObjectTest {
 
     @Test
     public void testGetKeysDoesNotIncludePrototypeKeys() {
-        v8.executeVoidScript("function Mammal(){}; Mammal.prototype.breathe=function(){return 'breathe';};");
-        V8Object mammal = v8.executeObjectScript("new Mammal();");
-        V8Object cat = new V8Object(v8);
+        v8Context.executeVoidScript("function Mammal(){}; Mammal.prototype.breathe=function(){return 'breathe';};");
+        V8Object mammal = v8Context.executeObjectScript("new Mammal();");
+        V8Object cat = new V8Object(v8Context);
         cat.setPrototype(mammal);
 
         String[] keys = cat.getKeys();
@@ -1388,33 +1374,33 @@ public class V8ObjectTest {
 
     @Test
     public void testChangePrototypeAfterCreation() {
-        v8.executeVoidScript("function Mammal(){};");
-        V8Object mammal = v8.executeObjectScript("new Mammal();");
-        V8Object cat = new V8Object(v8);
-        v8.add("cat", cat);
-        v8.add("mammal", mammal);
-        assertFalse(v8.executeBooleanScript("cat instanceof Mammal"));
+        v8Context.executeVoidScript("function Mammal(){};");
+        V8Object mammal = v8Context.executeObjectScript("new Mammal();");
+        V8Object cat = new V8Object(v8Context);
+        v8Context.add("cat", cat);
+        v8Context.add("mammal", mammal);
+        assertFalse(v8Context.executeBooleanScript("cat instanceof Mammal"));
 
         cat.setPrototype(mammal);
 
-        assertTrue(v8.executeBooleanScript("cat instanceof Mammal"));
-        assertTrue(v8.executeBooleanScript("cat.__proto__ === mammal"));
+        assertTrue(v8Context.executeBooleanScript("cat instanceof Mammal"));
+        assertTrue(v8Context.executeBooleanScript("cat.__proto__ === mammal"));
         cat.close();
         mammal.close();
     }
 
     @Test
     public void testChangePrototypePropertiesAfterCreation() {
-        v8.executeVoidScript("function Mammal(){};");
-        V8Object mammal = v8.executeObjectScript("new Mammal();");
-        V8Object cat = new V8Object(v8);
+        v8Context.executeVoidScript("function Mammal(){};");
+        V8Object mammal = v8Context.executeObjectScript("new Mammal();");
+        V8Object cat = new V8Object(v8Context);
         cat.setPrototype(mammal);
-        v8.add("cat", cat);
-        assertFalse(v8.executeBooleanScript("'breathe' in cat"));
+        v8Context.add("cat", cat);
+        assertFalse(v8Context.executeBooleanScript("'breathe' in cat"));
 
-        v8.executeVoidScript("Mammal.prototype.breathe=function(){return 'breathe';};");
+        v8Context.executeVoidScript("Mammal.prototype.breathe=function(){return 'breathe';};");
 
-        assertTrue(v8.executeBooleanScript("'breathe' in cat"));
+        assertTrue(v8Context.executeBooleanScript("'breathe' in cat"));
         cat.close();
         mammal.close();
     }
@@ -1422,9 +1408,9 @@ public class V8ObjectTest {
     /*** Equals ***/
     @Test
     public void testEquals() {
-        v8.executeVoidScript("o = {}");
-        V8Object o1 = v8.executeObjectScript("o");
-        V8Object o2 = v8.executeObjectScript("o");
+        v8Context.executeVoidScript("o = {}");
+        V8Object o1 = v8Context.executeObjectScript("o");
+        V8Object o2 = v8Context.executeObjectScript("o");
 
         assertEquals(o1, o2);
         assertNotSame(o1, o2);
@@ -1435,12 +1421,12 @@ public class V8ObjectTest {
 
     @Test
     public void testEqualsPassByReference() {
-        v8.executeVoidScript("o = {}");
-        v8.executeVoidScript("function ident(x){return x;}");
-        V8Object o1 = v8.executeObjectScript("o");
-        V8Array parameters = new V8Array(v8);
+        v8Context.executeVoidScript("o = {}");
+        v8Context.executeVoidScript("function ident(x){return x;}");
+        V8Object o1 = v8Context.executeObjectScript("o");
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(o1);
-        V8Object o2 = v8.executeObjectFunction("ident", parameters);
+        V8Object o2 = v8Context.executeObjectFunction("ident", parameters);
 
         assertEquals(o1, o2);
         assertNotSame(o1, o2);
@@ -1452,10 +1438,10 @@ public class V8ObjectTest {
 
     @Test
     public void testEqualsDifferenceReference() {
-        v8.executeVoidScript("a = {}; b=a;");
-        v8.executeVoidScript("function ident(x){return x;}");
-        V8Object o1 = v8.executeObjectScript("a");
-        V8Object o2 = v8.executeObjectScript("b");
+        v8Context.executeVoidScript("a = {}; b=a;");
+        v8Context.executeVoidScript("function ident(x){return x;}");
+        V8Object o1 = v8Context.executeObjectScript("a");
+        V8Object o2 = v8Context.executeObjectScript("b");
 
         assertEquals(o1, o2);
         assertNotSame(o1, o2);
@@ -1466,9 +1452,9 @@ public class V8ObjectTest {
 
     @Test
     public void testEqualHash() {
-        v8.executeVoidScript("o = {}");
-        V8Object o1 = v8.executeObjectScript("o");
-        V8Object o2 = v8.executeObjectScript("o");
+        v8Context.executeVoidScript("o = {}");
+        V8Object o1 = v8Context.executeObjectScript("o");
+        V8Object o2 = v8Context.executeObjectScript("o");
 
         assertEquals(o1.hashCode(), o2.hashCode());
 
@@ -1478,9 +1464,9 @@ public class V8ObjectTest {
 
     @Test
     public void testNotEquals() {
-        v8.executeVoidScript("a = {}; b = {};");
-        V8Object o1 = v8.executeObjectScript("a");
-        V8Object o2 = v8.executeObjectScript("b");
+        v8Context.executeVoidScript("a = {}; b = {};");
+        V8Object o1 = v8Context.executeObjectScript("a");
+        V8Object o2 = v8Context.executeObjectScript("b");
 
         assertNotEquals(o1, o2);
 
@@ -1490,8 +1476,8 @@ public class V8ObjectTest {
 
     @Test
     public void testNotEqualsNull() {
-        v8.executeVoidScript("a = {};");
-        V8Object o1 = v8.executeObjectScript("a");
+        v8Context.executeVoidScript("a = {};");
+        V8Object o1 = v8Context.executeObjectScript("a");
 
         assertNotEquals(o1, null);
 
@@ -1500,8 +1486,8 @@ public class V8ObjectTest {
 
     @Test
     public void testNotEqualsNull2() {
-        v8.executeVoidScript("a = {};");
-        V8Object o1 = v8.executeObjectScript("a");
+        v8Context.executeVoidScript("a = {};");
+        V8Object o1 = v8Context.executeObjectScript("a");
 
         assertNotEquals(null, o1);
 
@@ -1510,9 +1496,9 @@ public class V8ObjectTest {
 
     @Test
     public void testNotEqualHash() {
-        v8.executeVoidScript("a = {}; b = {};");
-        V8Object o1 = v8.executeObjectScript("a");
-        V8Object o2 = v8.executeObjectScript("b");
+        v8Context.executeVoidScript("a = {}; b = {};");
+        V8Object o1 = v8Context.executeObjectScript("a");
+        V8Object o2 = v8Context.executeObjectScript("b");
 
         assertNotEquals(o1.hashCode(), o2.hashCode());
 
@@ -1522,7 +1508,7 @@ public class V8ObjectTest {
 
     @Test
     public void testHashStable() {
-        V8Object a = v8.executeObjectScript("a = []; a");
+        V8Object a = v8Context.executeObjectScript("a = []; a");
         int hash1 = a.hashCode();
         int hash2 = a.add("1", true).add("2", false).add("3", 123).hashCode();
 
@@ -1535,7 +1521,7 @@ public class V8ObjectTest {
         String result = "function (){\n  1+2;\n}";
         String script = "var func = " + result + "\n"
                 + "func;\n";
-        V8Object function = v8.executeObjectScript(script);
+        V8Object function = v8Context.executeObjectScript(script);
 
         assertEquals(result, function.toString());
         function.close();
@@ -1543,7 +1529,7 @@ public class V8ObjectTest {
 
     @Test
     public void testDateToString() {
-        V8Object a = v8.executeObjectScript("new Date(2014, 9, 1, 10, 0, 0, 0)");
+        V8Object a = v8Context.executeObjectScript("new Date(2014, 9, 1, 10, 0, 0, 0)");
 
         assertTrue(a.toString().startsWith("Wed Oct 01 2014 10:00:00"));
         a.close();
@@ -1551,7 +1537,7 @@ public class V8ObjectTest {
 
     @Test
     public void testArrayToString() {
-        V8Object a = v8.executeObjectScript("x = [1,2,3]; x;");
+        V8Object a = v8Context.executeObjectScript("x = [1,2,3]; x;");
 
         assertEquals("1,2,3", a.toString());
         a.close();
@@ -1559,7 +1545,7 @@ public class V8ObjectTest {
 
     @Test
     public void testToString() {
-        V8Object a = v8.executeObjectScript("x = {a:'b'}; x;");
+        V8Object a = v8Context.executeObjectScript("x = {a:'b'}; x;");
 
         assertEquals("[object Object]", a.toString());
         a.close();
@@ -1571,16 +1557,16 @@ public class V8ObjectTest {
 
     @Test
     public void testToStringInCallback() {
-        V8Object a = v8.executeObjectScript("x = [1, 'test', false]; x;");
-        v8.registerJavaMethod(this, "runMe", "runMe", new Class<?>[] { Object.class });
+        V8Object a = v8Context.executeObjectScript("x = [1, 'test', false]; x;");
+        v8Context.registerJavaMethod(this, "runMe", "runMe", new Class<?>[] { Object.class });
 
-        v8.executeVoidScript("runMe(x);");
+        v8Context.executeVoidScript("runMe(x);");
         a.close();
     }
 
     @Test
     public void testV8ObjectTwinEqual() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
 
         V8Object twin = v8Object.twin();
 
@@ -1593,7 +1579,7 @@ public class V8ObjectTest {
 
     @Test
     public void testV8ObjectTwinStrictEquals() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
 
         V8Object twin = v8Object.twin();
 
@@ -1606,7 +1592,7 @@ public class V8ObjectTest {
 
     @Test
     public void testV8ObjectTwinSameHashCode() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
 
         V8Object twin = v8Object.twin();
 
@@ -1617,7 +1603,7 @@ public class V8ObjectTest {
 
     @Test
     public void testTwinIsObject() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
 
         V8Object twin = v8Object.twin();
 
@@ -1628,7 +1614,7 @@ public class V8ObjectTest {
 
     @Test
     public void testTwinIsArray() {
-        V8Array v8Object = new V8Array(v8);
+        V8Array v8Object = new V8Array(v8Context);
 
         V8Array twin = v8Object.twin();
 
@@ -1639,7 +1625,7 @@ public class V8ObjectTest {
 
     @Test
     public void testTwinIsArrayBuffer() {
-        V8ArrayBuffer arrayBuffer = (V8ArrayBuffer) v8.executeScript("var buf = new ArrayBuffer(100);  buf;");
+        V8ArrayBuffer arrayBuffer = (V8ArrayBuffer) v8Context.executeScript("var buf = new ArrayBuffer(100);  buf;");
 
         V8ArrayBuffer twin = arrayBuffer.twin();
 
@@ -1650,7 +1636,7 @@ public class V8ObjectTest {
 
     @Test
     public void testArrayBufferTwinHasSameBackingStore() {
-        V8ArrayBuffer arrayBuffer = (V8ArrayBuffer) v8.executeScript("var buf = new ArrayBuffer(100);  buf;");
+        V8ArrayBuffer arrayBuffer = (V8ArrayBuffer) v8Context.executeScript("var buf = new ArrayBuffer(100);  buf;");
 
         V8ArrayBuffer twin = arrayBuffer.twin();
 
@@ -1661,8 +1647,8 @@ public class V8ObjectTest {
 
     @Test
     public void testTwinIsFunction() {
-        v8.executeVoidScript("function add(x, y) {return x+y;}");
-        V8Function v8Object = (V8Function) v8.getObject("add");
+        v8Context.executeVoidScript("function add(x, y) {return x+y;}");
+        V8Function v8Object = (V8Function) v8Context.getObject("add");
 
         V8Function twin = v8Object.twin();
 
@@ -1684,7 +1670,7 @@ public class V8ObjectTest {
 
     @Test
     public void testReleaseTwinDoesNotReleaseOriginal() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         V8Value twin = v8Object.twin();
 
         twin.close();
@@ -1695,7 +1681,7 @@ public class V8ObjectTest {
 
     @Test
     public void testReleaseObjectDoesNotReleaseTwin() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         V8Value twin = v8Object.twin();
 
         v8Object.close();
@@ -1706,7 +1692,7 @@ public class V8ObjectTest {
 
     @Test
     public void testTwinMimicsObject() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         V8Object twin = v8Object.twin();
 
         v8Object.add("foo", "bar");
@@ -1718,7 +1704,7 @@ public class V8ObjectTest {
 
     @Test
     public void testUnicodeValue() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("foo", "\uD83C\uDF89");
 
         assertEquals("\uD83C\uDF89", v8Object.get("foo"));
@@ -1728,7 +1714,7 @@ public class V8ObjectTest {
 
     @Test
     public void testUnicodeValue_Char() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("foo", "\uD83C\uDF89");
 
         assertEquals("🎉", v8Object.get("foo"));
@@ -1738,7 +1724,7 @@ public class V8ObjectTest {
 
     @Test
     public void testUnicodeValue_SetChar() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("foo", "🎉");
 
         assertEquals("\uD83C\uDF89", v8Object.get("foo"));
@@ -1748,7 +1734,7 @@ public class V8ObjectTest {
 
     @Test
     public void testUnicodeKey() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("\uD83C\uDF89", "foo");
 
         assertEquals("foo", v8Object.get("\uD83C\uDF89"));
@@ -1758,7 +1744,7 @@ public class V8ObjectTest {
 
     @Test
     public void testUnicodeKeyWithChar() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("\uD83C\uDF89", "foo");
 
         assertEquals("foo", v8Object.get("🎉"));
@@ -1768,7 +1754,7 @@ public class V8ObjectTest {
 
     @Test
     public void testUnicodeKeyGetKeys() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("\uD83C\uDF89", "foo");
         assertEquals("🎉", v8Object.getKeys()[0]);
 
@@ -1777,7 +1763,7 @@ public class V8ObjectTest {
 
     @Test
     public void testSetUnicodeKeyWithChar() {
-        V8Object v8Object = new V8Object(v8);
+        V8Object v8Object = new V8Object(v8Context);
         v8Object.add("🎉", "foo");
 
         assertEquals("foo", v8Object.get("\uD83C\uDF89"));
@@ -1787,47 +1773,47 @@ public class V8ObjectTest {
 
     @Test
     public void testGetType_V8Object() {
-        V8Object object = new V8Object(v8);
+        V8Object object = new V8Object(v8Context);
 
-        assertEquals(V8Value.V8_OBJECT, object.getV8Type());
+        assertEquals(V8API.V8_OBJECT, object.getV8Type());
         object.close();
     }
 
     @Test
     public void testGetType_V8Array() {
-        V8Array array = new V8Array(v8);
+        V8Array array = new V8Array(v8Context);
 
-        assertEquals(V8Value.V8_ARRAY, array.getV8Type());
+        assertEquals(V8API.V8_ARRAY, array.getV8Type());
         array.close();
     }
 
     @Test
     public void testGetType_V8Function() {
-        V8Function function = new V8Function(v8, mock(JavaCallback.class));
+        V8Function function = new V8Function(v8Context, mock(JavaCallback.class));
 
-        assertEquals(V8Value.V8_FUNCTION, function.getV8Type());
+        assertEquals(V8API.V8_FUNCTION, function.getV8Type());
         function.close();
     }
 
     @Test
     public void testGetType_TypedArray() {
-        V8ArrayBuffer buffer = new V8ArrayBuffer(v8, 64);
-        V8Array array = new V8TypedArray(v8, buffer, V8Value.INT_8_ARRAY, 0, 8);
+        V8ArrayBuffer buffer = new V8ArrayBuffer(v8Context, 64);
+        V8Array array = new V8TypedArray(v8Context, buffer, V8API.INT_8_ARRAY, 0, 8);
 
-        assertEquals(V8Value.V8_TYPED_ARRAY, array.getV8Type());
+        assertEquals(V8API.V8_TYPED_ARRAY, array.getV8Type());
         array.close();
         buffer.close();
     }
 
     @Test
     public void testGetType_Undefined() {
-        assertEquals(V8Value.UNDEFINED, V8.getUndefined().getV8Type());
+        assertEquals(V8API.UNDEFINED, V8.getUndefined().getV8Type());
     }
 
     @SuppressWarnings("resource")
     @Test
     public void testWeakReferenceReducesObjectCount() {
-        new V8Object(v8).setWeak();
+        new V8Object(v8Context).setWeak();
 
         assertEquals(0, v8.getObjectReferenceCount());
     }
@@ -1835,7 +1821,7 @@ public class V8ObjectTest {
     @SuppressWarnings("resource")
     @Test
     public void testSetWeakMakesObjectWeak() {
-        V8Value object = new V8Object(v8).setWeak();
+        V8Value object = new V8Object(v8Context).setWeak();
 
         assertTrue(object.isWeak());
     }
@@ -1843,7 +1829,7 @@ public class V8ObjectTest {
     @SuppressWarnings("resource")
     @Test
     public void testClearWeakMakesObjectWeak() {
-        V8Value object = new V8Object(v8).setWeak().clearWeak();
+        V8Value object = new V8Object(v8Context).setWeak().clearWeak();
 
         assertFalse(object.isWeak());
         object.close();
@@ -1851,8 +1837,8 @@ public class V8ObjectTest {
 
     @Test
     public void testConstructorNameFunction() {
-        v8.executeVoidScript("function Foo() {} var foo = new Foo();");
-        V8Object object = (V8Object) v8.get("foo");
+        v8Context.executeVoidScript("function Foo() {} var foo = new Foo();");
+        V8Object object = (V8Object) v8Context.get("foo");
 
         assertEquals(object.getConstructorName(), "Foo");
 
@@ -1861,8 +1847,8 @@ public class V8ObjectTest {
 
     @Test
     public void testConstructorNameObject() {
-        v8.executeVoidScript("var foo = new Object()");
-        V8Object object = (V8Object) v8.get("foo");
+        v8Context.executeVoidScript("var foo = new Object()");
+        V8Object object = (V8Object) v8Context.get("foo");
 
         assertEquals(object.getConstructorName(), "Object");
 
@@ -1871,8 +1857,8 @@ public class V8ObjectTest {
 
     @Test
     public void testConstructorNameObject_2() {
-        v8.executeVoidScript("var foo = {}");
-        V8Object object = (V8Object) v8.get("foo");
+        v8Context.executeVoidScript("var foo = {}");
+        V8Object object = (V8Object) v8Context.get("foo");
 
         assertEquals(object.getConstructorName(), "Object");
 
@@ -1881,8 +1867,8 @@ public class V8ObjectTest {
 
     @Test
     public void testConstructorNameArray() {
-        v8.executeVoidScript("var foo = []");
-        V8Object object = (V8Object) v8.get("foo");
+        v8Context.executeVoidScript("var foo = []");
+        V8Object object = (V8Object) v8Context.get("foo");
 
         assertEquals(object.getConstructorName(), "Array");
 
@@ -1891,8 +1877,8 @@ public class V8ObjectTest {
 
     @Test
     public void testConstructorNameTypedArray() {
-        v8.executeVoidScript("var foo = new Uint8Array()");
-        V8Object object = (V8Object) v8.get("foo");
+        v8Context.executeVoidScript("var foo = new Uint8Array()");
+        V8Object object = (V8Object) v8Context.get("foo");
 
         assertEquals(object.getConstructorName(), "Uint8Array");
 
@@ -1901,8 +1887,8 @@ public class V8ObjectTest {
 
     @Test
     public void testConstructorNameArrayBuffer() {
-        v8.executeVoidScript("var foo = new ArrayBuffer()");
-        V8ArrayBuffer object = (V8ArrayBuffer) v8.get("foo");
+        v8Context.executeVoidScript("var foo = new ArrayBuffer()");
+        V8ArrayBuffer object = (V8ArrayBuffer) v8Context.get("foo");
 
         assertEquals(object.getConstructorName(), "ArrayBuffer");
 
@@ -1911,8 +1897,8 @@ public class V8ObjectTest {
 
     @Test
     public void testConstructorNameMap() {
-        v8.executeVoidScript("var foo = new Map()");
-        V8Object object = (V8Object) v8.get("foo");
+        v8Context.executeVoidScript("var foo = new Map()");
+        V8Object object = (V8Object) v8Context.get("foo");
 
         assertEquals(object.getConstructorName(), "Map");
 

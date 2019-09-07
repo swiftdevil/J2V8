@@ -10,14 +10,11 @@
  ******************************************************************************/
 package com.eclipsesource.v8;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 public class V8ScriptExecutionExceptionTest {
 
@@ -33,11 +30,13 @@ public class V8ScriptExecutionExceptionTest {
                                                                      + "called( x );\n";
 
     private V8                         v8;
+    private V8Context                  v8Context;
 
     @Before
-    public void seutp() {
+    public void setup() {
         exception = createV8ScriptExecutionException();
         v8 = V8.createV8Runtime();
+        v8Context = v8.getDefaultContext();
     }
 
     @After
@@ -120,8 +119,8 @@ public class V8ScriptExecutionExceptionTest {
     @Test(expected = V8ScriptExecutionException.class)
     public void testExceptionInVoidJavaCall() {
         try {
-            v8.registerJavaMethod(this, "voidCallbackWithException", "voidCallback", new Class<?>[] {});
-            v8.executeVoidScript("voidCallback()");
+            v8Context.registerJavaMethod(this, "voidCallbackWithException", "voidCallback", new Class<?>[] {});
+            v8Context.executeVoidScript("voidCallback()");
         } catch (V8ScriptExecutionException e) {
             assertEquals("Test Exception", e.getJSMessage());
             assertTrue(e.getCause() instanceof RuntimeException);
@@ -132,8 +131,8 @@ public class V8ScriptExecutionExceptionTest {
     @Test(expected = V8ScriptExecutionException.class)
     public void testExceptionInJavaCall() {
         try {
-            v8.registerJavaMethod(this, "callbackWithException", "callback", new Class<?>[] {});
-            v8.executeVoidScript("callback()");
+            v8Context.registerJavaMethod(this, "callbackWithException", "callback", new Class<?>[] {});
+            v8Context.executeVoidScript("callback()");
         } catch (V8ScriptExecutionException e) {
             assertEquals("Test Exception", e.getJSMessage());
             assertTrue(e.getCause() instanceof RuntimeException);
@@ -148,7 +147,7 @@ public class V8ScriptExecutionExceptionTest {
     @Test
     public void testV8ScriptExecutionExceptionCreated() {
         try {
-            v8.executeVoidScript(undefinedAccessScript, "file", 0);
+            v8Context.executeVoidScript(undefinedAccessScript, "file", 0);
         } catch (V8ScriptExecutionException e) {
             assertEquals("file", e.getFileName());
             assertEquals(3, e.getLineNumber());
@@ -163,85 +162,85 @@ public class V8ScriptExecutionExceptionTest {
 
     @Test(expected = V8ScriptExecutionException.class)
     public void testV8ScriptExecutionExceptionIntScript() {
-        v8.executeIntegerScript(undefinedAccessScript + "1;", "file", 0);
+        v8Context.executeIntegerScript(undefinedAccessScript + "1;", "file", 0);
     }
 
     @Test(expected = V8ScriptExecutionException.class)
     public void testV8ScriptExecutionExceptionBooleanScript() {
-        v8.executeBooleanScript(undefinedAccessScript + "true;", "file", 0);
+        v8Context.executeBooleanScript(undefinedAccessScript + "true;", "file", 0);
     }
 
     @Test(expected = V8ScriptExecutionException.class)
     public void testV8ScriptExecutionExceptionStringScript() {
-        v8.executeStringScript(undefinedAccessScript + "'string';", "file", 0);
+        v8Context.executeStringScript(undefinedAccessScript + "'string';", "file", 0);
     }
 
     @Test(expected = V8ScriptExecutionException.class)
     public void testV8ScriptExecutionExceptionDoubleScript() {
-        v8.executeDoubleScript(undefinedAccessScript + "1.1;", "file", 0);
+        v8Context.executeDoubleScript(undefinedAccessScript + "1.1;", "file", 0);
     }
 
     @Test(expected = V8ScriptExecutionException.class)
     public void testV8ScriptExecutionExceptionArrayScript() {
-        v8.executeArrayScript(undefinedAccessScript + "[];", "file", 0);
+        v8Context.executeArrayScript(undefinedAccessScript + "[];", "file", 0);
     }
 
     @Test(expected = V8ScriptExecutionException.class)
     public void testV8ScriptExecutionExceptionObjectScript() {
-        v8.executeObjectScript(undefinedAccessScript + "{};", "file", 0);
+        v8Context.executeObjectScript(undefinedAccessScript + "{};", "file", 0);
     }
 
     @Test(expected = V8ScriptExecutionException.class)
     public void testV8ScriptExceptionVoidCall() {
-        v8.executeVoidScript(errorFunction);
+        v8Context.executeVoidScript(errorFunction);
 
-        v8.executeVoidFunction("myFunction", null);
+        v8Context.executeVoidFunction("myFunction", null);
     }
 
     @Test(expected = V8ScriptExecutionException.class)
     public void testV8ScriptExceptionIntCall() {
-        v8.executeVoidScript(errorFunction);
+        v8Context.executeVoidScript(errorFunction);
 
-        v8.executeIntegerFunction("myFunction", null);
+        v8Context.executeIntegerFunction("myFunction", null);
     }
 
     @Test(expected = V8ScriptExecutionException.class)
     public void testV8ScriptExceptionBooleanCall() {
-        v8.executeVoidScript(errorFunction);
+        v8Context.executeVoidScript(errorFunction);
 
-        v8.executeBooleanFunction("myFunction", null);
+        v8Context.executeBooleanFunction("myFunction", null);
     }
 
     @Test(expected = V8ScriptExecutionException.class)
     public void testV8ScriptExceptionDoubleCall() {
-        v8.executeVoidScript(errorFunction);
+        v8Context.executeVoidScript(errorFunction);
 
-        v8.executeDoubleFunction("myFunction", null);
+        v8Context.executeDoubleFunction("myFunction", null);
     }
 
     @Test(expected = V8ScriptExecutionException.class)
     public void testV8ScriptExceptionStringCall() {
-        v8.executeVoidScript(errorFunction);
+        v8Context.executeVoidScript(errorFunction);
 
-        v8.executeStringFunction("myFunction", null);
+        v8Context.executeStringFunction("myFunction", null);
     }
 
     @Test(expected = V8ScriptExecutionException.class)
     public void testV8ScriptExceptionObjectCall() {
-        v8.executeVoidScript(errorFunction);
+        v8Context.executeVoidScript(errorFunction);
 
-        v8.executeObjectFunction("myFunction", null);
+        v8Context.executeObjectFunction("myFunction", null);
     }
 
     @Test(expected = V8ScriptExecutionException.class)
     public void testV8ScriptExceptionArrayCall() {
-        v8.executeVoidScript(errorFunction);
+        v8Context.executeVoidScript(errorFunction);
 
-        v8.executeArrayFunction("myFunction", null);
+        v8Context.executeArrayFunction("myFunction", null);
     }
 
     @Test(expected = V8ScriptExecutionException.class)
     public void testV8ThrowsException() {
-        v8.executeVoidScript("throw 'problem';");
+        v8Context.executeVoidScript("throw 'problem';");
     }
 }

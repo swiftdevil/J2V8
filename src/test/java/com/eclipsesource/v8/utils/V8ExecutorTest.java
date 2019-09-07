@@ -51,7 +51,7 @@ public class V8ExecutorTest {
             }
         };
         executor.start();
-        V8Object key = new V8Object(runtime);
+        V8Object key = new V8Object(runtime.getDefaultContext());
         runtime.registerV8Executor(key, executor);
         key.close();
         runtime.close();
@@ -64,7 +64,7 @@ public class V8ExecutorTest {
         runtime.terminateExecution();
         V8Executor executor = new V8Executor("");
         executor.start();
-        V8Object key = new V8Object(runtime);
+        V8Object key = new V8Object(runtime.getDefaultContext());
         runtime.registerV8Executor(key, executor);
         key.close();
         runtime.close();
@@ -76,7 +76,7 @@ public class V8ExecutorTest {
         V8 runtime = V8.createV8Runtime();
         runtime.terminateExecution();
         V8Executor executor = new V8Executor("");
-        V8Object key = new V8Object(runtime);
+        V8Object key = new V8Object(runtime.getDefaultContext());
 
         runtime.registerV8Executor(key, executor);
 
@@ -90,9 +90,9 @@ public class V8ExecutorTest {
         V8 runtime = V8.createV8Runtime();
         runtime.terminateExecution();
         V8Executor executor = new V8Executor("");
-        V8Object key = new V8Object(runtime);
+        V8Object key = new V8Object(runtime.getDefaultContext());
         runtime.registerV8Executor(key, executor);
-        V8Object anotherKey = new V8Object(runtime);
+        V8Object anotherKey = new V8Object(runtime.getDefaultContext());
 
         V8Executor result = runtime.getExecutor(anotherKey);
 
@@ -107,7 +107,7 @@ public class V8ExecutorTest {
         V8 runtime = V8.createV8Runtime();
         runtime.terminateExecution();
         V8Executor executor = new V8Executor("");
-        V8Object key = new V8Object(runtime);
+        V8Object key = new V8Object(runtime.getDefaultContext());
         runtime.registerV8Executor(key, executor);
 
         V8Executor result = runtime.removeExecutor(key);
@@ -123,7 +123,7 @@ public class V8ExecutorTest {
         V8 runtime = V8.createV8Runtime();
         runtime.terminateExecution();
         V8Executor executor = new V8Executor("while (true){}");
-        V8Object key = new V8Object(runtime);
+        V8Object key = new V8Object(runtime.getDefaultContext());
         runtime.registerV8Executor(key, executor);
 
         runtime.shutdownExecutors(false);
@@ -139,7 +139,7 @@ public class V8ExecutorTest {
         runtime.terminateExecution();
         V8Executor executor = new V8Executor("while (true){}");
         executor.start();
-        V8Object key = new V8Object(runtime);
+        V8Object key = new V8Object(runtime.getDefaultContext());
         runtime.registerV8Executor(key, executor);
 
         runtime.shutdownExecutors(true);

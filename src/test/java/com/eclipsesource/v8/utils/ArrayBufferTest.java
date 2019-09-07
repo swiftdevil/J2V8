@@ -1,24 +1,26 @@
 package com.eclipsesource.v8.utils;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
-import java.nio.ByteBuffer;
-
+import com.eclipsesource.v8.V8;
+import com.eclipsesource.v8.V8ArrayBuffer;
+import com.eclipsesource.v8.V8Context;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.eclipsesource.v8.V8;
-import com.eclipsesource.v8.V8ArrayBuffer;
+import java.nio.ByteBuffer;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class ArrayBufferTest {
 
     private V8 v8;
+    private V8Context v8Context;
 
     @Before
-    public void seutp() {
+    public void setup() {
         v8 = V8.createV8Runtime();
+        v8Context = v8.getDefaultContext();
     }
 
     @After
@@ -33,7 +35,7 @@ public class ArrayBufferTest {
 
     @Test
     public void testGetV8ArrayBuffer() {
-        ArrayBuffer arrayBuffer = new ArrayBuffer(v8, ByteBuffer.allocateDirect(8));
+        ArrayBuffer arrayBuffer = new ArrayBuffer(v8Context, ByteBuffer.allocateDirect(8));
 
         V8ArrayBuffer v8ArrayBuffer = arrayBuffer.getV8ArrayBuffer();
 
@@ -43,7 +45,7 @@ public class ArrayBufferTest {
 
     @Test
     public void testV8ArrayBufferAvailable() {
-        ArrayBuffer arrayBuffer = new ArrayBuffer(v8, ByteBuffer.allocateDirect(8));
+        ArrayBuffer arrayBuffer = new ArrayBuffer(v8Context, ByteBuffer.allocateDirect(8));
 
         assertTrue(arrayBuffer.isAvailable());
     }

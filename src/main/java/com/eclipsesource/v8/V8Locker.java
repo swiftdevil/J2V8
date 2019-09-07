@@ -47,7 +47,7 @@ public class V8Locker {
         } else if ((thread == Thread.currentThread())) {
             return;
         }
-        runtime.acquireLock(runtime.getV8RuntimePtr());
+        runtime.acquireLock(runtime.getHandle());
         thread = Thread.currentThread();
         released = false;
     }
@@ -65,7 +65,7 @@ public class V8Locker {
         } else if (thread == Thread.currentThread()) {
             return true;
         }
-        runtime.acquireLock(runtime.getV8RuntimePtr());
+        runtime.acquireLock(runtime.getHandle());
         thread = Thread.currentThread();
         released = false;
         return true;
@@ -81,7 +81,7 @@ public class V8Locker {
             return;
         }
         checkThread();
-        runtime.releaseLock(runtime.getV8RuntimePtr());
+        runtime.releaseLock(runtime.getHandle());
         thread = null;
         released = true;
     }

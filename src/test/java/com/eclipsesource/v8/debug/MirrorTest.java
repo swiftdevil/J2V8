@@ -10,33 +10,23 @@
  ******************************************************************************/
 package com.eclipsesource.v8.debug;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-
+import com.eclipsesource.v8.V8;
+import com.eclipsesource.v8.V8Context;
+import com.eclipsesource.v8.V8Object;
+import com.eclipsesource.v8.debug.DebugHandler.DebugEvent;
+import com.eclipsesource.v8.debug.mirror.*;
+import com.eclipsesource.v8.debug.mirror.ObjectMirror.PropertyKind;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import com.eclipsesource.v8.V8;
-import com.eclipsesource.v8.V8Object;
-import com.eclipsesource.v8.debug.DebugHandler.DebugEvent;
-import com.eclipsesource.v8.debug.mirror.ArrayMirror;
-import com.eclipsesource.v8.debug.mirror.BooleanMirror;
-import com.eclipsesource.v8.debug.mirror.Frame;
-import com.eclipsesource.v8.debug.mirror.NumberMirror;
-import com.eclipsesource.v8.debug.mirror.ObjectMirror;
-import com.eclipsesource.v8.debug.mirror.ObjectMirror.PropertyKind;
-import com.eclipsesource.v8.debug.mirror.PropertiesArray;
-import com.eclipsesource.v8.debug.mirror.PropertyMirror;
-import com.eclipsesource.v8.debug.mirror.StringMirror;
-import com.eclipsesource.v8.debug.mirror.ValueMirror;
+import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 
 public class MirrorTest {
 
@@ -59,6 +49,7 @@ public class MirrorTest {
 
     private Object       result = false;;
     private V8           v8;
+    private V8Context    v8Context;
     private DebugHandler debugHandler;
     private BreakHandler breakHandler;
 
@@ -66,7 +57,8 @@ public class MirrorTest {
     public void setup() {
         V8.setFlags("--expose-debug-as=" + DebugHandler.DEBUG_OBJECT_NAME);
         v8 = V8.createV8Runtime();
-        debugHandler = new DebugHandler(v8);
+        v8Context = v8.getDefaultContext();
+        debugHandler = new DebugHandler(v8.getDefaultContext());
         debugHandler.setScriptBreakpoint("script", 14);
         breakHandler = mock(BreakHandler.class);
         debugHandler.addBreakHandler(breakHandler);
@@ -102,7 +94,7 @@ public class MirrorTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertTrue((Boolean) result);
     }
@@ -123,7 +115,7 @@ public class MirrorTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertTrue((Boolean) result);
     }
@@ -144,7 +136,7 @@ public class MirrorTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertFalse((Boolean) result);
     }
@@ -163,7 +155,7 @@ public class MirrorTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertFalse((Boolean) result);
     }
@@ -182,7 +174,7 @@ public class MirrorTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertFalse((Boolean) result);
     }
@@ -202,7 +194,7 @@ public class MirrorTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertTrue((Boolean) result);
     }
@@ -222,7 +214,7 @@ public class MirrorTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertTrue((Boolean) result);
     }
@@ -241,7 +233,7 @@ public class MirrorTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertTrue((Boolean) result);
     }
@@ -266,7 +258,7 @@ public class MirrorTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertTrue((Boolean) result);
     }
@@ -293,7 +285,7 @@ public class MirrorTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertTrue((Boolean) result);
     }
@@ -320,7 +312,7 @@ public class MirrorTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertTrue((Boolean) result);
     }
@@ -347,7 +339,7 @@ public class MirrorTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertTrue((Boolean) result);
     }
@@ -374,7 +366,7 @@ public class MirrorTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertTrue((Boolean) result);
     }
@@ -394,7 +386,7 @@ public class MirrorTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertTrue((Boolean) result);
     }
@@ -414,7 +406,7 @@ public class MirrorTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertTrue((Boolean) result);
     }
@@ -433,7 +425,7 @@ public class MirrorTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertTrue((Boolean) result);
     }
@@ -452,7 +444,7 @@ public class MirrorTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertTrue((Boolean) result);
     }
@@ -471,7 +463,7 @@ public class MirrorTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertTrue((Boolean) result);
     }
@@ -492,7 +484,7 @@ public class MirrorTest {
             }
         });
 
-        int result = v8.executeIntegerScript(script, "script", 0);
+        int result = v8Context.executeIntegerScript(script, "script", 0);
 
         assertEquals(7, result);
     }

@@ -25,59 +25,33 @@ package com.eclipsesource.v8;
  */
 abstract public class V8Value implements Releasable {
 
-    public static final int NULL                         = 0;
-    public static final int UNKNOWN                      = 0;
-    public static final int INTEGER                      = 1;
-    public static final int INT_32_ARRAY                 = 1;
-    public static final int DOUBLE                       = 2;
-    public static final int FLOAT_64_ARRAY               = 2;
-    public static final int BOOLEAN                      = 3;
-    public static final int STRING                       = 4;
-    public static final int V8_ARRAY                     = 5;
-    public static final int V8_OBJECT                    = 6;
-    public static final int V8_FUNCTION                  = 7;
-    public static final int V8_TYPED_ARRAY               = 8;
-    public static final int BYTE                         = 9;
-    public static final int INT_8_ARRAY                  = 9;
-    public static final int V8_ARRAY_BUFFER              = 10;
-    public static final int UNSIGNED_INT_8_ARRAY         = 11;
-    public static final int UNSIGNED_INT_8_CLAMPED_ARRAY = 12;
-    public static final int INT_16_ARRAY                 = 13;
-    public static final int UNSIGNED_INT_16_ARRAY        = 14;
-    public static final int UNSIGNED_INT_32_ARRAY        = 15;
-    public static final int FLOAT_32_ARRAY               = 16;
-    public static final int UNDEFINED                    = 99;
-
-    protected V8      v8;
-    protected long    objectHandle;
-    protected boolean released = true;
+    private   V8Context v8Context;
+    protected long      objectHandle;
+    protected boolean   released = true;
 
     protected V8Value() {
         super();
     }
 
-    protected V8Value(final V8 v8) {
-        if (v8 == null) {
-            this.v8 = (V8) this;
+    protected V8Value(final V8Context v8Context) {
+        if (v8Context == null) {
+            this.v8Context = (V8Context) this;
         } else {
-            this.v8 = v8;
+            this.v8Context = v8Context;
         }
     }
 
-    protected void initialize(final long runtimePtr, final Object data) {
-        long objectHandle = v8.initNewV8Object(runtimePtr);
+    protected void initialize(final Object data) {
+        long objectHandle = getContext().initNewV8Object();
         released = false;
         addObjectReference(objectHandle);
     }
 
-    protected void addObjectReference(final long objectHandle) throws Error {
+    void addObjectReference(final long objectHandle) throws Error {
         this.objectHandle = objectHandle;
         try {
-            v8.addObjRef(this);
-        } catch (Error e) {
-            release();
-            throw e;
-        } catch (RuntimeException e) {
+            getRuntime().addObjRef(this);
+        } catch (Error | RuntimeException e) {
             release();
             throw e;
         }
@@ -102,41 +76,41 @@ abstract public class V8Value implements Releasable {
      */
     public static String getStringRepresentation(final int type) {
         switch (type) {
-            case NULL:
+            case V8API.NULL:
                 return "Null";
-            case INTEGER:
+            case V8API.INTEGER:
                 return "Integer";
-            case DOUBLE:
+            case V8API.DOUBLE:
                 return "Double";
-            case BOOLEAN:
+            case V8API.BOOLEAN:
                 return "Boolean";
-            case STRING:
+            case V8API.STRING:
                 return "String";
-            case V8_ARRAY:
+            case V8API.V8_ARRAY:
                 return "V8Array";
-            case V8_OBJECT:
+            case V8API.V8_OBJECT:
                 return "V8Object";
-            case V8_FUNCTION:
+            case V8API.V8_FUNCTION:
                 return "V8Function";
-            case V8_TYPED_ARRAY:
+            case V8API.V8_TYPED_ARRAY:
                 return "V8TypedArray";
-            case BYTE:
+            case V8API.BYTE:
                 return "Byte";
-            case V8_ARRAY_BUFFER:
+            case V8API.V8_ARRAY_BUFFER:
                 return "V8ArrayBuffer";
-            case UNSIGNED_INT_8_ARRAY:
+            case V8API.UNSIGNED_INT_8_ARRAY:
                 return "UInt8Array";
-            case UNSIGNED_INT_8_CLAMPED_ARRAY:
+            case V8API.UNSIGNED_INT_8_CLAMPED_ARRAY:
                 return "UInt8ClampedArray";
-            case INT_16_ARRAY:
+            case V8API.INT_16_ARRAY:
                 return "Int16Array";
-            case UNSIGNED_INT_16_ARRAY:
+            case V8API.UNSIGNED_INT_16_ARRAY:
                 return "UInt16Array";
-            case UNSIGNED_INT_32_ARRAY:
+            case V8API.UNSIGNED_INT_32_ARRAY:
                 return "UInt32Array";
-            case FLOAT_32_ARRAY:
+            case V8API.FLOAT_32_ARRAY:
                 return "Float32Array";
-            case UNDEFINED:
+            case V8API.UNDEFINED:
                 return "Undefined";
             default:
                 throw new IllegalArgumentException("Invalid V8 type: " + type);
@@ -149,9 +123,9 @@ abstract public class V8Value implements Releasable {
      * @return The V8Value constructor name as a string.
      */
     public String getConstructorName() {
-        v8.checkThread();
-        v8.checkReleased();
-        return v8.getConstructorName(v8.getV8RuntimePtr(), objectHandle);
+        getRuntime().checkThread();
+        getRuntime().checkReleased();
+        return getContext().getConstructorName(objectHandle);
     }
 
     /**
@@ -169,7 +143,11 @@ abstract public class V8Value implements Releasable {
      * @return Returns the V8 runtime this value is associated with.
      */
     public V8 getRuntime() {
-        return v8;
+        return getContext().getRuntime();
+    }
+    
+    public V8Context getContext() {
+        return v8Context;
     }
 
     /**
@@ -181,11 +159,11 @@ abstract public class V8Value implements Releasable {
      */
     public int getV8Type() {
         if (isUndefined()) {
-            return UNDEFINED;
+            return V8API.UNDEFINED;
         }
-        v8.checkThread();
-        v8.checkReleased();
-        return v8.getType(v8.getV8RuntimePtr(), objectHandle);
+        getRuntime().checkThread();
+        getContext().checkReleased();
+        return getContext().getType(objectHandle);
     }
 
     /**
@@ -205,10 +183,10 @@ abstract public class V8Value implements Releasable {
         if (isUndefined()) {
             return this;
         }
-        v8.checkThread();
-        v8.checkReleased();
+        getRuntime().checkThread();
+        getContext().checkReleased();
         V8Value twin = createTwin();
-        v8.createTwin(this, twin);
+        getContext().createTwin(this, twin);
         return twin;
     }
 
@@ -226,10 +204,10 @@ abstract public class V8Value implements Releasable {
      * @return The receiver.
      */
     public V8Value setWeak() {
-        v8.checkThread();
-        v8.checkReleased();
-        v8.v8WeakReferences.put(getHandle(), this);
-        v8.setWeak(v8.getV8RuntimePtr(), getHandle());
+        getRuntime().checkThread();
+        getContext().checkReleased();
+        getContext().weakReferenceAdded(getHandle(), this);
+        getContext().setWeak(getHandle());
         return this;
     }
 
@@ -244,10 +222,10 @@ abstract public class V8Value implements Releasable {
      * @return The receiver.
      */
     public V8Value clearWeak() {
-        v8.checkThread();
-        v8.checkReleased();
-        v8.v8WeakReferences.remove(getHandle());
-        v8.clearWeak(v8.getV8RuntimePtr(), getHandle());
+        getRuntime().checkThread();
+        getContext().checkReleased();
+        getContext().weakReferenceReleased(getHandle());
+        getContext().clearWeak(getHandle());
         return this;
     }
 
@@ -258,9 +236,9 @@ abstract public class V8Value implements Releasable {
      * @return Returns true if this object has been set 'Weak', return false otherwise.
      */
     public boolean isWeak() {
-        v8.checkThread();
-        v8.checkReleased();
-        return v8.isWeak(v8.getV8RuntimePtr(), getHandle());
+        getRuntime().checkThread();
+        getRuntime().checkReleased();
+        return getContext().isWeak(getHandle());
     }
 
     /*
@@ -269,13 +247,13 @@ abstract public class V8Value implements Releasable {
      */
     @Override
     public void close() {
-        v8.checkThread();
+        getRuntime().checkThread();
         if (!released) {
             try {
-                v8.releaseObjRef(this);
+                getRuntime().releaseObjRef(this);
             } finally {
                 released = true;
-                v8.release(v8.getV8RuntimePtr(), objectHandle);
+                getContext().release(objectHandle);
             }
         }
     }
@@ -308,7 +286,7 @@ abstract public class V8Value implements Releasable {
      * @return Returns true iff this === that
      */
     public boolean strictEquals(final Object that) {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
         if (that == this) {
             return true;
@@ -325,10 +303,10 @@ abstract public class V8Value implements Releasable {
         if (((V8Value) that).isUndefined()) {
             return false;
         }
-        return v8.strictEquals(v8.getV8RuntimePtr(), getHandle(), ((V8Value) that).getHandle());
+        return getContext().strictEquals(getHandle(), ((V8Value) that).getHandle());
     }
 
-    protected long getHandle() {
+    long getHandle() {
         checkReleased();
         return objectHandle;
     }
@@ -351,7 +329,7 @@ abstract public class V8Value implements Releasable {
      * @return Returns true iff this == that
      */
     public boolean jsEquals(final Object that) {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
         if (that == this) {
             return true;
@@ -368,7 +346,7 @@ abstract public class V8Value implements Releasable {
         if (((V8Value) that).isUndefined()) {
             return false;
         }
-        return v8.equals(v8.getV8RuntimePtr(), getHandle(), ((V8Value) that).getHandle());
+        return getContext().equals(getHandle(), ((V8Value) that).getHandle());
     }
 
     /*
@@ -377,12 +355,12 @@ abstract public class V8Value implements Releasable {
      */
     @Override
     public int hashCode() {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
-        return v8.identityHash(v8.getV8RuntimePtr(), getHandle());
+        return getContext().identityHash(getHandle());
     }
 
-    protected void checkReleased() {
+    void checkReleased() {
         if (released) {
             throw new IllegalStateException("Object released");
         }

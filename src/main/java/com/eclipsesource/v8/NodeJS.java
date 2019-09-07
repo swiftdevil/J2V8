@@ -34,7 +34,7 @@ public class NodeJS implements Closeable {
     private static final String NODE                = "node";
     private String              nodeVersion         = null;
 
-    private V8         v8;
+    private V8Context  v8Context;
     private V8Function require;
 
     /**
@@ -50,7 +50,7 @@ public class NodeJS implements Closeable {
         V8Object process = null;
         V8Object versions = null;
         try {
-            process = v8.getObject(PROCESS);
+            process = v8Context.getObject(PROCESS);
             versions = process.getObject(VERSIONS);
             nodeVersion = versions.getString(NODE);
         } finally {
@@ -70,16 +70,13 @@ public class NodeJS implements Closeable {
      */
     public static NodeJS createNodeJS() {
         final V8 v8 = V8.createV8Runtime(GLOBAL);
-        final NodeJS node = new NodeJS(v8);
+        final NodeJS node = new NodeJS(v8.getDefaultContext());
         v8.registerJavaMethod(new JavaVoidCallback() {
 
             @Override
             public void invoke(final V8Object receiver, final V8Array parameters) {
-                V8Function require = (V8Function) parameters.get(0);
-                try {
+                try (V8Function require = (V8Function) parameters.get(0)) {
                     node.init(require.twin());
-                } finally {
-                    require.close();
                 }
             }
         }, STARTUP_CALLBACK);
@@ -97,12 +94,21 @@ public class NodeJS implements Closeable {
     }
 
     /**
+     * Returns the V8 context being used for this NodeJS instance.
+     *
+     * @return The V8 Context.
+     */
+    public V8Context getContext() {
+        return v8Context;
+    }
+
+    /**
      * Returns the V8 runtime being used for this NodeJS instance.
      *
      * @return The V8 Runtime.
      */
     public V8 getRuntime() {
-        return v8;
+        return getContext().getRuntime();
     }
 
     /**
@@ -112,8 +118,8 @@ public class NodeJS implements Closeable {
      * @return True if there are more messages to handle, false otherwise.
      */
     public boolean handleMessage() {
-        v8.checkThread();
-        return v8.pumpMessageLoop();
+        getRuntime().checkThread();
+        return getContext().pumpMessageLoop();
     }
 
     /**
@@ -121,12 +127,12 @@ public class NodeJS implements Closeable {
      */
     @Override
     public void close() {
-        v8.checkThread();
+        getRuntime().checkThread();
         if (!require.isReleased()) {
             require.close();
         }
-        if (!v8.isReleased()) {
-            v8.close();
+        if (!getContext().isReleased()) {
+            getContext().close();
         }
     }
 
@@ -136,8 +142,8 @@ public class NodeJS implements Closeable {
      * @return True if there are more messages to process, false otherwise.
      */
     public boolean isRunning() {
-        v8.checkThread();
-        return v8.isRunning();
+        getRuntime().checkThread();
+        return getContext().isRunning();
     }
 
     /**
@@ -148,8 +154,8 @@ public class NodeJS implements Closeable {
      * @return The exports object.
      */
     public V8Object require(final String path) {
-        v8.checkThread();
-        V8Array requireParams = new V8Array(v8);
+        getRuntime().checkThread();
+        V8Array requireParams = new V8Array(getContext());
         try {
             requireParams.push(path);
             return (V8Object) require.call(null, requireParams);
@@ -171,8 +177,8 @@ public class NodeJS implements Closeable {
         V8Object process = null;
         V8Array parameters = null;
         try {
-            process = v8.getObject(PROCESS);
-            parameters = new V8Array(v8);
+            process = getContext().getObject(PROCESS);
+            parameters = new V8Array(getContext());
             parameters.push(scriptExecution);
             process.executeObjectFunction(NEXT_TICK, parameters);
         } finally {
@@ -183,10 +189,10 @@ public class NodeJS implements Closeable {
     }
 
     private V8Function createScriptExecutionCallback(final String script) {
-        return new V8Function(v8, new JavaCallback() {
+        return new V8Function(getContext(), new JavaCallback() {
             @Override
             public Object invoke(final V8Object receiver, final V8Array parameters) {
-                return getRuntime().executeScript(script);
+                return getContext().executeScript(script);
             }
         });
     }
@@ -197,8 +203,8 @@ public class NodeJS implements Closeable {
         }
     }
 
-    private NodeJS(final V8 v8) {
-        this.v8 = v8;
+    private NodeJS(final V8Context v8Context) {
+        this.v8Context = v8Context;
     }
 
     private void init(final V8Function require) {
@@ -207,11 +213,8 @@ public class NodeJS implements Closeable {
 
     private static File createTemporaryScriptFile(final String script, final String name) throws IOException {
         File tempFile = File.createTempFile(name, TMP_JS_EXT);
-        PrintWriter writer = new PrintWriter(tempFile, "UTF-8");
-        try {
+        try (PrintWriter writer = new PrintWriter(tempFile, "UTF-8")) {
             writer.print(script);
-        } finally {
-            writer.close();
         }
         return tempFile;
     }

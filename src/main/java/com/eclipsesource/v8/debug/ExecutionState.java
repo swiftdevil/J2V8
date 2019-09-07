@@ -53,7 +53,7 @@ public class ExecutionState implements Releasable {
      * @param action The step action to use.
      */
     public void prepareStep(final StepAction action) {
-        V8Array parameters = new V8Array(v8Object.getRuntime());
+        V8Array parameters = new V8Array(v8Object.getContext());
         parameters.push(action.index);
         try {
             v8Object.executeVoidFunction(PREPARE_STEP, parameters);
@@ -69,7 +69,7 @@ public class ExecutionState implements Releasable {
      * @return The stack frame at a given index
      */
     public Frame getFrame(final int index) {
-        V8Array parameters = new V8Array(v8Object.getRuntime());
+        V8Array parameters = new V8Array(v8Object.getContext());
         parameters.push(index);
         V8Object frame = null;
         try {

@@ -26,20 +26,20 @@ public class V8Array extends V8Object {
      * Creates a new V8Array and associates it with the given runtime.
      * V8Arrays have native resources and as such, must be released.
      *
-     * @param v8 The runtime on which to associate the V8Array.
+     * @param v8Context The v8 context on which to associate the V8Array.
      */
-    public V8Array(final V8 v8) {
-        super(v8);
-        v8.checkThread();
+    public V8Array(final V8Context v8Context) {
+        super(v8Context);
+        getRuntime().checkThread();
     }
 
-    protected V8Array(final V8 v8, final Object data) {
-        super(v8, data);
+    protected V8Array(final V8Context v8Context, final Object data) {
+        super(v8Context, data);
     }
 
     @Override
     protected V8Value createTwin() {
-        return new V8Array(v8);
+        return new V8Array(getContext());
     }
 
     /*
@@ -57,15 +57,15 @@ public class V8Array extends V8Object {
      */
     @Override
     public String toString() {
-        if (released || v8.isReleased()) {
+        if (released || getContext().isReleased()) {
             return "[Array released]";
         }
         return super.toString();
     }
 
     @Override
-    protected void initialize(final long runtimePtr, final Object data) {
-        long handle = v8.initNewV8Array(runtimePtr);
+    protected void initialize(final Object data) {
+        long handle = getContext().initNewV8Array();
         released = false;
         addObjectReference(handle);
     }
@@ -76,9 +76,9 @@ public class V8Array extends V8Object {
      * @return The length of the array.
      */
     public int length() {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
-        return v8.arrayGetSize(v8.getV8RuntimePtr(), getHandle());
+        return getContext().arrayGetSize(getHandle());
     }
 
     /**
@@ -89,9 +89,9 @@ public class V8Array extends V8Object {
      * @return The type of the element at the index.
      */
     public int getType(final int index) {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
-        return v8.getType(v8.getV8RuntimePtr(), getHandle(), index);
+        return getContext().getType(getHandle(), index);
     }
 
     /**
@@ -102,9 +102,9 @@ public class V8Array extends V8Object {
      * are not all the same type.
      */
     public int getType() {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
-        return v8.getArrayType(v8.getV8RuntimePtr(), getHandle());
+        return getContext().getArrayType(getHandle());
     }
 
     /**
@@ -119,9 +119,9 @@ public class V8Array extends V8Object {
      * all the same type.
      */
     public int getType(final int index, final int length) {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
-        return v8.getType(v8.getV8RuntimePtr(), getHandle(), index, length);
+        return getContext().getType(getHandle(), index, length);
     }
 
     /**
@@ -135,9 +135,9 @@ public class V8Array extends V8Object {
      * if the index does not exist or the value is not an integer.
      */
     public int getInteger(final int index) {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
-        return v8.arrayGetInteger(v8.getV8RuntimePtr(), getHandle(), index);
+        return getContext().arrayGetInteger(getHandle(), index);
     }
 
     /**
@@ -151,9 +151,9 @@ public class V8Array extends V8Object {
      * if the index does not exist or the value is not a boolean.
      */
     public boolean getBoolean(final int index) {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
-        return v8.arrayGetBoolean(v8.getV8RuntimePtr(), getHandle(), index);
+        return getContext().arrayGetBoolean(getHandle(), index);
     }
 
     /**
@@ -166,9 +166,9 @@ public class V8Array extends V8Object {
      * if the index does not exist or the value cannot be cast to a byte.
      */
     public byte getByte(final int index) {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
-        return v8.arrayGetByte(v8.getV8RuntimePtr(), getHandle(), index);
+        return getContext().arrayGetByte(getHandle(), index);
     }
 
     /**
@@ -182,9 +182,9 @@ public class V8Array extends V8Object {
      * if the index does not exist or the value is not a double.
      */
     public double getDouble(final int index) {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
-        return v8.arrayGetDouble(v8.getV8RuntimePtr(), getHandle(), index);
+        return getContext().arrayGetDouble(getHandle(), index);
     }
 
     /**
@@ -198,9 +198,9 @@ public class V8Array extends V8Object {
      * if the index does not exist or the value is not a String.
      */
     public String getString(final int index) {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
-        return v8.arrayGetString(v8.getV8RuntimePtr(), getHandle(), index);
+        return getContext().arrayGetString(getHandle(), index);
     }
 
     /**
@@ -216,9 +216,9 @@ public class V8Array extends V8Object {
      * exception.
      */
     public int[] getIntegers(final int index, final int length) {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
-        return v8.arrayGetIntegers(v8.getV8RuntimePtr(), getHandle(), index, length);
+        return getContext().arrayGetIntegers(getHandle(), index, length);
     }
 
     /**
@@ -235,12 +235,12 @@ public class V8Array extends V8Object {
      * @return The number of elements added to the array.
      */
     public int getIntegers(final int index, final int length, final int[] resultArray) {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
         if (length > resultArray.length) {
             throw new IndexOutOfBoundsException();
         }
-        return v8.arrayGetIntegers(v8.getV8RuntimePtr(), getHandle(), index, length, resultArray);
+        return getContext().arrayGetIntegers(getHandle(), index, length, resultArray);
     }
 
     /**
@@ -256,9 +256,9 @@ public class V8Array extends V8Object {
      * exception.
      */
     public double[] getDoubles(final int index, final int length) {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
-        return v8.arrayGetDoubles(v8.getV8RuntimePtr(), getHandle(), index, length);
+        return getContext().arrayGetDoubles(getHandle(), index, length);
     }
 
     /**
@@ -275,12 +275,12 @@ public class V8Array extends V8Object {
      * @return The number of elements added to the array.
      */
     public int getDoubles(final int index, final int length, final double[] resultArray) {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
         if (length > resultArray.length) {
             throw new IndexOutOfBoundsException();
         }
-        return v8.arrayGetDoubles(v8.getV8RuntimePtr(), getHandle(), index, length, resultArray);
+        return getContext().arrayGetDoubles(getHandle(), index, length, resultArray);
     }
 
     /**
@@ -296,9 +296,9 @@ public class V8Array extends V8Object {
      * exception.
      */
     public boolean[] getBooleans(final int index, final int length) {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
-        return v8.arrayGetBooleans(v8.getV8RuntimePtr(), getHandle(), index, length);
+        return getContext().arrayGetBooleans(getHandle(), index, length);
     }
 
     /**
@@ -314,9 +314,9 @@ public class V8Array extends V8Object {
      * exception.
      */
     public byte[] getBytes(final int index, final int length) {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
-        return v8.arrayGetBytes(v8.getV8RuntimePtr(), getHandle(), index, length);
+        return getContext().arrayGetBytes(getHandle(), index, length);
     }
 
     /**
@@ -333,12 +333,12 @@ public class V8Array extends V8Object {
      * @return The number of elements added to the array.
      */
     public int getBooleans(final int index, final int length, final boolean[] resultArray) {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
         if (length > resultArray.length) {
             throw new IndexOutOfBoundsException();
         }
-        return v8.arrayGetBooleans(v8.getV8RuntimePtr(), getHandle(), index, length, resultArray);
+        return getContext().arrayGetBooleans(getHandle(), index, length, resultArray);
     }
 
     /**
@@ -355,12 +355,12 @@ public class V8Array extends V8Object {
      * @return The number of elements added to the array.
      */
     public int getBytes(final int index, final int length, final byte[] resultArray) {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
         if (length > resultArray.length) {
             throw new IndexOutOfBoundsException();
         }
-        return v8.arrayGetBytes(v8.getV8RuntimePtr(), getHandle(), index, length, resultArray);
+        return getContext().arrayGetBytes(getHandle(), index, length, resultArray);
     }
 
     /**
@@ -376,9 +376,9 @@ public class V8Array extends V8Object {
      * exception.
      */
     public String[] getStrings(final int index, final int length) {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
-        return v8.arrayGetStrings(v8.getV8RuntimePtr(), getHandle(), index, length);
+        return getContext().arrayGetStrings(getHandle(), index, length);
     }
 
     /**
@@ -395,12 +395,12 @@ public class V8Array extends V8Object {
      * @return The number of elements added to the array.
      */
     public int getStrings(final int index, final int length, final String[] resultArray) {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
         if (length > resultArray.length) {
             throw new IndexOutOfBoundsException();
         }
-        return v8.arrayGetStrings(v8.getV8RuntimePtr(), getHandle(), index, length, resultArray);
+        return getContext().arrayGetStrings(getHandle(), index, length, resultArray);
     }
 
     /**
@@ -411,9 +411,9 @@ public class V8Array extends V8Object {
      * @return The value at the given index.
      */
     public Object get(final int index) {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
-        return v8.arrayGet(v8.getV8RuntimePtr(), V8_OBJECT, objectHandle, index);
+        return getContext().arrayGet(V8API.V8_OBJECT, objectHandle, index);
     }
 
     /**
@@ -427,9 +427,9 @@ public class V8Array extends V8Object {
      * if the index does not exist or the value is not a V8Array.
      */
     public V8Array getArray(final int index) {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
-        Object result = v8.arrayGet(v8.getV8RuntimePtr(), V8_ARRAY, objectHandle, index);
+        Object result = getContext().arrayGet(V8API.V8_ARRAY, objectHandle, index);
         if ((result == null) || (result instanceof V8Array)) {
             return (V8Array) result;
         }
@@ -447,9 +447,9 @@ public class V8Array extends V8Object {
      * if the index does not exist or the value is not a V8Object.
      */
     public V8Object getObject(final int index) {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
-        Object result = v8.arrayGet(v8.getV8RuntimePtr(), V8_OBJECT, objectHandle, index);
+        Object result = getContext().arrayGet(V8API.V8_OBJECT, objectHandle, index);
         if ((result == null) || (result instanceof V8Object)) {
             return (V8Object) result;
         }
@@ -465,9 +465,9 @@ public class V8Array extends V8Object {
      * @return The receiver.
      */
     public V8Array push(final int value) {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
-        v8.addArrayIntItem(v8.getV8RuntimePtr(), getHandle(), value);
+        getContext().addArrayIntItem(getHandle(), value);
         return this;
     }
 
@@ -480,9 +480,9 @@ public class V8Array extends V8Object {
      * @return The receiver.
      */
     public V8Array push(final boolean value) {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
-        v8.addArrayBooleanItem(v8.getV8RuntimePtr(), getHandle(), value);
+        getContext().addArrayBooleanItem(getHandle(), value);
         return this;
     }
 
@@ -495,9 +495,9 @@ public class V8Array extends V8Object {
      * @return The receiver.
      */
     public V8Array push(final double value) {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
-        v8.addArrayDoubleItem(v8.getV8RuntimePtr(), getHandle(), value);
+        getContext().addArrayDoubleItem(getHandle(), value);
         return this;
     }
 
@@ -510,14 +510,14 @@ public class V8Array extends V8Object {
      * @return The receiver.
      */
     public V8Array push(final String value) {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
         if (value == null) {
-            v8.addArrayNullItem(v8.getV8RuntimePtr(), getHandle());
+            getContext().addArrayNullItem(getHandle());
         } else if (value.equals(V8.getUndefined())) {
-            v8.addArrayUndefinedItem(v8.getV8RuntimePtr(), getHandle());
+            getContext().addArrayUndefinedItem(getHandle());
         } else {
-            v8.addArrayStringItem(v8.getV8RuntimePtr(), getHandle(), value);
+            getContext().addArrayStringItem(getHandle(), value);
         }
         return this;
     }
@@ -531,15 +531,15 @@ public class V8Array extends V8Object {
      * @return The receiver.
      */
     public V8Array push(final V8Value value) {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
-        v8.checkRuntime(value);
+        getRuntime().checkRuntime(value);
         if (value == null) {
-            v8.addArrayNullItem(v8.getV8RuntimePtr(), getHandle());
+            getContext().addArrayNullItem(getHandle());
         } else if (value.equals(V8.getUndefined())) {
-            v8.addArrayUndefinedItem(v8.getV8RuntimePtr(), getHandle());
+            getContext().addArrayUndefinedItem(getHandle());
         } else {
-            v8.addArrayObjectItem(v8.getV8RuntimePtr(), getHandle(), value.getHandle());
+            getContext().addArrayObjectItem(getHandle(), value.getHandle());
         }
         return this;
     }
@@ -553,30 +553,30 @@ public class V8Array extends V8Object {
      * @return The receiver.
      */
     public V8Array push(final Object value) {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
         if (value instanceof V8Value) {
-            v8.checkRuntime((V8Value) value);
+            getRuntime().checkRuntime((V8Value) value);
         }
         if (value == null) {
-            v8.addArrayNullItem(v8.getV8RuntimePtr(), getHandle());
+            getContext().addArrayNullItem(getHandle());
         } else if (value.equals(V8.getUndefined())) {
-            v8.addArrayUndefinedItem(v8.getV8RuntimePtr(), getHandle());
+            getContext().addArrayUndefinedItem(getHandle());
         } else {
             if (value instanceof Double) {
-                v8.addArrayDoubleItem(v8.getV8RuntimePtr(), getHandle(), (Double) value);
+                getContext().addArrayDoubleItem(getHandle(), (Double) value);
             } else if (value instanceof Integer) {
-                v8.addArrayIntItem(v8.getV8RuntimePtr(), getHandle(), (Integer) value);
+                getContext().addArrayIntItem(getHandle(), (Integer) value);
             } else if (value instanceof Float) {
-                v8.addArrayDoubleItem(v8.getV8RuntimePtr(), getHandle(), ((Float) value).doubleValue());
+                getContext().addArrayDoubleItem(getHandle(), ((Float) value).doubleValue());
             } else if (value instanceof Number) {
-                v8.addArrayDoubleItem(v8.getV8RuntimePtr(), getHandle(), ((Number) value).doubleValue());
+                getContext().addArrayDoubleItem(getHandle(), ((Number) value).doubleValue());
             } else if (value instanceof Boolean) {
-                v8.addArrayBooleanItem(v8.getV8RuntimePtr(), getHandle(), (Boolean) value);
+                getContext().addArrayBooleanItem(getHandle(), (Boolean) value);
             } else if (value instanceof String) {
-                v8.addArrayStringItem(v8.getV8RuntimePtr(), getHandle(), (String) value);
+                getContext().addArrayStringItem(getHandle(), (String) value);
             } else if (value instanceof V8Value) {
-                v8.addArrayObjectItem(v8.getV8RuntimePtr(), getHandle(), ((V8Value) value).getHandle());
+                getContext().addArrayObjectItem(getHandle(), ((V8Value) value).getHandle());
             } else {
                 throw new IllegalArgumentException();
             }
@@ -591,9 +591,9 @@ public class V8Array extends V8Object {
      * @return The receiver.
      */
     public V8Array pushNull() {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
-        v8.addArrayNullItem(v8.getV8RuntimePtr(), getHandle());
+        getContext().addArrayNullItem(getHandle());
         return this;
     }
 
@@ -604,9 +604,9 @@ public class V8Array extends V8Object {
      * @return The receiver.
      */
     public V8Array pushUndefined() {
-        v8.checkThread();
+        getRuntime().checkThread();
         checkReleased();
-        v8.addArrayUndefinedItem(v8.getV8RuntimePtr(), getHandle());
+        getContext().addArrayUndefinedItem(getHandle());
         return this;
     }
 
@@ -655,8 +655,8 @@ public class V8Array extends V8Object {
          * @see com.eclipsesource.v8.V8Array#twin()
          */
         @Override
-        public Undefined twin() {
-            return (Undefined) super.twin();
+        public V8Array.Undefined twin() {
+            return (V8Array.Undefined) super.twin();
         }
 
         /*

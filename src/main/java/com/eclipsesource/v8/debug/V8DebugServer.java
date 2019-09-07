@@ -84,7 +84,7 @@ public class V8DebugServer {
 
     private DebugProxy<String> proxy;
 
-    private V8                  runtime;
+    private V8Context           runtime;
     private V8Object            debugObject;
     private V8Object            runningStateDcp;
     private V8Object            stoppedStateDcp;
@@ -95,16 +95,16 @@ public class V8DebugServer {
     /**
      * Creates V8DebugServer.
      *
-     * @param runtime
+     * @param v8Context
      * @param proxy
      */
-    public V8DebugServer(final V8 runtime, final DebugProxy<String> proxy) {
+    public V8DebugServer(final V8Context v8Context, final DebugProxy<String> proxy) {
         setupProxy(proxy);
 
         this.proxy = proxy;
-        this.runtime = runtime;
+        this.runtime = v8Context;
 
-        V8Object debugScope = runtime.getObject(DEBUG_OBJECT_NAME);
+        V8Object debugScope = v8Context.getObject(DEBUG_OBJECT_NAME);
         if (debugScope == null) {
             System.err.println("Cannot initialize debugger server - global debug object not found.");
             return;
@@ -115,7 +115,7 @@ public class V8DebugServer {
             debugScope.close();
         }
 
-        runtime.executeVoidScript("(function() {\n"
+        v8Context.executeVoidScript("(function() {\n"
                 + " " + DEBUG_OBJECT_NAME + ".Debug. " + MAKE_BREAK_EVENT + " = function (break_id,breakpoints_hit) {\n"
                 + "  return new " + DEBUG_OBJECT_NAME + ".BreakEvent(break_id,breakpoints_hit);\n"
                 + " }\n"

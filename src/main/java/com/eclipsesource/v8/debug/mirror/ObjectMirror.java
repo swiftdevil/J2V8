@@ -52,7 +52,7 @@ public class ObjectMirror extends ValueMirror {
      * @return All the property names for a given object
      */
     public String[] getPropertyNames(final PropertyKind kind, final int limit) {
-        V8Array parameters = new V8Array(v8Object.getRuntime());
+        V8Array parameters = new V8Array(v8Object.getContext());
         parameters.push(kind.index);
         parameters.push(limit);
         V8Array propertyNames = null;
@@ -79,7 +79,7 @@ public class ObjectMirror extends ValueMirror {
      * @return {Array} Property mirrors for this object
      */
     public PropertiesArray getProperties(final PropertyKind kind, final int limit) {
-        V8Array parameters = new V8Array(v8Object.getRuntime());
+        V8Array parameters = new V8Array(v8Object.getContext());
         parameters.push(kind.index);
         parameters.push(limit);
         V8Array result = null;

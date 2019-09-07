@@ -10,15 +10,15 @@
  ******************************************************************************/
 package com.eclipsesource.v8.debug;
 
-import static org.junit.Assert.assertTrue;
-
+import com.eclipsesource.v8.V8;
+import com.eclipsesource.v8.V8Context;
+import com.eclipsesource.v8.V8Object;
+import com.eclipsesource.v8.debug.DebugHandler.DebugEvent;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.eclipsesource.v8.V8;
-import com.eclipsesource.v8.V8Object;
-import com.eclipsesource.v8.debug.DebugHandler.DebugEvent;
+import static org.junit.Assert.assertTrue;
 
 public class BreakEventTest {
 
@@ -29,12 +29,14 @@ public class BreakEventTest {
             + "}                    // 4 \n"
             + "foo();               // 5 \n";
     private V8            v8;
+    private V8Context     v8Context;
     private Object        result = false;
 
     @Before
     public void setup() {
         V8.setFlags("--expose-debug-as=" + DebugHandler.DEBUG_OBJECT_NAME);
         v8 = V8.createV8Runtime();
+        v8Context = v8.getDefaultContext();
     }
 
     @After
@@ -51,7 +53,7 @@ public class BreakEventTest {
 
     @Test
     public void testGetSourceLine() {
-        DebugHandler handler = new DebugHandler(v8);
+        DebugHandler handler = new DebugHandler(v8Context);
         handler.setScriptBreakpoint("script", 3);
         handler.addBreakHandler(new BreakHandler() {
 
@@ -61,7 +63,7 @@ public class BreakEventTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertTrue((Boolean) result);
         handler.close();
@@ -69,7 +71,7 @@ public class BreakEventTest {
 
     @Test
     public void testGetSourceColumn() {
-        DebugHandler handler = new DebugHandler(v8);
+        DebugHandler handler = new DebugHandler(v8Context);
         handler.setScriptBreakpoint("script", 3);
         handler.addBreakHandler(new BreakHandler() {
 
@@ -80,7 +82,7 @@ public class BreakEventTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertTrue((Boolean) result);
         handler.close();
@@ -88,7 +90,7 @@ public class BreakEventTest {
 
     @Test
     public void testGetSourceLineText() {
-        DebugHandler handler = new DebugHandler(v8);
+        DebugHandler handler = new DebugHandler(v8Context);
         handler.setScriptBreakpoint("script", 3);
         handler.addBreakHandler(new BreakHandler() {
 
@@ -98,7 +100,7 @@ public class BreakEventTest {
             }
         });
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertTrue((Boolean) result);
         handler.close();

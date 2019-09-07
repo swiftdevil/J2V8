@@ -167,8 +167,8 @@ endif()
 
 # project source files
 set(src_files
-    jni/com_eclipsesource_v8_V8Impl.cpp
-    jni/com_eclipsesource_v8_V8Impl.h
+    jni/com_eclipsesource_v8_V8APIImpl.cpp
+    jni/com_eclipsesource_v8_V8APIImpl.h
 )
 
 source_group("" FILES ${src_files})

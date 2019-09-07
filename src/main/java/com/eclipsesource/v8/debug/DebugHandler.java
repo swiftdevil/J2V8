@@ -10,21 +10,16 @@
  ******************************************************************************/
 package com.eclipsesource.v8.debug;
 
+import com.eclipsesource.v8.*;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import com.eclipsesource.v8.JavaVoidCallback;
-import com.eclipsesource.v8.Releasable;
-import com.eclipsesource.v8.V8;
-import com.eclipsesource.v8.V8Array;
-import com.eclipsesource.v8.V8Function;
-import com.eclipsesource.v8.V8Object;
 
 /**
  * The entry point for the Debug API. The debug API is a Java API
  * that exposes V8's JavaScript API.
  *
- * The API requires that V8 be initialized with the runtime flag
+ * The API requires that V8 be initialized with the v8Context flag
  * '--expose-debug-as=__j2v8_debug_handler'.
  */
 public class DebugHandler implements Releasable {
@@ -54,20 +49,20 @@ public class DebugHandler implements Releasable {
     private static final String NUMBER                         = "number";
     private static final String CHANGE_BREAK_POINT_CONDITION   = "changeBreakPointCondition";
 
-    private V8                 runtime;
+    private V8Context          v8Context;
     private V8Object           debugObject;
     private List<BreakHandler> breakHandlers = new ArrayList<BreakHandler>();
 
     /**
-     * Creates the Debug Handler for a particular V8 runtime.
-     * Before the runtime was created, V8.setFlags("expose-debug-as=__j2v8_debug_handler");
+     * Creates the Debug Handler for a particular V8 v8Context.
+     * Before the v8Context was created, V8.setFlags("expose-debug-as=__j2v8_debug_handler");
      * must be called.
      *
-     * @param runtime The runtime on which to create the Debug Handler.
+     * @param v8Context The v8Context on which to create the Debug Handler.
      */
-    public DebugHandler(final V8 runtime) {
-        this.runtime = runtime;
-        setupDebugObject(runtime);
+    public DebugHandler(final V8Context v8Context) {
+        this.v8Context = v8Context;
+        setupDebugObject(v8Context);
         setupBreakpointHandler();
     }
 
@@ -77,7 +72,7 @@ public class DebugHandler implements Releasable {
      * @param handler The handler to notify.
      */
     public void addBreakHandler(final BreakHandler handler) {
-        runtime.getLocker().checkThread();
+        v8Context.getRuntime().getLocker().checkThread();
         breakHandlers.add(handler);
     }
 
@@ -88,7 +83,7 @@ public class DebugHandler implements Releasable {
      * @param handler The handler to remove.
      */
     public void removeBreakHandler(final BreakHandler handler) {
-        runtime.getLocker().checkThread();
+        v8Context.getRuntime().getLocker().checkThread();
         breakHandlers.remove(handler);
     }
 
@@ -100,7 +95,7 @@ public class DebugHandler implements Releasable {
      * @return The berakpointID.
      */
     public int setBreakpoint(final V8Function function) {
-        V8Array parameters = new V8Array(runtime);
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(function);
         try {
             return debugObject.executeIntegerFunction(SET_BREAK_POINT, parameters);
@@ -118,7 +113,7 @@ public class DebugHandler implements Releasable {
      * @return The berakpointID.
      */
     public int setScriptBreakpoint(final String scriptID, final int lineNumber) {
-        V8Array parameters = new V8Array(runtime);
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(scriptID);
         parameters.push(lineNumber);
         try {
@@ -134,7 +129,7 @@ public class DebugHandler implements Releasable {
      * @param breakpointID The breakpoint to enable.
      */
     public void enableScriptBreakPoint(final int breakpointID) {
-        V8Array parameters = new V8Array(runtime);
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(breakpointID);
         try {
             debugObject.executeVoidFunction(ENABLE_SCRIPT_BREAK_POINT, parameters);
@@ -149,7 +144,7 @@ public class DebugHandler implements Releasable {
      * @param breakpointID The breakpoint to disable
      */
     public void disableScriptBreakPoint(final int breakpointID) {
-        V8Array parameters = new V8Array(runtime);
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(breakpointID);
         try {
             debugObject.executeVoidFunction(DISABLE_SCRIPT_BREAK_POINT, parameters);
@@ -164,7 +159,7 @@ public class DebugHandler implements Releasable {
      * @param breakpointID The ID of the breakpoint to remove.
      */
     public void clearBreakPoint(final int breakpointID) {
-        V8Array parameters = new V8Array(runtime);
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(breakpointID);
         try {
             debugObject.executeVoidFunction(CLEAR_BREAK_POINT, parameters);
@@ -224,7 +219,7 @@ public class DebugHandler implements Releasable {
      * @return The BreakPoint as referenced by the given ID.
      */
     public ScriptBreakPoint getScriptBreakPoint(final int breakPointID) {
-        V8Array parameters = new V8Array(runtime);
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(breakPointID);
         parameters.push(false);
         V8Object scriptBreakPoint = null;
@@ -246,7 +241,7 @@ public class DebugHandler implements Releasable {
      * @param condition The new condition to set
      */
     public void changeBreakPointCondition(final int breakpointID, final String condition) {
-        V8Array parameters = new V8Array(runtime);
+        V8Array parameters = new V8Array(v8Context);
         parameters.push(breakpointID);
         parameters.push(condition);
         try {
@@ -271,8 +266,8 @@ public class DebugHandler implements Releasable {
         close();
     }
 
-    private void setupDebugObject(final V8 runtime) {
-        V8Object outerDebug = runtime.getObject(DEBUG_OBJECT_NAME);
+    private void setupDebugObject(final V8Context v8Context) {
+        V8Object outerDebug = v8Context.getObject(DEBUG_OBJECT_NAME);
         try {
             debugObject = outerDebug.getObject(V8_DEBUG_OBJECT);
         } finally {
@@ -287,7 +282,7 @@ public class DebugHandler implements Releasable {
         V8Array parameters = null;
         try {
             debugHandler = (V8Function) debugObject.getObject(DEBUG_BREAK_HANDLER);
-            parameters = new V8Array(runtime);
+            parameters = new V8Array(v8Context);
             parameters.push(debugHandler);
             debugObject.executeFunction(SET_LISTENER, parameters);
         } finally {

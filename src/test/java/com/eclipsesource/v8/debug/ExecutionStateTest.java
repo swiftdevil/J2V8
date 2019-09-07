@@ -10,25 +10,22 @@
  ******************************************************************************/
 package com.eclipsesource.v8.debug;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
+import com.eclipsesource.v8.V8;
+import com.eclipsesource.v8.V8Context;
+import com.eclipsesource.v8.V8Object;
+import com.eclipsesource.v8.debug.DebugHandler.DebugEvent;
+import com.eclipsesource.v8.debug.mirror.Frame;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import com.eclipsesource.v8.V8;
-import com.eclipsesource.v8.V8Object;
-import com.eclipsesource.v8.debug.DebugHandler.DebugEvent;
-import com.eclipsesource.v8.debug.mirror.Frame;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 public class ExecutionStateTest {
 
@@ -44,6 +41,7 @@ public class ExecutionStateTest {
             + "foo();               // 10 \n";
     private Object        result;
     private V8            v8;
+    private V8Context     v8Context;
     private DebugHandler  debugHandler;
     private BreakHandler  breakHandler;
 
@@ -51,7 +49,8 @@ public class ExecutionStateTest {
     public void setup() {
         V8.setFlags("--expose-debug-as=" + DebugHandler.DEBUG_OBJECT_NAME);
         v8 = V8.createV8Runtime();
-        debugHandler = new DebugHandler(v8);
+        v8Context = v8.getDefaultContext();
+        debugHandler = new DebugHandler(v8Context);
         debugHandler.setScriptBreakpoint("script", 2);
         breakHandler = mock(BreakHandler.class);
         debugHandler.addBreakHandler(breakHandler);
@@ -83,7 +82,7 @@ public class ExecutionStateTest {
 
         }).when(breakHandler).onBreak(eq(DebugEvent.Break), any(ExecutionState.class), any(EventData.class), any(V8Object.class));
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         verify(breakHandler, times(4)).onBreak(eq(DebugEvent.Break), any(ExecutionState.class), any(EventData.class), any(V8Object.class));
     }
@@ -101,7 +100,7 @@ public class ExecutionStateTest {
 
         }).when(breakHandler).onBreak(eq(DebugEvent.Break), any(ExecutionState.class), any(EventData.class), any(V8Object.class));
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         verify(breakHandler, times(2)).onBreak(eq(DebugEvent.Break), any(ExecutionState.class), any(EventData.class), any(V8Object.class));
     }
@@ -119,7 +118,7 @@ public class ExecutionStateTest {
 
         }).when(breakHandler).onBreak(eq(DebugEvent.Break), any(ExecutionState.class), any(EventData.class), any(V8Object.class));
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         verify(breakHandler, times(7)).onBreak(eq(DebugEvent.Break), any(ExecutionState.class), any(EventData.class), any(V8Object.class));
     }
@@ -137,7 +136,7 @@ public class ExecutionStateTest {
 
         }).when(breakHandler).onBreak(eq(DebugEvent.Break), any(ExecutionState.class), any(EventData.class), any(V8Object.class));
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertEquals(2, result);
     }
@@ -159,7 +158,7 @@ public class ExecutionStateTest {
 
         }).when(breakHandler).onBreak(eq(DebugEvent.Break), any(ExecutionState.class), any(EventData.class), any(V8Object.class));
 
-        v8.executeScript(script, "script", 0);
+        v8Context.executeScript(script, "script", 0);
 
         assertTrue((Boolean) result);
     }

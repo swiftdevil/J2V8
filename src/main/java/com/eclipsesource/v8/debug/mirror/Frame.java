@@ -97,7 +97,7 @@ public class Frame extends Mirror {
      * @return The name of argument at the given index.
      */
     public String getArgumentName(final int index) {
-        V8Array parameters = new V8Array(v8Object.getRuntime());
+        V8Array parameters = new V8Array(v8Object.getContext());
         parameters.push(index);
         try {
             return v8Object.executeStringFunction(ARGUMENT_NAME, parameters);
@@ -113,7 +113,7 @@ public class Frame extends Mirror {
      * @return The value of argument at the given index.
      */
     public ValueMirror getArgumentValue(final int index) {
-        V8Array parameters = new V8Array(v8Object.getRuntime());
+        V8Array parameters = new V8Array(v8Object.getContext());
         parameters.push(index);
         V8Object result = null;
         try {
@@ -137,7 +137,7 @@ public class Frame extends Mirror {
      * @return The value of local at the given index.
      */
     public ValueMirror getLocalValue(final int index) {
-        V8Array parameters = new V8Array(v8Object.getRuntime());
+        V8Array parameters = new V8Array(v8Object.getContext());
         parameters.push(index);
         V8Object result = null;
         try {
@@ -170,7 +170,7 @@ public class Frame extends Mirror {
      * @return The name of local variable at the given index.
      */
     public String getLocalName(final int index) {
-        V8Array parameters = new V8Array(v8Object.getRuntime());
+        V8Array parameters = new V8Array(v8Object.getContext());
         parameters.push(index);
         try {
             return v8Object.executeStringFunction(LOCAL_NAME, parameters);
@@ -186,7 +186,7 @@ public class Frame extends Mirror {
      * @return The scope
      */
     public Scope getScope(final int index) {
-        V8Array parameters = new V8Array(v8Object.getRuntime());
+        V8Array parameters = new V8Array(v8Object.getContext());
         parameters.push(index);
         V8Object scope = null;
         try {

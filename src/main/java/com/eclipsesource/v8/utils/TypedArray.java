@@ -10,8 +10,8 @@ package com.eclipsesource.v8.utils;
  *    EclipseSource - initial API and implementation
  ******************************************************************************/
 
-import com.eclipsesource.v8.V8;
 import com.eclipsesource.v8.V8ArrayBuffer;
+import com.eclipsesource.v8.V8Context;
 import com.eclipsesource.v8.V8TypedArray;
 
 /**
@@ -35,15 +35,15 @@ public class TypedArray {
     /**
      * Create a new TypedArray from an ArrayBuffer.
      *
-     * @param v8 the V8Runtime on which to create the TypedArray
+     * @param v8Context the V8Runtime context on which to create the TypedArray
      * @param buffer the ArrayBuffer to use to back the TypedArray
      * @param type the Type of Array to create
      * @param offset the Offset into the ArrayBuffer in which to map the TyepdArray
      * @param size the Size of the TypedArray
      */
-    public TypedArray(final V8 v8, final ArrayBuffer buffer, final int type, final int offset, final int size) {
+    public TypedArray(final V8Context v8Context, final ArrayBuffer buffer, final int type, final int offset, final int size) {
         V8ArrayBuffer v8ArrayBuffer = buffer.getV8ArrayBuffer();
-        V8TypedArray v8typedArray = new V8TypedArray(v8, v8ArrayBuffer, type, offset, size);
+        V8TypedArray v8typedArray = new V8TypedArray(v8Context, v8ArrayBuffer, type, offset, size);
         try {
             typedArray = (V8TypedArray) v8typedArray.twin().setWeak();
         } finally {

@@ -5,7 +5,6 @@ import re
 import shutil
 import subprocess
 import sys
-from itertools import ifilter
 
 import constants as c
 
@@ -310,7 +309,7 @@ def check_node_builtins():
     if (len(glob.glob(node_src + "*.cc")) == 0):
         return
 
-    j2v8_jni_cpp_path = "jni/com_eclipsesource_v8_V8Impl.cpp"
+    j2v8_jni_cpp_path = "jni/com_eclipsesource_v8_V8APIImpl.cpp"
     j2v8_builtins = []
 
     with open(j2v8_jni_cpp_path, "r") as j2v8_jni_cpp:

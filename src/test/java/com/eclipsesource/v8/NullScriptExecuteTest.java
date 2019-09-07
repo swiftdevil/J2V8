@@ -17,10 +17,12 @@ import org.junit.Test;
 public class NullScriptExecuteTest {
 
     private V8 v8;
+    private V8Context v8Context;
 
     @Before
     public void setup() {
         v8 = V8.createV8Runtime();
+        v8Context = v8.getDefaultContext();
     }
 
     @After
@@ -39,42 +41,42 @@ public class NullScriptExecuteTest {
 
     @Test(expected = NullPointerException.class)
     public void testStringScript() {
-        v8.executeStringScript(null);
+        v8Context.executeStringScript(null);
     }
 
     @Test(expected = NullPointerException.class)
     public void testArrayScript() {
-        v8.executeArrayScript(null);
+        v8Context.executeArrayScript(null);
     }
 
     @Test(expected = NullPointerException.class)
     public void testBooleancript() {
-        v8.executeBooleanScript(null);
+        v8Context.executeBooleanScript(null);
     }
 
     @Test(expected = NullPointerException.class)
     public void testDoubleScript() {
-        v8.executeDoubleScript(null);
+        v8Context.executeDoubleScript(null);
     }
 
     @Test(expected = NullPointerException.class)
     public void testIntScript() {
-        v8.executeIntegerScript(null);
+        v8Context.executeIntegerScript(null);
     }
 
     @Test(expected = NullPointerException.class)
     public void testObjectScript() {
-        v8.executeObjectScript(null);
+        v8Context.executeObjectScript(null);
     }
 
     @Test(expected = NullPointerException.class)
     public void testScript() {
-        v8.executeScript(null);
+        v8Context.executeScript(null);
     }
 
     @Test(expected = NullPointerException.class)
     public void testNullStringScript() {
-        v8.executeVoidScript(null);
+        v8Context.executeVoidScript(null);
     }
 
 }
