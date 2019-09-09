@@ -10,7 +10,7 @@
  ******************************************************************************/
 package com.eclipsesource.v8.utils;
 
-import com.eclipsesource.v8.V8;
+import com.eclipsesource.v8.V8Isolate;
 
 /**
  * A Thread with its own V8 runtime. The thread will create a runtime,
@@ -24,7 +24,6 @@ import com.eclipsesource.v8.V8;
 public class V8Thread extends Thread {
 
     private final V8Runnable target;
-    private V8               runtime;
 
     /**
      * Create as new Thread with its own V8Runtime.
@@ -41,9 +40,9 @@ public class V8Thread extends Thread {
      */
     @Override
     public void run() {
-        runtime = V8.createV8Runtime();
+        V8Isolate runtime = V8Isolate.create();
         try {
-            target.run(runtime.getDefaultContext());
+            target.run(runtime.createContext());
         } finally {
             synchronized (this) {
                 if (runtime.getLocker().hasLock()) {

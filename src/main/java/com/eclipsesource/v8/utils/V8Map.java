@@ -10,13 +10,13 @@
  ******************************************************************************/
 package com.eclipsesource.v8.utils;
 
+import com.eclipsesource.v8.Releasable;
+import com.eclipsesource.v8.V8Value;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
-import com.eclipsesource.v8.Releasable;
-import com.eclipsesource.v8.V8Value;
 
 /**
  * A Map that maps V8Values to arbitrary Java Objects.
@@ -47,17 +47,6 @@ public class V8Map<V> implements Map<V8Value, V>, Releasable {
     @Override
     public void close() {
         this.clear();
-    }
-
-    /**
-     * Releases all the resources associated with this map. A
-     * map can be used again once it's released, although
-     * if it's used again it should be released again.
-     */
-    @Override
-    @Deprecated
-    public void release() {
-        close();
     }
 
     /*

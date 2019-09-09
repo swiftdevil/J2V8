@@ -72,7 +72,7 @@ public class DebugHandler implements Releasable {
      * @param handler The handler to notify.
      */
     public void addBreakHandler(final BreakHandler handler) {
-        v8Context.getRuntime().getLocker().checkThread();
+        v8Context.getIsolate().getLocker().checkThread();
         breakHandlers.add(handler);
     }
 
@@ -83,7 +83,7 @@ public class DebugHandler implements Releasable {
      * @param handler The handler to remove.
      */
     public void removeBreakHandler(final BreakHandler handler) {
-        v8Context.getRuntime().getLocker().checkThread();
+        v8Context.getIsolate().getLocker().checkThread();
         breakHandlers.remove(handler);
     }
 
@@ -264,6 +264,11 @@ public class DebugHandler implements Releasable {
     @Deprecated
     public void release() {
         close();
+    }
+
+    @Override
+    public boolean isReleased() {
+        return debugObject.isReleased();
     }
 
     private void setupDebugObject(final V8Context v8Context) {

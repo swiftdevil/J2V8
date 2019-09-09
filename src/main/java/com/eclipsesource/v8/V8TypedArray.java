@@ -37,14 +37,14 @@ public class V8TypedArray extends V8Array {
 
     @Override
     protected V8Value createTwin() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return new V8TypedArray(getContext());
     }
 
     @Override
     public Object get(final int index) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         int type = getType();
         switch (type) {
@@ -82,7 +82,7 @@ public class V8TypedArray extends V8Array {
 
     @Override
     protected void initialize(final Object data) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         if (data == null) {
             super.initialize(data);
             return;

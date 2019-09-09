@@ -10,13 +10,7 @@
  ******************************************************************************/
 package com.eclipsesource.v8;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeFalse;
-
-import java.lang.reflect.Field;
-import java.net.URLClassLoader;
-
+import com.eclipsesource.v8.V8RuntimeNotLoadedTest.SeparateClassloaderTestRunner;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -24,7 +18,12 @@ import org.junit.runner.RunWith;
 import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.InitializationError;
 
-import com.eclipsesource.v8.V8RuntimeNotLoadedTest.SeparateClassloaderTestRunner;
+import java.lang.reflect.Field;
+import java.net.URLClassLoader;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assume.assumeFalse;
 
 // A separate class loaded must be used since we don't want these tests to interfere
 // with other tests.
@@ -59,7 +58,7 @@ public class V8RuntimeNotLoadedTest {
     public void testJ2V8NotEnabled() {
         assumeFalse(skipMessage, skipTest()); // conditional skip
 
-        assertFalse(V8.isLoaded());
+        assertFalse(V8Isolate.isLoaded());
     }
 
     @Test(expected = UnsatisfiedLinkError.class)
@@ -69,7 +68,7 @@ public class V8RuntimeNotLoadedTest {
         String oldValue = System.getProperty("os.arch");
         System.setProperty("os.arch", "unknown");
         try {
-            V8.createV8Runtime();
+            V8Isolate.create();
         }
         catch (UnsatisfiedLinkError ex) {
             assertEquals("Unsupported arch: unknown", ex.getMessage());

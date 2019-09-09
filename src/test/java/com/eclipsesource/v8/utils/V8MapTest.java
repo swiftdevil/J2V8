@@ -10,8 +10,8 @@
  ******************************************************************************/
 package com.eclipsesource.v8.utils;
 
-import com.eclipsesource.v8.V8;
 import com.eclipsesource.v8.V8Context;
+import com.eclipsesource.v8.V8Isolate;
 import com.eclipsesource.v8.V8Object;
 import com.eclipsesource.v8.V8Value;
 import org.junit.After;
@@ -25,21 +25,21 @@ import java.util.Set;
 import static org.junit.Assert.*;
 
 public class V8MapTest {
-    private V8 v8;
+    private V8Isolate v8Isolate;
     private V8Context v8Context;
 
     @Before
     public void seutp() {
-        v8 = V8.createV8Runtime();
-        v8Context = v8.getDefaultContext();
+        v8Isolate = V8Isolate.create();
+        v8Context = v8Isolate.createContext();
     }
 
     @After
     public void tearDown() {
-        if (v8 != null) {
-            v8.close();
+        if (v8Isolate != null) {
+            v8Isolate.close();
         }
-        if (V8.getActiveRuntimes() != 0) {
+        if (V8Isolate.getActiveRuntimes() != 0) {
             throw new IllegalStateException("V8Runtimes not properly released");
         }
     }
@@ -76,9 +76,9 @@ public class V8MapTest {
     public void testPutUndefined() {
         V8Map<Object> map = new V8Map<Object>();
         V8Object v1 = new V8Object(v8Context);
-        map.put(v1, V8.getUndefined());
+        map.put(v1, V8Isolate.getUndefined());
 
-        assertEquals(V8.getUndefined(), map.get(v1));
+        assertEquals(V8Isolate.getUndefined(), map.get(v1));
         v1.close();
         map.close();
     }
@@ -145,7 +145,7 @@ public class V8MapTest {
     public void testGet() {
         V8Map<String> map = new V8Map<String>();
         v8Context.executeVoidScript("var x = {}");
-        V8Object v8Object = v8.getObject("x");
+        V8Object v8Object = v8Context.getObject("x");
         map.put(v8Object, "foo");
 
         assertEquals("foo", map.get(v8Object));
@@ -158,7 +158,7 @@ public class V8MapTest {
     public void testGetMissing() {
         V8Map<String> map = new V8Map<String>();
         v8Context.executeVoidScript("var x = {}");
-        V8Object v8Object = v8.getObject("x");
+        V8Object v8Object = v8Context.getObject("x");
 
         assertNull(map.get(v8Object));
 
@@ -170,7 +170,7 @@ public class V8MapTest {
     public void testContainsKey() {
         V8Map<String> map = new V8Map<String>();
         v8Context.executeVoidScript("var x = {}");
-        V8Object v8Object = v8.getObject("x");
+        V8Object v8Object = v8Context.getObject("x");
         map.put(v8Object, "foo");
 
         assertTrue(map.containsKey(v8Object));
@@ -183,7 +183,7 @@ public class V8MapTest {
     public void testDoesNotContainKey() {
         V8Map<String> map = new V8Map<String>();
         v8Context.executeVoidScript("var x = {}");
-        V8Object v8Object = v8.getObject("x");
+        V8Object v8Object = v8Context.getObject("x");
 
         assertFalse(map.containsKey(v8Object));
 
@@ -195,7 +195,7 @@ public class V8MapTest {
     public void testContainsValue() {
         V8Map<String> map = new V8Map<String>();
         v8Context.executeVoidScript("var x = {}");
-        V8Object v8Object = v8.getObject("x");
+        V8Object v8Object = v8Context.getObject("x");
         map.put(v8Object, "foo");
 
         assertTrue(map.containsValue("foo"));
@@ -218,7 +218,7 @@ public class V8MapTest {
     public void testRemove() {
         V8Map<String> map = new V8Map<String>();
         v8Context.executeVoidScript("var x = {}");
-        V8Object v8Object = v8.getObject("x");
+        V8Object v8Object = v8Context.getObject("x");
         map.put(v8Object, "foo");
 
         assertEquals("foo", map.remove(v8Object));
@@ -231,7 +231,7 @@ public class V8MapTest {
     public void testRemoveMissing() {
         V8Map<String> map = new V8Map<String>();
         v8Context.executeVoidScript("var x = {}");
-        V8Object v8Object = v8.getObject("x");
+        V8Object v8Object = v8Context.getObject("x");
 
         assertNull(map.remove(v8Object));
 
@@ -253,7 +253,7 @@ public class V8MapTest {
     public void testRemoveKeyReleasesKey() {
         V8Map<String> map = new V8Map<String>();
         v8Context.executeScript("var x = {}");
-        V8Object v8Object = v8.getObject("x");
+        V8Object v8Object = v8Context.getObject("x");
         map.put(v8Object, "foo");
 
         map.remove(v8Object);
@@ -264,14 +264,14 @@ public class V8MapTest {
 
     @Test
     public void testAddItemStoresACopy() {
-        V8 v8 = V8.createV8Runtime();
-        V8Object v8Object = new V8Object(v8Context);
+        V8Isolate v8Isolate = V8Isolate.create();
+        V8Object v8Object = new V8Object(v8Isolate.createContext());
         V8Map<String> map = new V8Map<String>();
         map.put(v8Object, "foo");
         v8Object.close();
 
         try {
-            v8.release(true);
+            v8Isolate.release(true);
             map.close();
         } catch (IllegalStateException e) {
             return;

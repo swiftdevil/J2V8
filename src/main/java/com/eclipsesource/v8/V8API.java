@@ -42,7 +42,7 @@ public class V8API {
 
 	native void _releaseRuntime(long v8RuntimePtr);
 
-	native long _createIsolate(V8 v8);
+	native long _createIsolate(V8Isolate v8Isolate);
 
 	native long _createContext(V8Context ctx, long v8RuntimePtr, String globalAlias);
 
@@ -224,9 +224,8 @@ public class V8API {
 
 	native long _getGlobalObject(long v8ContextPtr);
 
-	native String _getVersion();
-	
-	
+
+	native static String _getVersion();
 
 	native static void _setFlags(String v8flags);
 

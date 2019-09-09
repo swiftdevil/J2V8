@@ -10,8 +10,8 @@
  ******************************************************************************/
 package com.eclipsesource.v8.debug;
 
-import com.eclipsesource.v8.V8;
 import com.eclipsesource.v8.V8Context;
+import com.eclipsesource.v8.V8Isolate;
 import com.eclipsesource.v8.V8Object;
 import com.eclipsesource.v8.debug.DebugHandler.DebugEvent;
 import com.eclipsesource.v8.debug.mirror.Frame;
@@ -45,16 +45,16 @@ public class ScopeTest {
             + "}                        // 10 \n"
             + "foo(1,2,3)();            // 11 \n";
     private Object        result = false;
-    private V8            v8;
+    private V8Isolate     v8Isolate;
     private V8Context     v8Context;
     private DebugHandler  debugHandler;
     private BreakHandler  breakHandler;
 
     @Before
     public void setup() {
-        V8.setFlags("--expose-debug-as=" + DebugHandler.DEBUG_OBJECT_NAME);
-        v8 = V8.createV8Runtime();
-        v8Context = v8.getDefaultContext();
+        V8Isolate.setFlags("--expose-debug-as=" + DebugHandler.DEBUG_OBJECT_NAME);
+        v8Isolate = V8Isolate.create();
+        v8Context = v8Isolate.createContext();
         debugHandler = new DebugHandler(v8Context);
         debugHandler.setScriptBreakpoint("script", 7);
         breakHandler = mock(BreakHandler.class);
@@ -65,8 +65,8 @@ public class ScopeTest {
     public void tearDown() {
         try {
             debugHandler.close();
-            v8.close();
-            if (V8.getActiveRuntimes() != 0) {
+            v8Isolate.close();
+            if (V8Isolate.getActiveRuntimes() != 0) {
                 throw new IllegalStateException("V8Runtimes not properly released");
             }
         } catch (IllegalStateException e) {

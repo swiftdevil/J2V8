@@ -272,7 +272,7 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
 
     // on first creation, store the JVM and a handle to J2V8 classes
     jvm = vm;
-    v8cls = (jclass)env->NewGlobalRef((env)->FindClass("com/eclipsesource/v8/V8"));
+    v8cls = (jclass)env->NewGlobalRef((env)->FindClass("com/eclipsesource/v8/V8Isolate"));
     v8ctx = (jclass)env->NewGlobalRef((env)->FindClass("com/eclipsesource/v8/V8Context"));
     v8ObjectCls = (jclass)env->NewGlobalRef((env)->FindClass("com/eclipsesource/v8/V8Object"));
     v8ArrayCls = (jclass)env->NewGlobalRef((env)->FindClass("com/eclipsesource/v8/V8Array"));
@@ -473,7 +473,7 @@ JNIEXPORT jboolean JNICALL Java_com_eclipsesource_v8_V8API__1isNodeCompatible
 }
 
 JNIEXPORT jlong JNICALL Java_com_eclipsesource_v8_V8API__1createIsolate
- (JNIEnv *env, jobject v8api, jobject v8) {
+ (JNIEnv *env, jobject, jobject v8) {
   V8Runtime* runtime = new V8Runtime();
   v8::Isolate::CreateParams create_params;
   create_params.array_buffer_allocator = &array_buffer_allocator;
@@ -495,7 +495,6 @@ JNIEXPORT jlong JNICALL Java_com_eclipsesource_v8_V8API__1createContext
   v8Context->v8Ctx = env->NewGlobalRef(v8ctx);
 
   v8::Isolate::Scope isolateScope(runtime->isolate);
-  runtime->locker = new Locker(runtime->isolate);
   HandleScope handle_scope(runtime->isolate);
 
   Handle<ObjectTemplate> globalObject = ObjectTemplate::New();
@@ -515,7 +514,6 @@ JNIEXPORT jlong JNICALL Java_com_eclipsesource_v8_V8API__1createContext
     v8Context->globalObject->Reset(runtime->isolate, context->Global()->GetPrototype()->ToObject(runtime->isolate));
   }
 
-  delete(runtime->locker);
   return reinterpret_cast<jlong>(v8Context);
 }
 

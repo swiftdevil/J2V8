@@ -86,7 +86,7 @@ JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8API__1releaseRuntime
 /*
  * Class:     com_eclipsesource_v8_V8API
  * Method:    _createIsolate
- * Signature: (Lcom/eclipsesource/v8/V8;)J
+ * Signature: (Lcom/eclipsesource/v8/V8Isolate;)J
  */
 JNIEXPORT jlong JNICALL Java_com_eclipsesource_v8_V8API__1createIsolate
   (JNIEnv *, jobject, jobject);
@@ -817,7 +817,7 @@ JNIEXPORT jlong JNICALL Java_com_eclipsesource_v8_V8API__1getGlobalObject
  * Signature: ()Ljava/lang/String;
  */
 JNIEXPORT jstring JNICALL Java_com_eclipsesource_v8_V8API__1getVersion
-  (JNIEnv *, jobject);
+  (JNIEnv *, jclass);
 
 /*
  * Class:     com_eclipsesource_v8_V8API

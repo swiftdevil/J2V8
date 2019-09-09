@@ -86,46 +86,48 @@ public class V8MultiThreadTest {
         }
     }
 
-    V8 v8TempRuntime = null;
+    V8Isolate v8IsolateTempRuntime = null;
 
     @Test
     public void testLosesCurrentIsolate() {
-        final V8 v8 = V8.createV8Runtime();
-        v8.registerJavaMethod(new JavaCallback() {
+        final V8Isolate v8Isolate = V8Isolate.create();
+        final V8Context v8Context = v8Isolate.createContext();
+        v8Context.registerJavaMethod(new JavaCallback() {
 
             @Override
             public Object invoke(final V8Object receiver, final V8Array parameters) {
-                v8TempRuntime = V8.createV8Runtime();
-                v8TempRuntime.getLocker().release();
+                v8IsolateTempRuntime = V8Isolate.create();
+                v8IsolateTempRuntime.getLocker().release();
                 throw new RuntimeException();
             }
         }, "foo");
         try {
-            v8.executeFunction("foo", null);
+            v8Context.executeFunction("foo", null);
         } catch (RuntimeException e) {
             // doNothing
         }
-        v8.release(false);
-        v8TempRuntime.getLocker().acquire();
-        v8TempRuntime.close();
+        v8Isolate.release(false);
+        v8IsolateTempRuntime.getLocker().acquire();
+        v8IsolateTempRuntime.close();
     }
 
     @Test(expected = Exception.class)
     public void testReleaseLockInCallback() {
-        final V8 v8 = V8.createV8Runtime();
+        final V8Isolate v8Isolate = V8Isolate.create();
+        final V8Context v8Context = v8Isolate.createContext();
         try {
-            v8.registerJavaMethod(new JavaCallback() {
+            v8Context.registerJavaMethod(new JavaCallback() {
 
                 @Override
                 public Object invoke(final V8Object receiver, final V8Array parameters) {
-                    v8.getLocker().release();
-                    v8.getLocker().acquire();
+                    v8Isolate.getLocker().release();
+                    v8Isolate.getLocker().acquire();
                     return null;
                 }
             }, "foo");
-            v8.executeFunction("foo", null);
+            v8Context.executeFunction("foo", null);
         } finally {
-            v8.close();
+            v8Isolate.close();
         }
     }
 

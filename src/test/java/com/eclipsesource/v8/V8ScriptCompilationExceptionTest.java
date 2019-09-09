@@ -20,7 +20,7 @@ public class V8ScriptCompilationExceptionTest {
 
     private V8ScriptCompilationException exception;
 
-    private V8                           v8;
+    private V8Isolate                    v8Isolate;
     private V8Context                    v8Context;
 
     String                               script = "x = [1,2,3];\n"
@@ -34,17 +34,17 @@ public class V8ScriptCompilationExceptionTest {
     @Before
     public void seutp() {
         exception = createV8ScriptCompilationException();
-        v8 = V8.createV8Runtime();
-        v8Context = v8.getDefaultContext();
+        v8Isolate = V8Isolate.create();
+        v8Context = v8Isolate.createContext();
     }
 
     @After
     public void tearDown() {
         try {
-            if (v8 != null) {
-                v8.close();
+            if (v8Isolate != null) {
+                v8Isolate.close();
             }
-            if (V8.getActiveRuntimes() != 0) {
+            if (V8Isolate.getActiveRuntimes() != 0) {
                 throw new IllegalStateException("V8Runtimes not properly released");
             }
         } catch (IllegalStateException e) {

@@ -26,5 +26,17 @@ public interface Releasable extends Closeable {
     /**
      * Synonym for {@link #close()}.
      */
-    void release();
+    default void release() {
+        close();
+    };
+
+    default void checkReleased() {
+        if (isReleased()) {
+            throw new IllegalStateException("Object released");
+        }
+    }
+
+    default boolean isReleased() {
+        return true;
+    };
 }

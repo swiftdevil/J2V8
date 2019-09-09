@@ -26,22 +26,22 @@ import static org.mockito.Mockito.*;
 
 public class V8CallbackTest {
 
-    private V8 v8;
+    private V8Isolate v8Isolate;
     private V8Context v8Context;
 
     @Before
     public void seutp() {
-        v8 = V8.createV8Runtime();
-        v8Context = v8.getDefaultContext();
+        v8Isolate = V8Isolate.create();
+        v8Context = v8Isolate.createContext();
     }
 
     @After
     public void tearDown() {
         try {
-            if (v8 != null) {
-                v8.close();
+            if (v8Isolate != null) {
+                v8Isolate.close();
             }
-            if (V8.getActiveRuntimes() != 0) {
+            if (V8Isolate.getActiveRuntimes() != 0) {
                 throw new IllegalStateException("V8Runtimes not properly released");
             }
         } catch (IllegalStateException e) {
@@ -371,7 +371,7 @@ public class V8CallbackTest {
     @Test
     public void testV8ObjectMethodReturnsUndefined() {
         ICallback callback = mock(ICallback.class);
-        doReturn(V8.getUndefined()).when(callback).v8ObjectMethodNoParameters();
+        doReturn(V8Isolate.getUndefined()).when(callback).v8ObjectMethodNoParameters();
         v8Context.registerJavaMethod(callback, "v8ObjectMethodNoParameters", "foo", new Class<?>[0]);
 
         boolean result = v8Context.executeBooleanScript("typeof foo() === 'undefined'");
@@ -1335,7 +1335,7 @@ public class V8CallbackTest {
 
         v8Context.executeVoidScript("var caught = false; try {foo();} catch (e) {if ( e === 'My Runtime Exception' ) caught=true;}");
 
-        assertTrue(v8.getBoolean("caught"));
+        assertTrue(v8Context.getBoolean("caught"));
     }
 
     @Test
@@ -1346,7 +1346,7 @@ public class V8CallbackTest {
 
         v8Context.executeVoidScript("var caught = false; try {foo();} catch (e) {if ( e === 'Unhandled Java Exception' ) caught=true;}");
 
-        assertTrue(v8.getBoolean("caught"));
+        assertTrue(v8Context.getBoolean("caught"));
     }
 
     @Test
@@ -1357,7 +1357,7 @@ public class V8CallbackTest {
 
         v8Context.executeVoidScript("var caught = false; try {foo();} catch (e) {if ( e === 'My Runtime Exception' ) caught=true;}");
 
-        assertTrue(v8.getBoolean("caught"));
+        assertTrue(v8Context.getBoolean("caught"));
     }
 
     @Test
@@ -1368,7 +1368,7 @@ public class V8CallbackTest {
 
         v8Context.executeVoidScript("var caught = false; try {foo();} catch (e) {if ( e === 'Unhandled Java Exception' ) caught=true;}");
 
-        assertTrue(v8.getBoolean("caught"));
+        assertTrue(v8Context.getBoolean("caught"));
     }
 
     @Test
@@ -1713,7 +1713,7 @@ public class V8CallbackTest {
         v8Context.registerJavaMethod(callback, "voidMethodVarArgsReceiverAndOthers", "foo", new Class<?>[] { V8Object.class, Integer.TYPE,
                 Integer.TYPE, Object[].class }, false);
         V8Array parameters = new V8Array(v8Context);
-        parameters.push(v8).push(1).push(2).push(3).push(false);
+        parameters.push(v8Context).push(1).push(2).push(3).push(false);
         doAnswer(constructReflectiveAnswer(null, parameters, null)).when(callback).voidMethodVarArgsReceiverAndOthers(any(V8Object.class), anyInt(), anyInt());
 
         v8Context.executeVoidScript("foo(this, 1, 2, 3, false);");

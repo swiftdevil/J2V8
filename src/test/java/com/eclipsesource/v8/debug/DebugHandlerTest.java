@@ -10,9 +10,9 @@
  ******************************************************************************/
 package com.eclipsesource.v8.debug;
 
-import com.eclipsesource.v8.V8;
 import com.eclipsesource.v8.V8Context;
 import com.eclipsesource.v8.V8Function;
+import com.eclipsesource.v8.V8Isolate;
 import com.eclipsesource.v8.V8Object;
 import com.eclipsesource.v8.debug.DebugHandler.DebugEvent;
 import org.junit.After;
@@ -32,22 +32,22 @@ public class DebugHandlerTest {
             + "  var y = x + 1;     // 4 \n"
             + "}                    // 5 \n"
             + "foo();               // 6 \n";
-    private V8            v8;
+    private V8Isolate     v8Isolate;
     private V8Context     v8Context;
     private Object        result = false;
 
     @Before
     public void setup() {
-        V8.setFlags("--expose-debug-as=" + DebugHandler.DEBUG_OBJECT_NAME);
-        v8 = V8.createV8Runtime();
-        v8Context = v8.getDefaultContext();
+        V8Isolate.setFlags("--expose-debug-as=" + DebugHandler.DEBUG_OBJECT_NAME);
+        v8Isolate = V8Isolate.create();
+        v8Context = v8Isolate.createContext();
     }
 
     @After
     public void tearDown() {
         try {
-            v8.close();
-            if (V8.getActiveRuntimes() != 0) {
+            v8Isolate.close();
+            if (V8Isolate.getActiveRuntimes() != 0) {
                 throw new IllegalStateException("V8Runtimes not properly released");
             }
         } catch (IllegalStateException e) {
@@ -262,7 +262,7 @@ public class DebugHandlerTest {
     public void testSetBreakpointByFunction() {
         DebugHandler handler = new DebugHandler(v8Context);
         v8Context.executeScript(script, "script", 0);
-        V8Function function = (V8Function) v8.get("foo");
+        V8Function function = (V8Function) v8Context.get("foo");
         handler.setBreakpoint(function);
         BreakHandler breakHandler = mock(BreakHandler.class);
         handler.addBreakHandler(breakHandler);
@@ -278,7 +278,7 @@ public class DebugHandlerTest {
     public void testSetBreakpointByFunctionReturnsID() {
         DebugHandler handler = new DebugHandler(v8Context);
         v8Context.executeScript(script, "script", 0);
-        V8Function function = (V8Function) v8.get("foo");
+        V8Function function = (V8Function) v8Context.get("foo");
 
         int breakpointID = handler.setBreakpoint(function);
 

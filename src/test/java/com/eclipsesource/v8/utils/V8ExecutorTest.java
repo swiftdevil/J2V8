@@ -24,20 +24,20 @@ public class V8ExecutorTest {
 
     @After
     public void tearDown() {
-        if (V8.getActiveRuntimes() != 0) {
+        if (V8Isolate.getActiveRuntimes() != 0) {
             throw new IllegalStateException("V8Runtimes not properly released");
         }
     }
 
     @Test
     public void testNestedExecutorExecutionLongRunning() throws InterruptedException {
-        V8 runtime = V8.createV8Runtime();
+        V8Isolate runtime = V8Isolate.create();
         runtime.terminateExecution();
 
         V8Executor executor = new V8Executor("foo();") {
             @Override
             protected void setup(final NodeJS nodeJs) {
-                nodeJs.getRuntime().registerJavaMethod(new JavaVoidCallback() {
+                nodeJs.getContext().registerJavaMethod(new JavaVoidCallback() {
 
                     @Override
                     public void invoke(final V8Object receiver, final V8Array parameters) {
@@ -51,7 +51,7 @@ public class V8ExecutorTest {
             }
         };
         executor.start();
-        V8Object key = new V8Object(runtime.getDefaultContext());
+        V8Object key = new V8Object(runtime.createContext());
         runtime.registerV8Executor(key, executor);
         key.close();
         runtime.close();
@@ -60,11 +60,11 @@ public class V8ExecutorTest {
 
     @Test
     public void testNestedExecutorExecution() throws InterruptedException {
-        V8 runtime = V8.createV8Runtime();
+        V8Isolate runtime = V8Isolate.create();
         runtime.terminateExecution();
         V8Executor executor = new V8Executor("");
         executor.start();
-        V8Object key = new V8Object(runtime.getDefaultContext());
+        V8Object key = new V8Object(runtime.createContext());
         runtime.registerV8Executor(key, executor);
         key.close();
         runtime.close();
@@ -73,10 +73,10 @@ public class V8ExecutorTest {
 
     @Test
     public void testGetNestedExecutor() {
-        V8 runtime = V8.createV8Runtime();
+        V8Isolate runtime = V8Isolate.create();
         runtime.terminateExecution();
         V8Executor executor = new V8Executor("");
-        V8Object key = new V8Object(runtime.getDefaultContext());
+        V8Object key = new V8Object(runtime.createContext());
 
         runtime.registerV8Executor(key, executor);
 
@@ -87,12 +87,13 @@ public class V8ExecutorTest {
 
     @Test
     public void testGetMissingExecutor() {
-        V8 runtime = V8.createV8Runtime();
+        V8Isolate runtime = V8Isolate.create();
+        V8Context context = runtime.createContext();
         runtime.terminateExecution();
         V8Executor executor = new V8Executor("");
-        V8Object key = new V8Object(runtime.getDefaultContext());
+        V8Object key = new V8Object(context);
         runtime.registerV8Executor(key, executor);
-        V8Object anotherKey = new V8Object(runtime.getDefaultContext());
+        V8Object anotherKey = new V8Object(context);
 
         V8Executor result = runtime.getExecutor(anotherKey);
 
@@ -104,10 +105,10 @@ public class V8ExecutorTest {
 
     @Test
     public void testRemoveNestedExecutor() {
-        V8 runtime = V8.createV8Runtime();
+        V8Isolate runtime = V8Isolate.create();
         runtime.terminateExecution();
         V8Executor executor = new V8Executor("");
-        V8Object key = new V8Object(runtime.getDefaultContext());
+        V8Object key = new V8Object(runtime.createContext());
         runtime.registerV8Executor(key, executor);
 
         V8Executor result = runtime.removeExecutor(key);
@@ -120,10 +121,10 @@ public class V8ExecutorTest {
 
     @Test
     public void testTerminateNestedExecutors() {
-        V8 runtime = V8.createV8Runtime();
+        V8Isolate runtime = V8Isolate.create();
         runtime.terminateExecution();
         V8Executor executor = new V8Executor("while (true){}");
-        V8Object key = new V8Object(runtime.getDefaultContext());
+        V8Object key = new V8Object(runtime.createContext());
         runtime.registerV8Executor(key, executor);
 
         runtime.shutdownExecutors(false);
@@ -135,11 +136,11 @@ public class V8ExecutorTest {
 
     @Test
     public void testForceTerminateNestedExecutors() throws InterruptedException {
-        V8 runtime = V8.createV8Runtime();
+        V8Isolate runtime = V8Isolate.create();
         runtime.terminateExecution();
         V8Executor executor = new V8Executor("while (true){}");
         executor.start();
-        V8Object key = new V8Object(runtime.getDefaultContext());
+        V8Object key = new V8Object(runtime.createContext());
         runtime.registerV8Executor(key, executor);
 
         runtime.shutdownExecutors(true);
@@ -185,7 +186,7 @@ public class V8ExecutorTest {
         V8Executor executor = new V8Executor("callback()") {
             @Override
             protected void setup(final NodeJS nodeJs) {
-                nodeJs.getRuntime().registerJavaMethod(V8ExecutorTest.this, "callback", "callback", new Class<?>[] {});
+                nodeJs.getContext().registerJavaMethod(V8ExecutorTest.this, "callback", "callback", new Class<?>[] {});
             }
         };
         executor.start();
@@ -218,7 +219,7 @@ public class V8ExecutorTest {
         V8Executor executor = new V8Executor("postMessage(''); while(true){}") {
             @Override
             protected void setup(final NodeJS nodeJs) {
-                nodeJs.getRuntime().registerJavaMethod(V8ExecutorTest.this, "postMessage", "postMessage", new Class<?>[] { Object[].class });
+                nodeJs.getContext().registerJavaMethod(V8ExecutorTest.this, "postMessage", "postMessage", new Class<?>[] { Object[].class });
             }
         };
         executor.start();
@@ -285,7 +286,7 @@ public class V8ExecutorTest {
         V8Executor executor = new V8Executor("messageHandler = function(e) { postMessage(e); }", true, "messageHandler") {
             @Override
             protected void setup(final NodeJS nodeJs) {
-                nodeJs.getRuntime().registerJavaMethod(V8ExecutorTest.this, "postMessage", "postMessage", new Class<?>[] { Object[].class });
+                nodeJs.getContext().registerJavaMethod(V8ExecutorTest.this, "postMessage", "postMessage", new Class<?>[] { Object[].class });
             }
         };
         executor.start();
@@ -302,7 +303,7 @@ public class V8ExecutorTest {
         V8Executor executor = new V8Executor("messageHandler = function(e) { postMessage(e); }", true, "messageHandler") {
             @Override
             protected void setup(final NodeJS nodeJs) {
-                nodeJs.getRuntime().registerJavaMethod(V8ExecutorTest.this, "postMessage", "postMessage", new Class<?>[] { Object[].class });
+                nodeJs.getContext().registerJavaMethod(V8ExecutorTest.this, "postMessage", "postMessage", new Class<?>[] { Object[].class });
             }
         };
         executor.start();
@@ -318,7 +319,7 @@ public class V8ExecutorTest {
         V8Executor executor = new V8Executor("messageHandler = function(e) { postMessage(e[0], e[1]); }", true, "messageHandler") {
             @Override
             protected void setup(final NodeJS nodeJs) {
-                nodeJs.getRuntime().registerJavaMethod(V8ExecutorTest.this, "postMessage", "postMessage", new Class<?>[] { Object[].class });
+                nodeJs.getContext().registerJavaMethod(V8ExecutorTest.this, "postMessage", "postMessage", new Class<?>[] { Object[].class });
             }
         };
         executor.start();
@@ -335,7 +336,7 @@ public class V8ExecutorTest {
         V8Executor executor = new V8Executor("messageHandler = function(e) { postMessage(e); }", true, "messageHandler") {
             @Override
             protected void setup(final NodeJS nodeJs) {
-                nodeJs.getRuntime().registerJavaMethod(V8ExecutorTest.this, "postMessage", "postMessage", new Class<?>[] { Object[].class });
+                nodeJs.getContext().registerJavaMethod(V8ExecutorTest.this, "postMessage", "postMessage", new Class<?>[] { Object[].class });
             }
         };
         executor.start();
@@ -354,7 +355,7 @@ public class V8ExecutorTest {
         V8Executor executor = new V8Executor("messageHandler = function(e) { postMessage(e); }", true, "messageHandler") {
             @Override
             protected void setup(final NodeJS nodeJs) {
-                nodeJs.getRuntime().registerJavaMethod(V8ExecutorTest.this, "postMessage", "postMessage", new Class<?>[] { Object[].class });
+                nodeJs.getContext().registerJavaMethod(V8ExecutorTest.this, "postMessage", "postMessage", new Class<?>[] { Object[].class });
             }
         };
         executor.start();

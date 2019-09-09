@@ -12,11 +12,11 @@ package com.eclipsesource.v8;
 
 import com.eclipsesource.v8.utils.V8Executor;
 import com.eclipsesource.v8.utils.V8Map;
-import com.eclipsesource.v8.utils.V8Runnable;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
@@ -33,27 +33,25 @@ import java.util.function.Consumer;
  * V8 runtime = V8.createV8Runtime();
  *
  */
-public class V8 extends V8Object {
+public class V8Isolate implements Releasable {
 
-    private static final Object          lock                    = new Object();
-    private volatile static int          runtimeCounter          = 0;
-    private static String                v8Flags                 = null;
-    private static boolean               initialized             = false;
+    private static final Object           lock                    = new Object();
+    private volatile static AtomicInteger runtimeCounter          = new AtomicInteger(0);
+    private static String                 v8Flags                 = null;
+    private static boolean                initialized             = false;
 
-    private V8Locker                     locker                  = null;
-    private long                         objectReferences        = 0;
-    private LinkedList<V8Context>        contexts                = new LinkedList<V8Context>();
-    private List<Releasable>             resources               = null;
-    private V8Map<V8Executor>            executors               = null;
-    private boolean                      forceTerminateExecutors = false;
+    private long                          isolatePtr              = 0;
+    private V8Locker                      locker                  = null;
+    private LinkedList<V8Context>         contexts                = new LinkedList<V8Context>();
+    private List<Releasable>              resources               = null;
+    private V8Map<V8Executor>             executors               = null;
+    private boolean                       forceTerminateExecutors = false;
+    private boolean                       released                = false;
 
-    private LinkedList<ReferenceHandler> referenceHandlers       = new LinkedList<ReferenceHandler>();
-    private LinkedList<V8Runnable>       releaseHandlers         = new LinkedList<V8Runnable>();
-
-    private static boolean               nativeLibraryLoaded     = false;
-    private static Error                 nativeLoadError         = null;
-    private static Exception             nativeLoadException     = null;
-    private static V8Value               undefined               = new V8Object.Undefined();
+    private static boolean                nativeLibraryLoaded     = false;
+    private static Error                  nativeLoadError         = null;
+    private static Exception              nativeLoadException     = null;
+    private static V8Value                undefined               = new V8Object.Undefined();
 
     private synchronized static void load(final String tmpDirectory) {
         try {
@@ -95,8 +93,8 @@ public class V8 extends V8Object {
      *
      * @return A new isolated V8 Runtime.
      */
-    public static V8 createV8Runtime() {
-        return createV8Runtime(null, null);
+    public static V8Isolate create() {
+        return create(null);
     }
 
     /**
@@ -106,28 +104,12 @@ public class V8 extends V8Object {
      *
      * The current thread is given the lock to this runtime.
      *
-     * @param globalAlias The name to associate with the global scope.
-     *
-     * @return A new isolated V8 Runtime.
-     */
-    public static V8 createV8Runtime(final String globalAlias) {
-        return createV8Runtime(globalAlias, null);
-    }
-
-    /**
-     * Creates a new V8Runtime and loads the required native libraries if they
-     * are not already loaded. An alias is also set for the global scope. For example,
-     * 'window' can be set as the global scope name.
-     *
-     * The current thread is given the lock to this runtime.
-     *
-     * @param globalAlias The name to associate with the global scope.
      * @param tempDirectory The name of the directory to extract the native
      * libraries too.
      *
      * @return A new isolated V8 Runtime.
      */
-    public static V8 createV8Runtime(final String globalAlias, final String tempDirectory) {
+    public static V8Isolate create(final String tempDirectory) {
         if (!nativeLibraryLoaded) {
             synchronized (lock) {
                 if (!nativeLibraryLoaded) {
@@ -141,113 +123,24 @@ public class V8 extends V8Object {
             initialized = true;
         }
 
-        // this is nasty load-order logic
-        V8 runtime = new V8();
-        V8Context context = new V8Context();
-
-        long runtimePtr = V8API.get()._createIsolate(runtime);
-        runtime.init(runtimePtr, context);
-
-        long contextPtr = V8API.get()._createContext(context, runtimePtr, globalAlias);
-        context.init(runtime, contextPtr);
-
-        synchronized (lock) {
-            runtimeCounter++;
-        }
+        V8Isolate runtime = new V8Isolate();
+        runtimeCounter.incrementAndGet();
 
         return runtime;
     }
 
-    private V8() {
-        released = false;
-    }
-
-    private void init(long runtimePtr, V8Context defaultContext) {
-        objectHandle = runtimePtr;
+    private V8Isolate() {
+        isolatePtr = V8API.get()._createIsolate(this);
         locker = new V8Locker(this);
-        setDefaultContext(defaultContext);
         checkThread();
     }
 
-    @Override
-    public V8 getRuntime() {
-        return this;
+    public long getIsolatePtr() {
+        return isolatePtr;
     }
 
-    @Override
-    public V8Context getContext() {
-        return getDefaultContext();
-    }
-
-    public V8Context getDefaultContext() {
-        return contexts.getFirst();
-    }
-
-    private void setDefaultContext(V8Context context) {
-        contexts.addFirst(context);
-        addObjRef(context);
-    }
-
-    public void doAllContexts(Consumer<V8Context> contextConsumer) {
+    private void doAllContexts(Consumer<V8Context> contextConsumer) {
         contexts.forEach(contextConsumer);
-    }
-
-    /**
-     * Adds a ReferenceHandler to track when new V8Objects are created.
-     *
-     * @param handler The ReferenceHandler to add
-     */
-    public void addReferenceHandler(final ReferenceHandler handler) {
-        referenceHandlers.add(0, handler);
-    }
-
-    /**
-     * Adds a handler that will be called when the runtime is being released.
-     * The runtime will still be available when the handler is executed.
-     *
-     * @param handler The handler to invoke when the runtime, is being released
-     */
-    public void addReleaseHandler(final V8Runnable handler) {
-        releaseHandlers.add(handler);
-    }
-
-    /**
-     * Removes an existing ReferenceHandler from the collection of reference handlers.
-     * If the ReferenceHandler does not exist in the collection, it is ignored.
-     *
-     * @param handler The reference handler to remove
-     */
-    public void removeReferenceHandler(final ReferenceHandler handler) {
-        referenceHandlers.remove(handler);
-    }
-
-    /**
-     * Removes an existing release handler from the collection of release handlers.
-     * If the release handler does not exist in the collection, it is ignored.
-     *
-     * @param handler The handler to remove
-     */
-    public void removeReleaseHandler(final V8Runnable handler) {
-        releaseHandlers.remove(handler);
-    }
-
-
-    private void notifyReleaseHandlers(final V8 runtime) {
-        for (V8Runnable handler : releaseHandlers) {
-            handler.run(runtime.getDefaultContext());
-        }
-    }
-
-    private void notifyReferenceCreated(final V8Value object) {
-        for (ReferenceHandler referenceHandler : referenceHandlers) {
-            referenceHandler.v8HandleCreated(object);
-        }
-    }
-
-    private void notifyReferenceDisposed(final V8Value object) {
-        for (ReferenceHandler referenceHandler : referenceHandlers) {
-            referenceHandler.v8HandleDisposed(object);
-        }
     }
 
     private static void checkNativeLibraryLoaded() {
@@ -281,7 +174,7 @@ public class V8 extends V8Object {
      * @return The number of active runtimes.
      */
     public static int getActiveRuntimes() {
-        return runtimeCounter;
+        return runtimeCounter.get();
     }
 
     /**
@@ -290,8 +183,8 @@ public class V8 extends V8Object {
      * @return The number of Object References on this runtime.
      */
     public long getObjectReferenceCount() {
-        AtomicLong refCount = new AtomicLong(objectReferences);
-        doAllContexts(v8Ctx -> refCount.addAndGet(v8Ctx.weakReferenceCount()));
+        AtomicLong refCount = new AtomicLong(0);
+        doAllContexts(v8Ctx -> refCount.addAndGet(v8Ctx.objectReferenceCount()));
 
         return refCount.get();
     }
@@ -316,23 +209,14 @@ public class V8 extends V8Object {
         return "Unknown revision ID";
     }
 
-    /*
-     * (non-Javadoc)
-     * @see com.eclipsesource.v8.V8Value#close()
-     */
     @Override
     public void close() {
         release(true);
     }
 
-    /*
-     * (non-Javadoc)
-     * @see com.eclipsesource.v8.V8Value#release()
-     */
     @Override
-    @Deprecated
-    public void release() {
-        release(true);
+    public boolean isReleased() {
+        return released;
     }
 
     /**
@@ -342,7 +226,7 @@ public class V8 extends V8Object {
      */
     public void terminateExecution() {
         forceTerminateExecutors = true;
-        getDefaultContext().terminateExecution();
+        doAllContexts(V8Context::terminateExecution);
     }
 
     /**
@@ -359,7 +243,7 @@ public class V8 extends V8Object {
         }
         checkThread();
         try {
-            notifyReleaseHandlers(this);
+            doAllContexts(V8Context::notifyReleaseHandlers);
         } finally {
             releaseResources();
             shutdownExecutors(forceTerminateExecutors);
@@ -368,18 +252,14 @@ public class V8 extends V8Object {
             }
             doAllContexts(V8Context::releaseNativeMethodDescriptors);
             doAllContexts(V8Context::close);
-            synchronized (lock) {
-                runtimeCounter--;
-            }
-            V8API.get()._releaseRuntime(getHandle());
+            runtimeCounter.decrementAndGet();
+            V8API.get()._releaseRuntime(isolatePtr);
             released = true;
             if (reportMemoryLeaks && (getObjectReferenceCount() > 0)) {
                 throw new IllegalStateException(getObjectReferenceCount() + " Object(s) still exist in runtime");
             }
         }
     }
-
-
 
     private void releaseResources() {
         if (resources != null) {
@@ -488,14 +368,8 @@ public class V8 extends V8Object {
      * @param globalAlias The name to associate with the global scope.
      */
     public V8Context createContext(String globalAlias) {
-        checkThread();
-
-        V8Context context = new V8Context();
-		long contextPtr = V8API.get()._createContext(context, getHandle(), globalAlias);
-		context.init(this, contextPtr);
-
+        V8Context context = new V8Context(this, globalAlias);
         contexts.addLast(context);
-        addObjRef(context);
 
         return context;
     }
@@ -527,14 +401,14 @@ public class V8 extends V8Object {
      */
     public void lowMemoryNotification() {
         checkThread();
-        lowMemoryNotification(getHandle());
+        V8API.get()._lowMemoryNotification(getIsolatePtr());
     }
 
     void checkRuntime(final V8Value value) {
         if ((value == null) || value.isUndefined()) {
             return;
         }
-        V8 runtime = value.getRuntime();
+        V8Isolate runtime = value.getIsolate();
         if ((runtime == null) ||
                 runtime.isReleased() ||
                 (runtime != this)) {
@@ -549,23 +423,13 @@ public class V8 extends V8Object {
         }
     }
 
-    void createNodeRuntime(final String fileName) {
-        getDefaultContext().startNodeJS(fileName);
+    protected void acquireLock() {
+        V8API.get()._acquireLock(getIsolatePtr());
     }
 
-    protected void acquireLock(final long v8ContextPtr) {
-        V8API.get()._acquireLock(v8ContextPtr);
+    protected void releaseLock() {
+        V8API.get()._releaseLock(getIsolatePtr());
     }
-
-    protected void releaseLock(final long v8RuntimePtr) {
-        V8API.get()._releaseLock(v8RuntimePtr);
-    }
-
-    protected void lowMemoryNotification(final long v8RuntimePtr) {
-        V8API.get()._lowMemoryNotification(v8RuntimePtr);
-    }
-
-
 
     public static boolean isNodeCompatible() {
         if (!nativeLibraryLoaded) {
@@ -575,20 +439,7 @@ public class V8 extends V8Object {
                 }
             }
         }
+
         return V8API._isNodeCompatible();
-    }
-
-    void addObjRef(final V8Value reference) {
-        objectReferences++;
-        if (!referenceHandlers.isEmpty()) {
-            notifyReferenceCreated(reference);
-        }
-    }
-
-    void releaseObjRef(final V8Value reference) {
-        if (!referenceHandlers.isEmpty()) {
-            notifyReferenceDisposed(reference);
-        }
-        objectReferences--;
     }
 }

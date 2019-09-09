@@ -11,8 +11,8 @@
  ******************************************************************************/
 package com.eclipsesource.v8.utils;
 
-import com.eclipsesource.v8.V8;
 import com.eclipsesource.v8.V8Context;
+import com.eclipsesource.v8.V8Isolate;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -30,7 +30,7 @@ public class ConcurrentV8Test {
     @After
     public void tearDown() {
         try {
-            if (V8.getActiveRuntimes() != 0) {
+            if (V8Isolate.getActiveRuntimes() != 0) {
                 throw new IllegalStateException("V8Runtimes not properly released");
             }
         } catch (IllegalStateException e) {
@@ -91,7 +91,7 @@ public class ConcurrentV8Test {
 
                 @Override
                 public void run(final V8Context v8Context) {
-                    assertTrue(v8Context.getRuntime().getLocker().hasLock());
+                    assertTrue(v8Context.getIsolate().getLocker().hasLock());
                 }
             });
         } catch (Exception e) {

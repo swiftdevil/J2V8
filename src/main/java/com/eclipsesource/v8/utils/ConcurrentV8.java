@@ -10,24 +10,24 @@
  ******************************************************************************/
 package com.eclipsesource.v8.utils;
 
-import com.eclipsesource.v8.V8;
 import com.eclipsesource.v8.V8Context;
+import com.eclipsesource.v8.V8Isolate;
 
 /**
- * Wrapper class for an {@link com.eclipsesource.v8.V8} instance that allows
- * a V8 instance to be invoked from across threads without explicitly acquiring
+ * Wrapper class for an {@link V8Context} instance that allows
+ * a V8 context to be invoked from across threads without explicitly acquiring
  * or releasing locks.
  *
  * This class does not guarantee the safety of any objects stored in or accessed
- * from the wrapped V8 instance; it only enables callers to interact with a V8
- * instance from any thread. The V8 instance represented by this class should
+ * from the wrapped V8 context; it only enables callers to interact with a V8
+ * context from any thread. The V8 context represented by this class should
  * still be treated with thread safety in mind
  *
  * @author Brandon Sanders [brandon@alicorn.io]
  * @author R. Ian Bull - Additional API
  */
 public final class ConcurrentV8 {
-    private V8 v8 = null;
+    private V8Context v8Context = null;
 
     /**
      * Create a new ConcurrentV8. A ConcurrentV8 allows multiple
@@ -35,8 +35,8 @@ public final class ConcurrentV8 {
      * the locks between calls.
      */
     public ConcurrentV8() {
-        v8 = V8.createV8Runtime();
-        v8.getLocker().release();
+        v8Context = V8Isolate.create().createContext();
+        v8Context.getIsolate().getLocker().release();
     }
 
     /**
@@ -44,8 +44,8 @@ public final class ConcurrentV8 {
      *
      * @return The V8 runtime backing this ConcurrentV8
      */
-    public V8 getV8() {
-        return v8;
+    public V8Isolate getV8() {
+        return v8Context.getIsolate();
     }
 
     /**
@@ -60,17 +60,17 @@ public final class ConcurrentV8 {
      */
     public synchronized void run(final V8Runnable runnable) {
         try {
-            v8.getLocker().acquire();
-            runnable.run(v8.getDefaultContext());
+            v8Context.getIsolate().getLocker().acquire();
+            runnable.run(v8Context);
         } finally {
-            if ((v8 != null) && (v8.getLocker() != null) && v8.getLocker().hasLock()) {
-                v8.getLocker().release();
+            if ((v8Context != null) && (v8Context.getIsolate().getLocker() != null) && v8Context.getIsolate().getLocker().hasLock()) {
+                v8Context.getIsolate().getLocker().release();
             }
         }
     }
 
     /**
-     * Releases the underlying {@link V8} instance.
+     * Releases the underlying {@link V8Isolate} instance.
      *
      * This method should be invoked once you're done using this object,
      * otherwise a large amount of garbage could be left on the JVM due to
@@ -80,13 +80,13 @@ public final class ConcurrentV8 {
      * will do nothing.
      */
     public void release() {
-        if ((v8 != null) && !v8.isReleased()) {
+        if ((v8Context != null) && !v8Context.isReleased()) {
             // Release the V8 instance from the V8 thread context.
             run(new V8Runnable() {
                 @Override
                 public void run(final V8Context v8Context) {
                     if ((v8Context != null) && !v8Context.isReleased()) {
-                        v8Context.close();
+                        v8Context.close(true);
                     }
                 }
             });

@@ -23,7 +23,7 @@ import java.util.List;
  * block until a client connects. {@link #setTraceCommunication(boolean)} allows to output
  * communication details for debugging purposes. Before creating V8 runtime you need to set V8 flag to expose
  * debug object. If you do not intend to set other flags, than you can use {@link #configureV8ForDebugging()}
- * method, otherwise set {@code -expose-debug-as=__j2v8_Debug} flag through {@link V8#setFlags(String)}.
+ * method, otherwise set {@code -expose-debug-as=__j2v8_Debug} flag through {@link V8Isolate#setFlags(String)}.
  *
  * <p>Client connection is handled in a separate thread, however, commands are processed in the V8 thread.
  * Therefore it is vital to provide an opportunity to process requests by calling
@@ -76,7 +76,7 @@ public class V8DebugServer {
      */
     public static void configureV8ForDebugging() {
         try {
-            V8.setFlags("-expose-debug-as=" + DEBUG_OBJECT_NAME);
+            V8Isolate.setFlags("-expose-debug-as=" + DEBUG_OBJECT_NAME);
         } catch (Throwable t) {
             t.printStackTrace();
         }

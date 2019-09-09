@@ -21,22 +21,22 @@ import static org.mockito.Mockito.mock;
 
 public class V8ObjectTest {
 
-    private V8 v8;
+    private V8Isolate v8Isolate;
     private V8Context v8Context;
 
     @Before
     public void setup() {
-        v8 = V8.createV8Runtime();
-        v8Context = v8.getDefaultContext();
+        v8Isolate = V8Isolate.create();
+        v8Context = v8Isolate.createContext();
     }
 
     @After
     public void tearDown() {
         try {
-            if (v8 != null) {
-                v8.close();
+            if (v8Isolate != null) {
+                v8Isolate.close();
             }
-            if (V8.getActiveRuntimes() != 0) {
+            if (V8Isolate.getActiveRuntimes() != 0) {
                 throw new IllegalStateException("V8Runtimes not properly released");
             }
         } catch (IllegalStateException e) {
@@ -164,9 +164,9 @@ public class V8ObjectTest {
     public void testReleaseRuntimeDoesNotReleaseObject() {
         try {
             new V8Object(v8Context);
-            v8.close();
+            v8Isolate.close();
         } catch (IllegalStateException e) {
-            v8 = V8.createV8Runtime();
+            v8Isolate = V8Isolate.create();
             return;
         }
         fail("Illegal State Exception not thrown.");
@@ -203,30 +203,30 @@ public class V8ObjectTest {
     public void testToStringWorksOnReleasedV8Runtime_V8Object() {
         @SuppressWarnings("resource")
         V8Object v8Object = new V8Object(v8Context);
-        v8.release(false);
+        v8Isolate.release(false);
 
         assertEquals("[Object released]", v8Object.toString());
-        v8 = V8.createV8Runtime();
+        v8Isolate = V8Isolate.create();
     }
 
     @Test
     public void testToStringWorksOnReleasedV8Runtime_V8Function() {
         @SuppressWarnings("resource")
         V8Object v8Object = new V8Function(v8Context);
-        v8Context.close(true);
+        v8Isolate.release(false);
 
         assertEquals("[Function released]", v8Object.toString());
-        v8 = V8.createV8Runtime();
+        v8Isolate = V8Isolate.create();
     }
 
     @Test
     public void testToStringWorksOnReleasedV8Runtime_V8Array() {
         @SuppressWarnings("resource")
         V8Object v8Object = new V8Array(v8Context);
-        v8.release(false);
+        v8Isolate.release(false);
 
         assertEquals("[Array released]", v8Object.toString());
-        v8 = V8.createV8Runtime();
+        v8Isolate = V8Isolate.create();
     }
 
     @Test(expected = IllegalStateException.class)
@@ -320,7 +320,7 @@ public class V8ObjectTest {
 
         Object result = object.get("key");
 
-        assertEquals(V8.getUndefined(), result);
+        assertEquals(V8Isolate.getUndefined(), result);
         object.close();
     }
 
@@ -833,7 +833,7 @@ public class V8ObjectTest {
     public void testStaticUndefined() {
         V8Object undefined = v8Context.getObject("foo");
 
-        assertEquals(undefined, V8.getUndefined());
+        assertEquals(undefined, V8Isolate.getUndefined());
     }
 
     @Test
@@ -1065,16 +1065,16 @@ public class V8ObjectTest {
     @Test
     public void testAddUndefinedAsObject() {
         V8Object object = new V8Object(v8Context);
-        object.add("foo", V8.getUndefined());
+        object.add("foo", V8Isolate.getUndefined());
 
-        assertEquals(V8.getUndefined(), object.getObject("foo"));
+        assertEquals(V8Isolate.getUndefined(), object.getObject("foo"));
         object.close();
     }
 
     @Test
     public void testAddUndefinedIsUndefined() {
         V8Object object = new V8Object(v8Context);
-        object.add("foo", V8.getUndefined());
+        object.add("foo", V8Isolate.getUndefined());
 
         assertEquals(UNDEFINED, object.getType("foo"));
         object.close();
@@ -1659,7 +1659,7 @@ public class V8ObjectTest {
 
     @Test
     public void testTwinIsUndefined() {
-        V8Object v8Object = (V8Object) V8.getUndefined();
+        V8Object v8Object = (V8Object) V8Isolate.getUndefined();
 
         V8Value twin = v8Object.twin();
 
@@ -1807,7 +1807,7 @@ public class V8ObjectTest {
 
     @Test
     public void testGetType_Undefined() {
-        assertEquals(V8API.UNDEFINED, V8.getUndefined().getV8Type());
+        assertEquals(V8API.UNDEFINED, V8Isolate.getUndefined().getV8Type());
     }
 
     @SuppressWarnings("resource")
@@ -1815,7 +1815,7 @@ public class V8ObjectTest {
     public void testWeakReferenceReducesObjectCount() {
         new V8Object(v8Context).setWeak();
 
-        assertEquals(0, v8.getObjectReferenceCount());
+        assertEquals(0, v8Context.objectReferenceCount());
     }
 
     @SuppressWarnings("resource")

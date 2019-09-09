@@ -116,14 +116,14 @@ public class V8Executor extends Thread {
     public void run() {
         synchronized (this) {
             nodeJs = NodeJS.createNodeJS();
-            nodeJs.getRuntime().registerJavaMethod(new ExecutorTermination(), "__j2v8__checkThreadTerminate");
+            nodeJs.getContext().registerJavaMethod(new ExecutorTermination(), "__j2v8__checkThreadTerminate");
             setup(nodeJs);
         }
         try {
             if (!forceTerminating) {
                 nodeJs.getContext().executeVoidScript("__j2v8__checkThreadTerminate();\n" + script, getName(), -1);
                 if (resultConsumer != null) {
-                    resultConsumer.apply(nodeJs.getRuntime());
+                    resultConsumer.apply(nodeJs.getContext());
                 }
             }
             while (!forceTerminating && longRunning) {
@@ -137,21 +137,17 @@ public class V8Executor extends Thread {
                 }
                 if (!messageQueue.isEmpty()) {
                     String[] message = messageQueue.remove(0);
-                    V8Array parameters = new V8Array(nodeJs.getContext());
-                    V8Array strings = new V8Array(nodeJs.getContext());
-                    try {
+                    try (V8Array parameters = new V8Array(nodeJs.getContext());
+                         V8Array strings = new V8Array(nodeJs.getContext())) {
                         for (String string : message) {
                             strings.push(string);
                         }
                         parameters.push(strings);
-                        nodeJs.getRuntime().executeVoidFunction(messageHandler, parameters);
+                        nodeJs.getContext().executeVoidFunction(messageHandler, parameters);
 
                         if (resultConsumer != null) {
-                            resultConsumer.apply(nodeJs.getRuntime());
+                            resultConsumer.apply(nodeJs.getContext());
                         }
-                    } finally {
-                        strings.close();
-                        parameters.close();
                     }
                 }
             }

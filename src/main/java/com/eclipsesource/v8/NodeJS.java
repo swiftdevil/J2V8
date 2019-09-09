@@ -69,9 +69,10 @@ public class NodeJS implements Closeable {
      * been compiled for your platform.
      */
     public static NodeJS createNodeJS() {
-        final V8 v8 = V8.createV8Runtime(GLOBAL);
-        final NodeJS node = new NodeJS(v8.getDefaultContext());
-        v8.registerJavaMethod(new JavaVoidCallback() {
+        final V8Isolate v8Isolate = V8Isolate.create();
+        final V8Context v8Context = v8Isolate.createContext(GLOBAL);
+        final NodeJS node = new NodeJS(v8Context);
+        v8Context.registerJavaMethod(new JavaVoidCallback() {
 
             @Override
             public void invoke(final V8Object receiver, final V8Array parameters) {
@@ -83,7 +84,7 @@ public class NodeJS implements Closeable {
         try {
             File startupScript = createTemporaryScriptFile(STARTUP_SCRIPT, STARTUP_SCRIPT_NAME);
             try {
-                v8.createNodeRuntime(startupScript.getAbsolutePath());
+                v8Context.createNodeRuntime(startupScript.getAbsolutePath());
             } finally {
                 startupScript.delete();
             }
@@ -107,8 +108,8 @@ public class NodeJS implements Closeable {
      *
      * @return The V8 Runtime.
      */
-    public V8 getRuntime() {
-        return getContext().getRuntime();
+    public V8Isolate getRuntime() {
+        return getContext().getIsolate();
     }
 
     /**
@@ -132,7 +133,7 @@ public class NodeJS implements Closeable {
             require.close();
         }
         if (!getContext().isReleased()) {
-            getContext().close();
+            getContext().close(true);
         }
     }
 

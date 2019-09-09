@@ -44,7 +44,7 @@ public class NodeJSTest {
     }
 
     private static boolean skipTest() {
-        return !V8.isNodeCompatible();
+        return !V8Isolate.isNodeCompatible();
     }
 
     private final static String skipMessage = "Skipped test (Node.js features not included in native library)";
@@ -134,7 +134,7 @@ public class NodeJSTest {
         nodeJS.exec("global.passed = true;");
         runMessageLoop();
 
-        assertEquals(true, nodeJS.getRuntime().getBoolean("passed"));
+        assertEquals(true, nodeJS.getContext().getBoolean("passed"));
     }
 
     @Test
@@ -147,7 +147,7 @@ public class NodeJSTest {
         nodeJS.require(testScript.getAbsolutePath()).close();
         runMessageLoop();
 
-        assertEquals(true, nodeJS.getRuntime().getBoolean("passed"));
+        assertEquals(true, nodeJS.getContext().getBoolean("passed"));
         testScript.delete();
     }
 

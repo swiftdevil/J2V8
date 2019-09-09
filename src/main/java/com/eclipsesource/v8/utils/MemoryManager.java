@@ -11,7 +11,7 @@
 package com.eclipsesource.v8.utils;
 
 import com.eclipsesource.v8.ReferenceHandler;
-import com.eclipsesource.v8.V8;
+import com.eclipsesource.v8.V8Context;
 import com.eclipsesource.v8.V8Value;
 
 import java.io.Closeable;
@@ -30,7 +30,7 @@ import java.util.Iterator;
 public class MemoryManager implements Closeable {
 
     private MemoryManagerReferenceHandler memoryManagerReferenceHandler;
-    private V8                            v8;
+    private V8Context                     v8Context;
     private ArrayList<V8Value>            references = new ArrayList<V8Value>();
     private boolean                       releasing = false;
     private boolean                       released   = false;
@@ -39,12 +39,12 @@ public class MemoryManager implements Closeable {
      * Creates and registered a Memory Manager. After this, all V8 handles will be
      * tracked until release is called.
      *
-     * @param v8 The V8 runtime to register this Memory Manager on
+     * @param v8Context The V8 context to register this Memory Manager on
      */
-    public MemoryManager(final V8 v8) {
-        this.v8 = v8;
+    public MemoryManager(final V8Context v8Context) {
+        this.v8Context = v8Context;
         memoryManagerReferenceHandler = new MemoryManagerReferenceHandler();
-        v8.addReferenceHandler(memoryManagerReferenceHandler);
+        v8Context.addReferenceHandler(memoryManagerReferenceHandler);
     }
 
     /**
@@ -72,7 +72,7 @@ public class MemoryManager implements Closeable {
      * @param object The object to persist
      */
     public void persist(final V8Value object) {
-        v8.getLocker().checkThread();
+        v8Context.getIsolate().getLocker().checkThread();
         checkReleased();
         references.remove(object);
     }
@@ -92,7 +92,7 @@ public class MemoryManager implements Closeable {
      * this memory manager was active.
      */
     public void release() {
-        v8.getLocker().checkThread();
+        v8Context.getIsolate().getLocker().checkThread();
         if (released) {
             return;
         }
@@ -101,7 +101,7 @@ public class MemoryManager implements Closeable {
             for (V8Value reference : references) {
                 reference.close();
             }
-            v8.removeReferenceHandler(memoryManagerReferenceHandler);
+            v8Context.removeReferenceHandler(memoryManagerReferenceHandler);
             references.clear();
         } finally {
             releasing = false;

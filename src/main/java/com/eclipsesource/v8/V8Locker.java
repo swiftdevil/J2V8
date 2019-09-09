@@ -20,9 +20,9 @@ public class V8Locker {
 
     private Thread  thread   = null;
     private boolean released = false;
-    private V8      runtime;
+    private V8Isolate runtime;
 
-    V8Locker(final V8 runtime) {
+    V8Locker(final V8Isolate runtime) {
         this.runtime = runtime;
         acquire();
     }
@@ -47,7 +47,7 @@ public class V8Locker {
         } else if ((thread == Thread.currentThread())) {
             return;
         }
-        runtime.acquireLock(runtime.getHandle());
+        runtime.acquireLock();
         thread = Thread.currentThread();
         released = false;
     }
@@ -65,7 +65,7 @@ public class V8Locker {
         } else if (thread == Thread.currentThread()) {
             return true;
         }
-        runtime.acquireLock(runtime.getHandle());
+        runtime.acquireLock();
         thread = Thread.currentThread();
         released = false;
         return true;
@@ -73,7 +73,7 @@ public class V8Locker {
 
     /**
      * Release the lock if it's currently held by the calling thread.
-     * If the current thread does not hold the lock, and error will be
+     * If the current thread does not hold the lock, an error will be
      * thrown. If no thread holds the lock then nothing will happen.
      */
     public synchronized void release() {
@@ -81,7 +81,7 @@ public class V8Locker {
             return;
         }
         checkThread();
-        runtime.releaseLock(runtime.getHandle());
+        runtime.releaseLock();
         thread = null;
         released = true;
     }

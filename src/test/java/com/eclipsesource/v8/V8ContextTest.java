@@ -12,42 +12,41 @@ public class V8ContextTest {
 
 	@Test
 	public void singleContextTest() {
-		V8 v8 = V8.createV8Runtime();
+		V8Isolate v8Isolate = V8Isolate.create();
 
-		V8Context a = v8.createContext();
+		V8Context a = v8Isolate.createContext();
 
 		a.add("x", 7);
 		a.add("x", 9);
 
 		assertEquals(9, a.get("x"));
+		v8Isolate.close();
 	}
 
 	@Test
 	public void multipleContextTest() {
-		V8 v8 = V8.createV8Runtime();
+		V8Isolate v8Isolate = V8Isolate.create();
 
-		V8Context a = v8.createContext();
-		V8Context b = v8.createContext();
+		V8Context a = v8Isolate.createContext();
+		V8Context b = v8Isolate.createContext();
 
 		a.add("x", 7);
 		b.add("x", 9);
 
 		assertNotEquals(a.get("x"), b.get("x"));
+		v8Isolate.close();
 	}
 
 	@Test
 	public void closeMultipleContextTest() {
-		V8 v8 = V8.createV8Runtime();
+		V8Isolate v8Isolate = V8Isolate.create();
 
 		List<V8Context> contexts = new ArrayList<>();
 		for (int i = 0; i < 100; i++) {
-			contexts.add(v8.createContext());
+			contexts.add(v8Isolate.createContext());
 		}
 
-		contexts.forEach(V8Context::close);
-		assertEquals(1, v8.getObjectReferenceCount());
-
-		v8.close();
-		assertEquals(0, v8.getObjectReferenceCount());
+		v8Isolate.close();
+		assertEquals(0, v8Isolate.getObjectReferenceCount());
 	}
 }

@@ -85,10 +85,10 @@ public class V8Function extends V8Object {
      */
     @SuppressWarnings("resource")
     public Object call(V8Object receiver, final V8Array parameters) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
-        getRuntime().checkRuntime(receiver);
-        getRuntime().checkRuntime(parameters);
+        getIsolate().checkRuntime(receiver);
+        getIsolate().checkRuntime(parameters);
         receiver = receiver != null ? receiver : getContext();
         long parametersHandle = parameters == null ? 0 : parameters.getHandle();
         long receiverHandle = receiver.isUndefined() ? getContext().getHandle() : receiver.getHandle();

@@ -25,22 +25,22 @@ import static org.mockito.Mockito.*;
 
 public class V8Test {
 
-    private V8 v8;
+    private V8Isolate v8Isolate;
     private V8Context v8Context;
 
     @Before
     public void setup() {
-        v8 = V8.createV8Runtime();
-        v8Context = v8.getDefaultContext();
+        v8Isolate = V8Isolate.create();
+        v8Context = v8Isolate.createContext();
     }
 
     @After
     public void tearDown() {
         try {
-            if (v8 != null) {
-                v8.close();
+            if (v8Isolate != null) {
+               v8Isolate.close();
             }
-            if (V8.getActiveRuntimes() != 0) {
+            if (V8Isolate.getActiveRuntimes() != 0) {
                 throw new IllegalStateException("V8Runtimes not properly released");
             }
         } catch (IllegalStateException e) {
@@ -50,36 +50,37 @@ public class V8Test {
 
     @Test
     public void testGetVersion() {
-        String v8version = V8.getV8Version();
+        String v8version = V8Isolate.getV8Version();
 
         assertNotNull(v8version);
     }
 
     @Test
     public void testLowMemoryNotification() {
-        v8.lowMemoryNotification();
+        v8Isolate.lowMemoryNotification();
     }
 
     @Test
     public void testGetVersion_StartsWith5() {
-        String v8version = V8.getV8Version();
+        String v8version = V8Isolate.getV8Version();
 
         assertTrue(v8version.startsWith("5"));
     }
 
     @Test
     public void testV8Setup() {
-        assertNotNull(v8);
+        assertNotNull(v8Isolate);
         assertNotNull(v8Context);
     }
 
     @SuppressWarnings("resource")
     @Test
     public void testReleaseRuntimeReportsMemoryLeaks() {
-        V8 localV8 = V8.createV8Runtime();
-        new V8Object(localV8.getDefaultContext());
+        V8Isolate localV8Isolate = V8Isolate.create();
+        V8Context localV8Context = localV8Isolate.createContext();
+        new V8Object(localV8Context);
         try {
-            localV8.release(true);
+            localV8Isolate.release(true);
         } catch (IllegalStateException ise) {
             String message = ise.getMessage();
             assertEquals("1 Object(s) still exist in runtime", message);
@@ -91,11 +92,12 @@ public class V8Test {
     @SuppressWarnings("resource")
     @Test
     public void testReleaseRuntimeWithWeakReferencesReportsCorrectMemoryLeaks() {
-        V8 localV8 = V8.createV8Runtime();
-        new V8Object(localV8.getDefaultContext());
-        new V8Object(localV8.getDefaultContext()).setWeak();
+        V8Isolate localV8Isolate = V8Isolate.create();
+        V8Context localV8Context = localV8Isolate.createContext();
+        new V8Object(localV8Context);
+        new V8Object(localV8Context).setWeak();
         try {
-            localV8.release(true);
+            localV8Isolate.release(true);
         } catch (IllegalStateException ise) {
             String message = ise.getMessage();
             assertEquals("1 Object(s) still exist in runtime", message);
@@ -106,7 +108,7 @@ public class V8Test {
 
     @Test
     public void testObjectReferenceZero() {
-        long objectReferenceCount = v8.getObjectReferenceCount();
+        long objectReferenceCount = v8Isolate.getObjectReferenceCount();
         assertEquals(0, objectReferenceCount);
     }
 
@@ -114,7 +116,7 @@ public class V8Test {
     public void testObjectReferenceCountOne() {
         V8Object object = new V8Object(v8Context);
 
-        long objectReferenceCount = v8.getObjectReferenceCount();
+        long objectReferenceCount = v8Isolate.getObjectReferenceCount();
 
         assertEquals(1, objectReferenceCount);
         object.close();
@@ -125,32 +127,32 @@ public class V8Test {
         V8Object object = new V8Object(v8Context);
         object.close();
 
-        long objectReferenceCount = v8.getObjectReferenceCount();
+        long objectReferenceCount = v8Isolate.getObjectReferenceCount();
 
         assertEquals(0, objectReferenceCount);
     }
 
     @Test(expected = Error.class)
     public void testCannotAccessDisposedIsolateVoid() {
-        v8.close();
+        v8Isolate.close();
         v8Context.executeVoidScript("");
     }
 
     @Test(expected = Error.class)
     public void testCannotAccessDisposedIsolateInt() {
-        v8.close();
+        v8Isolate.close();
         v8Context.executeIntegerScript("7");
     }
 
     @Test(expected = Error.class)
     public void testCannotAccessDisposedIsolateString() {
-        v8.close();
+        v8Isolate.close();
         v8Context.executeStringScript("'foo'");
     }
 
     @Test(expected = Error.class)
     public void testCannotAccessDisposedIsolateBoolean() {
-        v8.close();
+        v8Isolate.close();
         v8Context.executeBooleanScript("true");
     }
 
@@ -176,19 +178,19 @@ public class V8Test {
     @Test
     public void testMultiThreadAccess() throws InterruptedException {
         v8Context.add("foo", "bar");
-        v8.getLocker().release();
+        v8Isolate.getLocker().release();
         Thread t = new Thread(new Runnable() {
 
             @Override
             public void run() {
-                v8.getLocker().acquire();
-                v8.add("foo", "baz");
-                v8.getLocker().release();
+                v8Isolate.getLocker().acquire();
+                v8Context.add("foo", "baz");
+                v8Isolate.getLocker().release();
             }
         });
         t.start();
         t.join();
-        v8.getLocker().acquire();
+        v8Isolate.getLocker().acquire();
 
         assertEquals("baz", v8Context.getString("foo"));
     }
@@ -196,24 +198,26 @@ public class V8Test {
     @SuppressWarnings("resource")
     @Test
     public void testISENotThrownOnShutdown() {
-        V8 v8_ = V8.createV8Runtime();
+        V8Isolate v8_Isolate_ = V8Isolate.create();
+        V8Context v8_Context = v8_Isolate_.createContext();
 
-        new V8Object(v8_.getDefaultContext());
-        v8_.release(false);
+        new V8Object(v8_Context);
+        v8_Isolate_.release(false);
     }
 
     @SuppressWarnings("resource")
     @Test(expected = IllegalStateException.class)
     public void testISEThrownOnShutdown() {
-        V8 v8_ = V8.createV8Runtime();
+        V8Isolate v8_Isolate_ = V8Isolate.create();
+        V8Context v8_Context = v8_Isolate_.createContext();
 
-        new V8Object(v8_.getDefaultContext());
-        v8_.release(true);
+        new V8Object(v8_Context);
+        v8_Isolate_.release(true);
     }
 
     @Test
     public void testReleaseAttachedObjects() {
-        V8 runtime = V8.createV8Runtime();
+        V8Isolate runtime = V8Isolate.create();
         V8Object v8Object = new V8Object(v8Context);
         runtime.registerResource(v8Object);
 
@@ -222,19 +226,22 @@ public class V8Test {
 
     @Test
     public void testReleaseSeveralAttachedObjects() {
-        V8 runtime = V8.createV8Runtime();
-        runtime.registerResource(new V8Object(runtime.getDefaultContext()));
-        runtime.registerResource(new V8Object(runtime.getDefaultContext()));
-        runtime.registerResource(new V8Object(runtime.getDefaultContext()));
+        V8Isolate runtime = V8Isolate.create();
+        V8Context context = runtime.createContext();
+
+        runtime.registerResource(new V8Object(context));
+        runtime.registerResource(new V8Object(context));
+        runtime.registerResource(new V8Object(context));
 
         runtime.release(true);
     }
 
     @Test
     public void testReleaseAttachedMap() {
-        V8 runtime = V8.createV8Runtime();
+        V8Isolate runtime = V8Isolate.create();
+        V8Context context = runtime.createContext();
         V8Map<String> v8Map = new V8Map<String>();
-        V8Object v8Object = new V8Object(runtime.getDefaultContext());
+        V8Object v8Object = new V8Object(context);
         v8Map.put(v8Object, "foo");
         v8Object.close();
         runtime.registerResource(v8Map);
@@ -1198,9 +1205,9 @@ public class V8Test {
 
     /*** Global Object Prototype Manipulation ***/
     private void setupWindowAlias() {
-        v8.close();
-        v8 = V8.createV8Runtime("window");
-        v8Context = v8.getDefaultContext();
+        v8Isolate.close();
+        v8Isolate = V8Isolate.create();
+        v8Context = v8Isolate.createContext("window");
         v8Context.executeVoidScript("function Window(){};");
         V8Object prototype = v8Context.executeObjectScript("Window.prototype");
         v8Context.setPrototype(prototype);
@@ -1244,19 +1251,19 @@ public class V8Test {
     }
 
     @Test
-    public void testV8IsGlobalStrictEquals() {
+    public void testV8ContextIsGlobalStrictEquals() {
         setupWindowAlias();
         v8Context.executeVoidScript("var global = Function('return this')();");
 
         V8Object global = v8Context.executeObjectScript("global");
 
         assertTrue(v8Context.strictEquals(global));
-        assertTrue(global.strictEquals(v8));
+        assertTrue(global.strictEquals(v8Context));
         global.close();
     }
 
     @Test
-    public void testV8IsGlobalEquals() {
+    public void testV8ContextIsGlobalEquals() {
         setupWindowAlias();
         v8Context.executeVoidScript("var global = Function('return this')();");
 
@@ -1268,7 +1275,7 @@ public class V8Test {
     }
 
     @Test
-    public void testV8EqualsGlobalHash() {
+    public void testV8ContextEqualsGlobalHash() {
         setupWindowAlias();
         v8Context.executeVoidScript("var global = Function('return this')();");
 
@@ -1279,14 +1286,14 @@ public class V8Test {
     }
 
     @Test
-    public void testV8IsThis() {
+    public void testV8ContextIsThis() {
         setupWindowAlias();
         v8Context.executeVoidScript("var global = Function('return this')();");
 
         V8Object _this = v8Context.executeObjectScript("this;");
 
-        assertEquals(v8, _this);
-        assertEquals(_this, v8);
+        assertEquals(v8Context, _this);
+        assertEquals(_this, v8Context);
         _this.close();
     }
 
@@ -1300,8 +1307,9 @@ public class V8Test {
 
     @Test
     public void testAlternateGlobalAlias() {
-        v8Context.close();
-        v8 = V8.createV8Runtime("document");
+        v8Isolate.close();
+        v8Isolate = V8Isolate.create();
+        v8Context = v8Isolate.createContext("document");
         v8Context.executeVoidScript("var global = Function('return this')();");
 
         assertTrue(v8Context.executeBooleanScript("global === document"));
@@ -1397,7 +1405,7 @@ public class V8Test {
     @Test
     public void testV8HandleCreated_V8Object() {
         ReferenceHandler referenceHandler = mock(ReferenceHandler.class);
-        v8.addReferenceHandler(referenceHandler);
+        v8Context.addReferenceHandler(referenceHandler);
 
         V8Object object = new V8Object(v8Context);
 
@@ -1408,7 +1416,7 @@ public class V8Test {
     @Test
     public void testV8HandleCreated_AccessedObject() {
         ReferenceHandler referenceHandler = mock(ReferenceHandler.class);
-        v8.addReferenceHandler(referenceHandler);
+        v8Context.addReferenceHandler(referenceHandler);
 
         V8Object object = v8Context.executeObjectScript("foo = {}; foo;");
 
@@ -1419,7 +1427,7 @@ public class V8Test {
     @Test
     public void testV8HandleCreated_AccessedArray() {
         ReferenceHandler referenceHandler = mock(ReferenceHandler.class);
-        v8.addReferenceHandler(referenceHandler);
+        v8Context.addReferenceHandler(referenceHandler);
 
         V8Array object = (V8Array) v8Context.executeScript("[1,2,3];");
 
@@ -1430,8 +1438,8 @@ public class V8Test {
     @Test
     public void testV8ReferenceHandleRemoved() {
         ReferenceHandler referenceHandler = mock(ReferenceHandler.class);
-        v8.addReferenceHandler(referenceHandler);
-        v8.removeReferenceHandler(referenceHandler);
+        v8Context.addReferenceHandler(referenceHandler);
+        v8Context.removeReferenceHandler(referenceHandler);
 
         V8Object object = new V8Object(v8Context);
 
@@ -1443,8 +1451,8 @@ public class V8Test {
     public void testV8UnknownReferenceHandleRemoved() {
         ReferenceHandler referenceHandler1 = mock(ReferenceHandler.class);
         ReferenceHandler referenceHandler2 = mock(ReferenceHandler.class);
-        v8.addReferenceHandler(referenceHandler1);
-        v8.removeReferenceHandler(referenceHandler2);
+        v8Context.addReferenceHandler(referenceHandler1);
+        v8Context.removeReferenceHandler(referenceHandler2);
 
         V8Object object = new V8Object(v8Context);
 
@@ -1456,8 +1464,8 @@ public class V8Test {
     public void testV8MultipleReferenceHandlers() {
         ReferenceHandler referenceHandler1 = mock(ReferenceHandler.class);
         ReferenceHandler referenceHandler2 = mock(ReferenceHandler.class);
-        v8.addReferenceHandler(referenceHandler1);
-        v8.addReferenceHandler(referenceHandler2);
+        v8Context.addReferenceHandler(referenceHandler1);
+        v8Context.addReferenceHandler(referenceHandler2);
 
         V8Object object = new V8Object(v8Context);
 
@@ -1468,38 +1476,41 @@ public class V8Test {
 
     @Test
     public void testV8ReleaseHandleRemoved() {
-        V8 testV8 = V8.createV8Runtime();
+        V8Isolate testV8Isolate = V8Isolate.create();
+        V8Context testV8Context = testV8Isolate.createContext();
         V8Runnable releaseHandler = mock(V8Runnable.class);
-        testV8.addReleaseHandler(releaseHandler);
-        testV8.removeReleaseHandler(releaseHandler);
+        testV8Context.addReleaseHandler(releaseHandler);
+        testV8Context.removeReleaseHandler(releaseHandler);
 
-        testV8.close();
+        testV8Isolate.close();
 
-        verify(releaseHandler, never()).run(testV8.getDefaultContext());
+        verify(releaseHandler, never()).run(testV8Context);
     }
 
     @Test
     public void testV8UnknownReleaseHandleRemoved() {
-        V8 testV8 = V8.createV8Runtime();
+        V8Isolate testV8Isolate = V8Isolate.create();
+        V8Context testV8Context = testV8Isolate.createContext();
         V8Runnable releaseHandler1 = mock(V8Runnable.class);
         V8Runnable releaseHandler2 = mock(V8Runnable.class);
-        testV8.addReleaseHandler(releaseHandler1);
-        testV8.removeReleaseHandler(releaseHandler2);
+        testV8Context.addReleaseHandler(releaseHandler1);
+        testV8Context.removeReleaseHandler(releaseHandler2);
 
-        testV8.close();
+        testV8Isolate.close();
 
         verify(releaseHandler1, times(1)).run(any(V8Context.class)); // cannot check against the real v8 because it's released.
     }
 
     @Test
     public void testV8MultipleReleaseHandlers() {
-        V8 testV8 = V8.createV8Runtime();
+        V8Isolate testV8Isolate = V8Isolate.create();
+        V8Context testV8Context = testV8Isolate.createContext();
         V8Runnable releaseHandler1 = mock(V8Runnable.class);
         V8Runnable releaseHandler2 = mock(V8Runnable.class);
-        testV8.addReleaseHandler(releaseHandler1);
-        testV8.addReleaseHandler(releaseHandler2);
+        testV8Context.addReleaseHandler(releaseHandler1);
+        testV8Context.addReleaseHandler(releaseHandler2);
 
-        testV8.close();
+        testV8Isolate.close();
 
         verify(releaseHandler1, times(1)).run(any(V8Context.class)); // cannot check against the real v8 because it's released.
         verify(releaseHandler2, times(1)).run(any(V8Context.class)); // cannot check against the real v8 because it's released.
@@ -1507,15 +1518,16 @@ public class V8Test {
 
     @Test
     public void testExceptionInReleaseHandlerStillReleasesV8() {
-        V8 testV8 = V8.createV8Runtime();
+        V8Isolate testV8Isolate = V8Isolate.create();
+        V8Context testV8Context = testV8Isolate.createContext();
         V8Runnable releaseHandler = mock(V8Runnable.class);
         doThrow(new RuntimeException()).when(releaseHandler).run(any(V8Context.class));
-        testV8.addReleaseHandler(releaseHandler);
+        testV8Context.addReleaseHandler(releaseHandler);
 
         try {
-            testV8.close();
+            testV8Isolate.close();
         } catch (Exception e) {
-            assertTrue(testV8.isReleased());
+            assertTrue(testV8Isolate.isReleased());
             return;
         }
 
@@ -1525,7 +1537,7 @@ public class V8Test {
     @Test
     public void testV8HandleCreated_V8Array() {
         ReferenceHandler referenceHandler = mock(ReferenceHandler.class);
-        v8.addReferenceHandler(referenceHandler);
+        v8Context.addReferenceHandler(referenceHandler);
 
         V8Array object = new V8Array(v8Context);
 
@@ -1536,7 +1548,7 @@ public class V8Test {
     @Test
     public void testV8HandleCreated_V8Function() {
         ReferenceHandler referenceHandler = mock(ReferenceHandler.class);
-        v8.addReferenceHandler(referenceHandler);
+        v8Context.addReferenceHandler(referenceHandler);
 
         V8Function object = new V8Function(v8Context);
 
@@ -1547,7 +1559,7 @@ public class V8Test {
     @Test
     public void testV8HandleCreated_V8ArrayBuffer() {
         ReferenceHandler referenceHandler = mock(ReferenceHandler.class);
-        v8.addReferenceHandler(referenceHandler);
+        v8Context.addReferenceHandler(referenceHandler);
 
         V8ArrayBuffer object = new V8ArrayBuffer(v8Context, 100);
 
@@ -1558,7 +1570,7 @@ public class V8Test {
     @Test
     public void testV8HandleCreated_V8TypedArray() {
         ReferenceHandler referenceHandler = mock(ReferenceHandler.class);
-        v8.addReferenceHandler(referenceHandler);
+        v8Context.addReferenceHandler(referenceHandler);
 
         V8ArrayBuffer buffer = new V8ArrayBuffer(v8Context, 100);
         V8TypedArray object = new V8TypedArray(v8Context, buffer, V8API.INT_16_ARRAY, 0, 50);
@@ -1572,7 +1584,7 @@ public class V8Test {
     @Test
     public void testV8HandleDisposed() {
         ReferenceHandler referenceHandler = mock(ReferenceHandler.class);
-        v8.addReferenceHandler(referenceHandler);
+        v8Context.addReferenceHandler(referenceHandler);
 
         V8Object object = new V8Object(v8Context);
         object.close();
@@ -1585,12 +1597,12 @@ public class V8Test {
     public void testV8ObjectHandlerExceptionDuringCreation() {
         ReferenceHandler referenceHandler = mock(ReferenceHandler.class);
         doThrow(new RuntimeException()).when(referenceHandler).v8HandleCreated(any(V8Object.class));
-        v8.addReferenceHandler(referenceHandler);
+        v8Context.addReferenceHandler(referenceHandler);
 
         try {
             new V8Object(v8Context);
         } catch (Exception e) {
-            assertEquals(0, v8.getObjectReferenceCount());
+            assertEquals(0, v8Isolate.getObjectReferenceCount());
             return;
         }
 
@@ -1602,12 +1614,12 @@ public class V8Test {
     public void testV8ArrayHandlerExceptionDuringCreation() {
         ReferenceHandler referenceHandler = mock(ReferenceHandler.class);
         doThrow(new RuntimeException()).when(referenceHandler).v8HandleCreated(any(V8Object.class));
-        v8.addReferenceHandler(referenceHandler);
+        v8Context.addReferenceHandler(referenceHandler);
 
         try {
             new V8Array(v8Context);
         } catch (Exception e) {
-            assertEquals(0, v8.getObjectReferenceCount());
+            assertEquals(0, v8Isolate.getObjectReferenceCount());
             return;
         }
 
@@ -1619,12 +1631,12 @@ public class V8Test {
     public void testV8ArrayBufferHandlerExceptionDuringCreation() {
         ReferenceHandler referenceHandler = mock(ReferenceHandler.class);
         doThrow(new RuntimeException()).when(referenceHandler).v8HandleCreated(any(V8Value.class));
-        v8.addReferenceHandler(referenceHandler);
+        v8Context.addReferenceHandler(referenceHandler);
 
         try {
             new V8ArrayBuffer(v8Context, 100);
         } catch (Exception e) {
-            assertEquals(0, v8.getObjectReferenceCount());
+            assertEquals(0, v8Isolate.getObjectReferenceCount());
             return;
         }
 
@@ -1633,17 +1645,20 @@ public class V8Test {
 
     @Test(expected = Error.class)
     public void testSharingObjectsShouldNotCrashVM() {
-        V8 engine = null;
-        V8 engine2 = null;
+        V8Isolate engine = null;
+        V8Isolate engine2 = null;
         try {
-            engine = V8.createV8Runtime();
-            engine2 = V8.createV8Runtime();
+            engine = V8Isolate.create();
+            engine2 = V8Isolate.create();
 
-            engine.getDefaultContext().executeScript("b = { 'c': 'c' }");
-            engine2.getDefaultContext().executeScript("a = { 'd': 'd' };");
+            V8Context context = engine.createContext();
+            V8Context context2 = engine2.createContext();
 
-            V8Object a = (V8Object) engine2.getDefaultContext().get("a");
-            V8Object b = (V8Object) engine.get("b");
+            context.executeScript("b = { 'c': 'c' }");
+            context2.executeScript("a = { 'd': 'd' };");
+
+            V8Object a = (V8Object) context2.get("a");
+            V8Object b = (V8Object) context.get("b");
             b.add("data", a);
         } finally {
             engine.release(false);
@@ -1653,17 +1668,20 @@ public class V8Test {
 
     @Test(expected = Error.class)
     public void testSharingObjectsInArrayShouldNotCrashVM() {
-        V8 engine = null;
-        V8 engine2 = null;
+        V8Isolate engine = null;
+        V8Isolate engine2 = null;
         try {
-            engine = V8.createV8Runtime();
-            engine2 = V8.createV8Runtime();
+            engine = V8Isolate.create();
+            engine2 = V8Isolate.create();
 
-            engine.getDefaultContext().executeScript("b = [];");
-            engine2.getDefaultContext().executeScript("a = [];");
+            V8Context context = engine.createContext();
+            V8Context context2 = engine2.createContext();
 
-            V8Array a = (V8Array) engine2.getDefaultContext().get("a");
-            V8Array b = (V8Array) engine.get("b");
+            context.executeScript("b = [];");
+            context2.executeScript("a = [];");
+
+            V8Array a = (V8Array) context2.get("a");
+            V8Array b = (V8Array) context.get("b");
             b.push(a);
         } finally {
             engine.release(false);
@@ -1673,17 +1691,20 @@ public class V8Test {
 
     @Test(expected = Error.class)
     public void testSharingObjectsAsFunctionCallParameters_ArrayFunction() {
-        V8 engine = null;
-        V8 engine2 = null;
+        V8Isolate engine = null;
+        V8Isolate engine2 = null;
         try {
-            engine = V8.createV8Runtime();
-            engine2 = V8.createV8Runtime();
+            engine = V8Isolate.create();
+            engine2 = V8Isolate.create();
 
-            engine.getDefaultContext().executeScript("b = function(param){return param;}");
-            engine2.getDefaultContext().executeScript("a = [[1,2,3]];");
+            V8Context context = engine.createContext();
+            V8Context context2 = engine2.createContext();
 
-            V8Array a = (V8Array) engine2.getDefaultContext().get("a");
-            engine.getDefaultContext().executeArrayFunction("b", a);
+            context.executeScript("b = function(param){return param;}");
+            context2.executeScript("a = [[1,2,3]];");
+
+            V8Array a = (V8Array) context2.get("a");
+            context.executeArrayFunction("b", a);
         } finally {
             engine.release(false);
             engine2.release(false);
@@ -1692,17 +1713,20 @@ public class V8Test {
 
     @Test(expected = Error.class)
     public void testSharingObjectsAsFunctionCallParameters_ObjectFunction() {
-        V8 engine = null;
-        V8 engine2 = null;
+        V8Isolate engine = null;
+        V8Isolate engine2 = null;
         try {
-            engine = V8.createV8Runtime();
-            engine2 = V8.createV8Runtime();
+            engine = V8Isolate.create();
+            engine2 = V8Isolate.create();
 
-            engine.getDefaultContext().executeScript("b = function(param){return param;}");
-            engine2.getDefaultContext().executeScript("a = [{name: 'joe'}];");
+            V8Context context = engine.createContext();
+            V8Context context2 = engine2.createContext();
 
-            V8Array a = (V8Array) engine2.getDefaultContext().get("a");
-            engine.getDefaultContext().executeObjectFunction("b", a);
+            context.executeScript("b = function(param){return param;}");
+            context2.executeScript("a = [{name: 'joe'}];");
+
+            V8Array a = (V8Array) context2.get("a");
+            context.executeObjectFunction("b", a);
         } finally {
             engine.release(false);
             engine2.release(false);
@@ -1711,17 +1735,20 @@ public class V8Test {
 
     @Test(expected = Error.class)
     public void testSharingObjectsAsFunctionCallParameters_ExecuteFunction() {
-        V8 engine = null;
-        V8 engine2 = null;
+        V8Isolate engine = null;
+        V8Isolate engine2 = null;
         try {
-            engine = V8.createV8Runtime();
-            engine2 = V8.createV8Runtime();
+            engine = V8Isolate.create();
+            engine2 = V8Isolate.create();
 
-            engine.getDefaultContext().executeScript("b = function(param){return param;}");
-            engine2.getDefaultContext().executeScript("a = [{name: 'joe'}];");
+            V8Context context = engine.createContext();
+            V8Context context2 = engine2.createContext();
 
-            V8Array a = (V8Array) engine2.getDefaultContext().get("a");
-            engine.getDefaultContext().executeFunction("b", a);
+            context.executeScript("b = function(param){return param;}");
+            context2.executeScript("a = [{name: 'joe'}];");
+
+            V8Array a = (V8Array) context2.get("a");
+            context.executeFunction("b", a);
         } finally {
             engine.release(false);
             engine2.release(false);
@@ -1730,17 +1757,20 @@ public class V8Test {
 
     @Test(expected = Error.class)
     public void testSharingObjectsAsFunctionCallParameters_BooleanFunction() {
-        V8 engine = null;
-        V8 engine2 = null;
+        V8Isolate engine = null;
+        V8Isolate engine2 = null;
         try {
-            engine = V8.createV8Runtime();
-            engine2 = V8.createV8Runtime();
+            engine = V8Isolate.create();
+            engine2 = V8Isolate.create();
 
-            engine.getDefaultContext().executeScript("b = function(param){return param;}");
-            engine2.getDefaultContext().executeScript("a = [false];");
+            V8Context context = engine.createContext();
+            V8Context context2 = engine2.createContext();
 
-            V8Array a = (V8Array) engine2.getDefaultContext().get("a");
-            engine.getDefaultContext().executeBooleanFunction("b", a);
+            context.executeScript("b = function(param){return param;}");
+            context2.executeScript("a = [false];");
+
+            V8Array a = (V8Array) context2.get("a");
+            context.executeBooleanFunction("b", a);
         } finally {
             engine.release(false);
             engine2.release(false);
@@ -1749,17 +1779,20 @@ public class V8Test {
 
     @Test(expected = Error.class)
     public void testSharingObjectsAsFunctionCallParameters_StringFunction() {
-        V8 engine = null;
-        V8 engine2 = null;
+        V8Isolate engine = null;
+        V8Isolate engine2 = null;
         try {
-            engine = V8.createV8Runtime();
-            engine2 = V8.createV8Runtime();
+            engine = V8Isolate.create();
+            engine2 = V8Isolate.create();
 
-            engine.getDefaultContext().executeScript("b = function(param){return param;}");
-            engine2.getDefaultContext().executeScript("a = ['foo'];");
+            V8Context context = engine.createContext();
+            V8Context context2 = engine2.createContext();
 
-            V8Array a = (V8Array) engine2.getDefaultContext().get("a");
-            engine.getDefaultContext().executeStringFunction("b", a);
+            context.executeScript("b = function(param){return param;}");
+            context2.executeScript("a = ['foo'];");
+
+            V8Array a = (V8Array) context2.get("a");
+            context.executeStringFunction("b", a);
         } finally {
             engine.release(false);
             engine2.release(false);
@@ -1768,17 +1801,20 @@ public class V8Test {
 
     @Test(expected = Error.class)
     public void testSharingObjectsAsFunctionCallParameters_IntegerFunction() {
-        V8 engine = null;
-        V8 engine2 = null;
+        V8Isolate engine = null;
+        V8Isolate engine2 = null;
         try {
-            engine = V8.createV8Runtime();
-            engine2 = V8.createV8Runtime();
+            engine = V8Isolate.create();
+            engine2 = V8Isolate.create();
 
-            engine.getDefaultContext().executeScript("b = function(param){return param;}");
-            engine2.getDefaultContext().executeScript("a = [7];");
+            V8Context context = engine.createContext();
+            V8Context context2 = engine2.createContext();
 
-            V8Array a = (V8Array) engine2.getDefaultContext().get("a");
-            engine.getDefaultContext().executeIntegerFunction("b", a);
+            context.executeScript("b = function(param){return param;}");
+            context2.executeScript("a = [7];");
+
+            V8Array a = (V8Array) context2.get("a");
+            context.executeIntegerFunction("b", a);
         } finally {
             engine.release(false);
             engine2.release(false);
@@ -1787,17 +1823,20 @@ public class V8Test {
 
     @Test(expected = Error.class)
     public void testSharingObjectsAsFunctionCallParameters_DoubleFunction() {
-        V8 engine = null;
-        V8 engine2 = null;
+        V8Isolate engine = null;
+        V8Isolate engine2 = null;
         try {
-            engine = V8.createV8Runtime();
-            engine2 = V8.createV8Runtime();
+            engine = V8Isolate.create();
+            engine2 = V8Isolate.create();
 
-            engine.getDefaultContext().executeScript("b = function(param){return param;}");
-            engine2.getDefaultContext().executeScript("a = [3.14];");
+            V8Context context = engine.createContext();
+            V8Context context2 = engine2.createContext();
 
-            V8Array a = (V8Array) engine2.getDefaultContext().get("a");
-            engine.getDefaultContext().executeDoubleFunction("b", a);
+            context.executeScript("b = function(param){return param;}");
+            context2.executeScript("a = [3.14];");
+
+            V8Array a = (V8Array) context2.get("a");
+            context.executeDoubleFunction("b", a);
         } finally {
             engine.release(false);
             engine2.release(false);
@@ -1806,17 +1845,20 @@ public class V8Test {
 
     @Test(expected = Error.class)
     public void testSharingObjectsAsFunctionCallParameters_VoidFunction() {
-        V8 engine = null;
-        V8 engine2 = null;
+        V8Isolate engine = null;
+        V8Isolate engine2 = null;
         try {
-            engine = V8.createV8Runtime();
-            engine2 = V8.createV8Runtime();
+            engine = V8Isolate.create();
+            engine2 = V8Isolate.create();
 
-            engine.getDefaultContext().executeScript("b = function(param1, param2){ param1 + param2;}");
-            engine2.getDefaultContext().executeScript("a = [3, 4];");
+            V8Context context = engine.createContext();
+            V8Context context2 = engine2.createContext();
 
-            V8Array a = (V8Array) engine2.getDefaultContext().get("a");
-            engine.getDefaultContext().executeVoidFunction("b", a);
+            context.executeScript("b = function(param1, param2){ param1 + param2;}");
+            context2.executeScript("a = [3, 4];");
+
+            V8Array a = (V8Array) context2.get("a");
+            context.executeVoidFunction("b", a);
         } finally {
             engine.release(false);
             engine2.release(false);
@@ -1825,17 +1867,20 @@ public class V8Test {
 
     @Test(expected = Error.class)
     public void testSharingObjectsAsFunctionCallParameters_JSFunction() {
-        V8 engine = null;
-        V8 engine2 = null;
+        V8Isolate engine = null;
+        V8Isolate engine2 = null;
         try {
-            engine = V8.createV8Runtime();
-            engine2 = V8.createV8Runtime();
+            engine = V8Isolate.create();
+            engine2 = V8Isolate.create();
 
-            engine.getDefaultContext().executeScript("b = function(param){ param[0] + param[1];}");
-            engine2.getDefaultContext().executeScript("a = [3, 4];");
+            V8Context context = engine.createContext();
+            V8Context context2 = engine2.createContext();
 
-            V8Array a = (V8Array) engine2.getDefaultContext().get("a");
-            engine.getDefaultContext().executeJSFunction("b", a);
+            context.executeScript("b = function(param){ param[0] + param[1];}");
+            context2.executeScript("a = [3, 4];");
+
+            V8Array a = (V8Array) context2.get("a");
+            context.executeJSFunction("b", a);
         } finally {
             engine.release(false);
             engine2.release(false);

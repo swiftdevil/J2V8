@@ -56,7 +56,7 @@ public class V8ArrayBuffer extends V8Value {
 
     @Override
     protected void initialize(final Object data) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         if (data instanceof ByteBuffer) {
             ByteBuffer buffer = (ByteBuffer) data;
             int capacity = buffer.limit();
@@ -80,7 +80,7 @@ public class V8ArrayBuffer extends V8Value {
      */
     @Override
     public V8ArrayBuffer twin() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return (V8ArrayBuffer) super.twin();
     }
@@ -91,7 +91,7 @@ public class V8ArrayBuffer extends V8Value {
      * @return the buffers limit
      */
     public int limit() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return byteBuffer.limit();
     }
@@ -102,7 +102,7 @@ public class V8ArrayBuffer extends V8Value {
      * @return the buffers capacity
      */
     public final int capacity() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return byteBuffer.capacity();
     }
@@ -112,359 +112,359 @@ public class V8ArrayBuffer extends V8Value {
      * @return
      */
     public final int position() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return byteBuffer.position();
     }
 
     public final V8ArrayBuffer position(final int newPosition) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         byteBuffer.position(newPosition);
         return this;
     }
 
     public final V8ArrayBuffer limit(final int newLimit) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         byteBuffer.limit(newLimit);
         return this;
     }
 
     public final V8ArrayBuffer mark() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         byteBuffer.mark();
         return this;
     }
 
     public final V8ArrayBuffer reset() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         byteBuffer.reset();
         return this;
     }
 
     public final V8ArrayBuffer clear() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         byteBuffer.clear();
         return this;
     }
 
     public final V8ArrayBuffer flip() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         byteBuffer.flip();
         return this;
     }
 
     public final V8ArrayBuffer rewind() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         byteBuffer.rewind();
         return this;
     }
 
     public final int remaining() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return byteBuffer.remaining();
     }
 
     public final boolean hasRemaining() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return byteBuffer.hasRemaining();
     }
 
     public boolean isReadOnly() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return byteBuffer.isReadOnly();
     }
 
     public byte get() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return byteBuffer.get();
     }
 
     public V8ArrayBuffer put(final byte b) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         byteBuffer.put(b);
         return this;
     }
 
     public byte get(final int index) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return byteBuffer.get(index);
     }
 
     public V8ArrayBuffer put(final int index, final byte b) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         byteBuffer.put(index, b);
         return this;
     }
 
     public V8ArrayBuffer get(final byte[] dst, final int offset, final int length) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         byteBuffer.get(dst, offset, length);
         return this;
     }
 
     public V8ArrayBuffer get(final byte[] dst) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         byteBuffer.get(dst);
         return this;
     }
 
     public V8ArrayBuffer put(final ByteBuffer src) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         byteBuffer.put(src);
         return this;
     }
 
     public V8ArrayBuffer put(final byte[] src, final int offset, final int length) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         byteBuffer.put(src, offset, length);
         return this;
     }
 
     public final V8ArrayBuffer put(final byte[] src) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         byteBuffer.put(src);
         return this;
     }
 
     public final boolean hasArray() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return byteBuffer.hasArray();
     }
 
     public final byte[] array() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return byteBuffer.array();
     }
 
     public final int arrayOffset() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return byteBuffer.arrayOffset();
     }
 
     public V8ArrayBuffer compact() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         byteBuffer.compact();
         return this;
     }
 
     public boolean isDirect() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return byteBuffer.isDirect();
     }
 
     public final ByteOrder order() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return byteBuffer.order();
     }
 
     public final V8ArrayBuffer order(final ByteOrder bo) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         byteBuffer.order(bo);
         return this;
     }
 
     public char getChar() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return byteBuffer.getChar();
     }
 
     public V8ArrayBuffer putChar(final char value) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         byteBuffer.putChar(value);
         return this;
     }
 
     public char getChar(final int index) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return byteBuffer.getChar(index);
     }
 
     public V8ArrayBuffer putChar(final int index, final char value) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         byteBuffer.putChar(index, value);
         return this;
     }
 
     public short getShort() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return byteBuffer.getShort();
     }
 
     public V8ArrayBuffer putShort(final short value) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         byteBuffer.putShort(value);
         return this;
     }
 
     public short getShort(final int index) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return byteBuffer.getShort(index);
     }
 
     public V8ArrayBuffer putShort(final int index, final short value) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         byteBuffer.putShort(index, value);
         return this;
     }
 
     public int getInt() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return byteBuffer.getInt();
     }
 
     public V8ArrayBuffer putInt(final int value) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         byteBuffer.putInt(value);
         return this;
     }
 
     public int getInt(final int index) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return byteBuffer.getInt(index);
     }
 
     public V8ArrayBuffer putInt(final int index, final int value) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         byteBuffer.asIntBuffer().put(index, value);
         return this;
     }
 
     public long getLong() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return byteBuffer.getLong();
     }
 
     public V8ArrayBuffer putLong(final long value) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         byteBuffer.putLong(value);
         return this;
     }
 
     public long getLong(final int index) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return byteBuffer.getLong(index);
     }
 
     public V8ArrayBuffer putLong(final int index, final long value) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         byteBuffer.putLong(index, value);
         return this;
     }
 
     public float getFloat() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return byteBuffer.getFloat();
     }
 
     public V8ArrayBuffer putFloat(final float value) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         byteBuffer.putFloat(value);
         return this;
     }
 
     public float getFloat(final int index) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return byteBuffer.getFloat(index);
     }
 
     public V8ArrayBuffer putFloat(final int index, final float value) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         byteBuffer.putFloat(index, value);
         return this;
     }
 
     public double getDouble() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return byteBuffer.getDouble();
     }
 
     public V8ArrayBuffer putDouble(final double value) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         byteBuffer.putDouble(value);
         return this;
     }
 
     public double getDouble(final int index) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return byteBuffer.getDouble(index);
     }
 
     public V8ArrayBuffer putDouble(final int index, final double value) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         byteBuffer.putDouble(index, value);
         return this;
     }
 
     public int floatLimit() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return byteBuffer.asFloatBuffer().limit();
     }
 
     public int intLimit() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return byteBuffer.asIntBuffer().limit();
     }
 
     public int shortLimit() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return byteBuffer.asShortBuffer().limit();
     }
 
     public int doubleLimit() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return byteBuffer.asDoubleBuffer().limit();
     }

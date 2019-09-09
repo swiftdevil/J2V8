@@ -653,7 +653,7 @@ public class V8ObjectUtils {
             case V8API.NULL:
                 return null;
             case V8API.UNDEFINED:
-                return V8.getUndefined();
+                return V8Isolate.getUndefined();
             default:
                 throw new IllegalStateException("Cannot convert type " + V8Value.getStringRepresentation(valueType));
         }

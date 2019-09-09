@@ -1,8 +1,8 @@
 package com.eclipsesource.v8.utils;
 
-import com.eclipsesource.v8.V8;
 import com.eclipsesource.v8.V8API;
 import com.eclipsesource.v8.V8Context;
+import com.eclipsesource.v8.V8Isolate;
 import com.eclipsesource.v8.V8TypedArray;
 import org.junit.After;
 import org.junit.Before;
@@ -15,21 +15,21 @@ import static org.junit.Assert.assertTrue;
 
 public class TypedArrayTest {
 
-    private V8 v8;
+    private V8Isolate v8Isolate;
     private V8Context v8Context;
 
     @Before
     public void setup() {
-        v8 = V8.createV8Runtime();
-        v8Context = v8.getDefaultContext();
+        v8Isolate = V8Isolate.create();
+        v8Context = v8Isolate.createContext();
     }
 
     @After
     public void tearDown() {
-        if (v8 != null) {
-            v8.close();
+        if (v8Isolate != null) {
+            v8Isolate.close();
         }
-        if (V8.getActiveRuntimes() != 0) {
+        if (V8Isolate.getActiveRuntimes() != 0) {
             throw new IllegalStateException("V8Runtimes not properly released");
         }
     }

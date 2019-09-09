@@ -21,22 +21,22 @@ import java.util.*;
 import static org.junit.Assert.*;
 
 public class V8ObjectUtilsTest {
-    private V8 v8;
+    private V8Isolate v8Isolate;
     private V8Context v8Context;
 
     @Before
     public void setup() {
-        v8 = V8.createV8Runtime();
-        v8Context = v8.getDefaultContext();
+        v8Isolate = V8Isolate.create();
+        v8Context = v8Isolate.createContext();
     }
 
     @After
     public void tearDown() {
         try {
-            if (v8 != null) {
-                v8.close();
+            if (v8Isolate != null) {
+                v8Isolate.close();
             }
-            if (V8.getActiveRuntimes() != 0) {
+            if (V8Isolate.getActiveRuntimes() != 0) {
                 throw new IllegalStateException("V8Runtimes not properly released");
             }
         } catch (IllegalStateException e) {
@@ -378,7 +378,7 @@ public class V8ObjectUtilsTest {
         int size = registerAndRelease("result", map);
 
         assertEquals(5, size);
-        V8Object object = v8.getObject("result");
+        V8Object object = v8Context.getObject("result");
         assertTrue(object.getBoolean("boolean"));
         assertEquals(7, object.getInteger("integer"));
         assertEquals(3.14159, object.getDouble("double"), 0.000001);
@@ -727,9 +727,9 @@ public class V8ObjectUtilsTest {
 
     @Test
     public void testGetV8ResultUndefined() {
-        Object result = V8ObjectUtils.getV8Result(v8Context, V8.getUndefined());
+        Object result = V8ObjectUtils.getV8Result(v8Context, V8Isolate.getUndefined());
 
-        assertEquals(V8.getUndefined(), result);
+        assertEquals(V8Isolate.getUndefined(), result);
     }
 
     @Test
@@ -1188,7 +1188,7 @@ public class V8ObjectUtilsTest {
 
         V8Object v8Object = V8ObjectUtils.toV8Object(v8Context, V8ObjectUtils.toMap(list));
 
-        v8.add("l2", v8Object);
+        v8Context.add("l2", v8Object);
         v8Context.executeBooleanScript("JSON.stringify(l) === JSON.stringify(l2);");
         list.close();
         v8Object.close();
@@ -1200,7 +1200,7 @@ public class V8ObjectUtilsTest {
 
         V8Array v8Object = V8ObjectUtils.toV8Array(v8Context, V8ObjectUtils.toList(list));
 
-        v8.add("l2", v8Object);
+        v8Context.add("l2", v8Object);
         v8Context.executeBooleanScript("JSON.stringify(l) === JSON.stringify(l2);");
         list.close();
         v8Object.close();
@@ -1874,12 +1874,12 @@ public class V8ObjectUtilsTest {
 
             @Override
             public Object adapt(final Object value) {
-                return V8.getUndefined();
+                return V8Isolate.getUndefined();
             }
         });
 
         assertEquals(1, map.size());
-        assertEquals(V8.getUndefined(), map.get("b"));
+        assertEquals(V8Isolate.getUndefined(), map.get("b"));
 
         object.close();
     }
@@ -2012,12 +2012,12 @@ public class V8ObjectUtilsTest {
 
             @Override
             public Object adapt(final Object value) {
-                return V8.getUndefined();
+                return V8Isolate.getUndefined();
             }
         });
 
         assertEquals(1, list.size());
-        assertEquals(V8.getUndefined(), list.get(0));
+        assertEquals(V8Isolate.getUndefined(), list.get(0));
 
         array.close();
     }
@@ -2025,7 +2025,7 @@ public class V8ObjectUtilsTest {
     @Test
     public void testCreateFunctionMapFromV8Object() {
         V8Object object = v8Context.executeObjectScript("x = {a:function() {return 'a'}, b:function(){return 'b'}}; x");
-        MemoryManager memoryManager = new MemoryManager(v8);
+        MemoryManager memoryManager = new MemoryManager(v8Context);
 
         Map<String, ? super Object> map = V8ObjectUtils.toMap(object, new SingleTypeAdapter(V8API.V8_FUNCTION) {
 
@@ -2046,7 +2046,7 @@ public class V8ObjectUtilsTest {
     @Test
     public void testCreateFunctionListFromV8Object() {
         V8Array object = v8Context.executeArrayScript("x = [function() {return 'a'}, function(){return 'b'}]; x");
-        MemoryManager memoryManager = new MemoryManager(v8);
+        MemoryManager memoryManager = new MemoryManager(v8Context);
 
         List<? super Object> list = V8ObjectUtils.toList(object, new SingleTypeAdapter(V8API.V8_FUNCTION) {
 
@@ -2356,7 +2356,7 @@ public class V8ObjectUtilsTest {
 
         V8Array v8Object = V8ObjectUtils.toV8Array(v8Context, (List<? extends Object>) V8ObjectUtils.getValue(list));
 
-        v8.add("l2", v8Object);
+        v8Context.add("l2", v8Object);
         v8Context.executeBooleanScript("JSON.stringify(l) === JSON.stringify(l2);");
         list.close();
         v8Object.close();
@@ -2684,7 +2684,7 @@ public class V8ObjectUtilsTest {
 
             @Override
             public Object adapt(final Object value) {
-                return V8.getUndefined();
+                return V8Isolate.getUndefined();
             }
         });
 
@@ -2828,12 +2828,12 @@ public class V8ObjectUtilsTest {
 
             @Override
             public Object adapt(final Object value) {
-                return V8.getUndefined();
+                return V8Isolate.getUndefined();
             }
         });
 
         assertEquals(1, list.size());
-        assertEquals(V8.getUndefined(), list.get(0));
+        assertEquals(V8Isolate.getUndefined(), list.get(0));
 
         array.close();
     }
@@ -2842,7 +2842,7 @@ public class V8ObjectUtilsTest {
     @Test
     public void testCreateFunctionMapFromV8Object_GetValue() {
         V8Object object = v8Context.executeObjectScript("x = {a:function() {return 'a'}, b:function(){return 'b'}}; x");
-        MemoryManager memoryManager = new MemoryManager(v8);
+        MemoryManager memoryManager = new MemoryManager(v8Context);
 
         Map<String, ? super Object> map = (Map<String, ? super Object>) V8ObjectUtils.getValue(object, new SingleTypeAdapter(V8API.V8_FUNCTION) {
 
@@ -2864,7 +2864,7 @@ public class V8ObjectUtilsTest {
     @Test
     public void testCreateFunctionListFromV8Object_GetValue() {
         V8Array object = v8Context.executeArrayScript("x = [function() {return 'a'}, function(){return 'b'}]; x");
-        MemoryManager memoryManager = new MemoryManager(v8);
+        MemoryManager memoryManager = new MemoryManager(v8Context);
 
         List<? super Object> list = (List<? super Object>) V8ObjectUtils.getValue(object, new SingleTypeAdapter(V8API.V8_FUNCTION) {
 
@@ -2884,7 +2884,7 @@ public class V8ObjectUtilsTest {
 
     private int registerAndRelease(final String name, final List<? extends Object> list) {
         V8Array array = V8ObjectUtils.toV8Array(v8Context, list);
-        v8.add(name, array);
+        v8Context.add(name, array);
         int size = array.length();
         array.close();
         return size;
@@ -2892,7 +2892,7 @@ public class V8ObjectUtilsTest {
 
     private int registerAndRelease(final String name, final Map<String, ? extends Object> map) {
         V8Object object = V8ObjectUtils.toV8Object(v8Context, map);
-        v8.add(name, object);
+        v8Context.add(name, object);
         int size = getNumberOfProperties(object);
         object.close();
         return size;

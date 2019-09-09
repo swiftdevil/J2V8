@@ -18,23 +18,23 @@ import static org.junit.Assert.*;
 
 public class V8JSFunctionCallTest {
 
-    private V8        v8;
+    private V8Isolate v8Isolate;
     private V8Context v8Context;
     private Object    result;
 
     @Before
     public void setup() {
-        v8 = V8.createV8Runtime();
-        v8Context = v8.getDefaultContext();
+        v8Isolate = V8Isolate.create();
+        v8Context = v8Isolate.createContext();
     }
 
     @After
     public void tearDown() {
         try {
-            if (v8 != null) {
-                v8.close();
+            if (v8Isolate != null) {
+                v8Isolate.close();
             }
-            if (V8.getActiveRuntimes() != 0) {
+            if (V8Isolate.getActiveRuntimes() != 0) {
                 throw new IllegalStateException("V8Runtimes not properly released");
             }
         } catch (IllegalStateException e) {
@@ -100,7 +100,7 @@ public class V8JSFunctionCallTest {
         v8Context.executeVoidScript("function call() {return true;}");
         V8Function function = (V8Function) v8Context.getObject("call");
 
-        boolean result = (Boolean) function.call(v8, null);
+        boolean result = (Boolean) function.call(v8Context, null);
 
         assertTrue(result);
         function.close();
@@ -113,7 +113,7 @@ public class V8JSFunctionCallTest {
 
         Object result = function.call(null, null);
 
-        assertEquals(v8, result);
+        assertEquals(v8Context, result);
         function.close();
         ((Releasable) result).release();
     }
@@ -455,7 +455,7 @@ public class V8JSFunctionCallTest {
 
         Object result = v8Context.executeFunction("getFoo", null);
 
-        assertEquals(V8.getUndefined(), result);
+        assertEquals(V8Isolate.getUndefined(), result);
     }
 
     @Test
@@ -479,7 +479,7 @@ public class V8JSFunctionCallTest {
 
         Object result = v8Context.executeFunction("getAge", null);
 
-        assertEquals(V8.getUndefined(), result);
+        assertEquals(V8Isolate.getUndefined(), result);
     }
 
     @Test
@@ -977,7 +977,7 @@ public class V8JSFunctionCallTest {
     public void testExecuteJSFunction_undefined() {
         v8Context.executeVoidScript("function test(p1) { if (!p1) { return 'passed';} }");
 
-        String result = (String) v8Context.executeJSFunction("test", V8.getUndefined());
+        String result = (String) v8Context.executeJSFunction("test", V8Isolate.getUndefined());
 
         assertEquals("passed", result);
     }
@@ -1059,20 +1059,24 @@ public class V8JSFunctionCallTest {
 
     @Test(expected = Error.class)
     public void testSharingObjectsAsFunctionCallParameters_JSFunction() {
-        V8 engine = null;
-        V8 engine2 = null;
+        V8Isolate engine = null;
+        V8Isolate engine2 = null;
         try {
-            engine = V8.createV8Runtime();
-            engine2 = V8.createV8Runtime();
-            V8Function function = new V8Function(engine.getDefaultContext(), new JavaCallback() {
+            engine = V8Isolate.create();
+            engine2 = V8Isolate.create();
+
+            V8Context context = engine.createContext();
+            V8Context context2 = engine2.createContext();
+
+            V8Function function = new V8Function(context, new JavaCallback() {
 
                 @Override
                 public Object invoke(final V8Object receiver, final V8Array parameters) {
                     return parameters.getInteger(0) + parameters.getInteger(1);
                 }
             });
-            engine2.getDefaultContext().executeScript("a = [3, 4];");
-            V8Array a = (V8Array) engine2.get("a");
+            context2.executeScript("a = [3, 4];");
+            V8Array a = (V8Array) context2.get("a");
 
             function.call(null, a);
             function.close();
@@ -1084,12 +1088,16 @@ public class V8JSFunctionCallTest {
 
     @Test(expected = Error.class)
     public void testSharingObjectsAsFunctionCallThis() {
-        V8 engine = null;
-        V8 engine2 = null;
+        V8Isolate engine = null;
+        V8Isolate engine2 = null;
         try {
-            engine = V8.createV8Runtime();
-            engine2 = V8.createV8Runtime();
-            V8Function function = new V8Function(engine.getDefaultContext(), new JavaCallback() {
+            engine = V8Isolate.create();
+            engine2 = V8Isolate.create();
+
+            V8Context context = engine.createContext();
+            V8Context context2 = engine2.createContext();
+
+            V8Function function = new V8Function(context, new JavaCallback() {
 
                 @Override
                 public Object invoke(final V8Object receiver, final V8Array parameters) {
@@ -1097,8 +1105,8 @@ public class V8JSFunctionCallTest {
                     return receiver.get("name");
                 }
             });
-            engine2.getDefaultContext().executeScript("a = {name: 'joe'};");
-            V8Object a = (V8Object) engine2.get("a");
+            context2.executeScript("a = {name: 'joe'};");
+            V8Object a = (V8Object) context2.get("a");
 
             function.call(a, null);
             function.close();

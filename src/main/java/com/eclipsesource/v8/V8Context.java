@@ -1,16 +1,21 @@
 package com.eclipsesource.v8;
 
+import com.eclipsesource.v8.utils.V8Runnable;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.*;
 
 public class V8Context extends V8Object {
-	private V8                           runtime                 = null;
+	private V8Isolate                    isolate                 = null;
 	private long                         contextPtr              = 0L;
 	private Map<String, Object>          data                    = null;
 	private Map<Long, MethodDescriptor>  functionRegistry        = new HashMap<Long, MethodDescriptor>();
+	private long                         objectReferences        = 0;
 	private Map<Long, V8Value>           v8WeakReferences        = new HashMap<Long, V8Value>();
+	private LinkedList<ReferenceHandler> referenceHandlers       = new LinkedList<ReferenceHandler>();
+	private LinkedList<V8Runnable>       releaseHandlers         = new LinkedList<V8Runnable>();
 	private static Object                invalid                 = new Object();
 
 	private static class MethodDescriptor {
@@ -21,22 +26,19 @@ public class V8Context extends V8Object {
 		boolean          includeReceiver;
 	}
 
-	V8Context() {
+	V8Context(V8Isolate isolate, String globalAlias) {
 		super((V8Context) null);
+
 		released = false;
-	}
+		this.isolate = isolate;
 
-	V8Context init(V8 runtime, long contextPtr) {
-		this.runtime = runtime;
-		this.contextPtr = contextPtr;
+		contextPtr = V8API.get()._createContext(this, isolate.getIsolatePtr(), globalAlias);
 		objectHandle = V8API.get()._getGlobalObject(contextPtr);
-
-		return this;
 	}
 
 	@Override
-	public V8 getRuntime() {
-		return runtime;
+	public V8Isolate getIsolate() {
+		return isolate;
 	}
 	
 	private long getContextPtr() {
@@ -44,10 +46,91 @@ public class V8Context extends V8Object {
 	}
 
 	public void close(boolean closeRuntime) {
-		super.close();
+		close();
 		if (closeRuntime) {
-			getRuntime().close();
+			getIsolate().close();
 		}
+	}
+
+	@Override
+	public void close() {
+		getIsolate().checkThread();
+		if (!released) {
+			released = true;
+			release(objectHandle);
+		}
+	}
+
+	/**
+	 * Adds a ReferenceHandler to track when new V8Objects are created.
+	 *
+	 * @param handler The ReferenceHandler to add
+	 */
+	public void addReferenceHandler(final ReferenceHandler handler) {
+		referenceHandlers.add(0, handler);
+	}
+
+	/**
+	 * Adds a handler that will be called when the runtime is being released.
+	 * The runtime will still be available when the handler is executed.
+	 *
+	 * @param handler The handler to invoke when the runtime, is being released
+	 */
+	public void addReleaseHandler(final V8Runnable handler) {
+		releaseHandlers.add(handler);
+	}
+
+	/**
+	 * Removes an existing ReferenceHandler from the collection of reference handlers.
+	 * If the ReferenceHandler does not exist in the collection, it is ignored.
+	 *
+	 * @param handler The reference handler to remove
+	 */
+	public void removeReferenceHandler(final ReferenceHandler handler) {
+		referenceHandlers.remove(handler);
+	}
+
+	/**
+	 * Removes an existing release handler from the collection of release handlers.
+	 * If the release handler does not exist in the collection, it is ignored.
+	 *
+	 * @param handler The handler to remove
+	 */
+	public void removeReleaseHandler(final V8Runnable handler) {
+		releaseHandlers.remove(handler);
+	}
+
+
+	void notifyReleaseHandlers() {
+		for (V8Runnable handler : releaseHandlers) {
+			handler.run(this);
+		}
+	}
+
+	void notifyReferenceCreated(final V8Value object) {
+		for (ReferenceHandler referenceHandler : referenceHandlers) {
+			referenceHandler.v8HandleCreated(object);
+		}
+	}
+
+	void notifyReferenceDisposed(final V8Value object) {
+		for (ReferenceHandler referenceHandler : referenceHandlers) {
+			referenceHandler.v8HandleDisposed(object);
+		}
+	}
+
+	void addObjRef(final V8Value reference) {
+		objectReferences++;
+		if (!referenceHandlers.isEmpty()) {
+			notifyReferenceCreated(reference);
+		}
+	}
+
+	void releaseObjRef(final V8Value reference) {
+		if (!referenceHandlers.isEmpty()) {
+			notifyReferenceDisposed(reference);
+		}
+		objectReferences--;
 	}
 
 	/**
@@ -95,13 +178,13 @@ public class V8Context extends V8Object {
 	 * the result is not an integer.
 	 */
 	public int executeIntegerScript(final String script, final String scriptName, final int lineNumber) {
-		getRuntime().checkThread();
+		getIsolate().checkThread();
 		checkScript(script);
 		return V8API.get()._executeIntegerScript(getContextPtr(), script, scriptName, lineNumber);
 	}
 
 	void createTwin(final V8Value value, final V8Value twin) {
-		getRuntime().checkThread();
+		getIsolate().checkThread();
 		createTwin(value.getHandle(), twin.getHandle());
 	}
 
@@ -131,7 +214,7 @@ public class V8Context extends V8Object {
 	 * the result is not a double.
 	 */
 	public double executeDoubleScript(final String script, final String scriptName, final int lineNumber) {
-		getRuntime().checkThread();
+		getIsolate().checkThread();
 		checkScript(script);
 		return V8API.get()._executeDoubleScript(getContextPtr(), script, scriptName, lineNumber);
 	}
@@ -162,7 +245,7 @@ public class V8Context extends V8Object {
 	 * the result is not a String.
 	 */
 	public String executeStringScript(final String script, final String scriptName, final int lineNumber) {
-		getRuntime().checkThread();
+		getIsolate().checkThread();
 		checkScript(script);
 		return V8API.get()._executeStringScript(getContextPtr(), script, scriptName, lineNumber);
 	}
@@ -193,7 +276,7 @@ public class V8Context extends V8Object {
 	 * the result is not a boolean.
 	 */
 	public boolean executeBooleanScript(final String script, final String scriptName, final int lineNumber) {
-		getRuntime().checkThread();
+		getIsolate().checkThread();
 		checkScript(script);
 		return V8API.get()._executeBooleanScript(getContextPtr(), script, scriptName, lineNumber);
 	}
@@ -224,7 +307,7 @@ public class V8Context extends V8Object {
 	 * the result is not a V8Array.
 	 */
 	public V8Array executeArrayScript(final String script, final String scriptName, final int lineNumber) {
-		getRuntime().checkThread();
+		getIsolate().checkThread();
 		Object result = executeScript(script, scriptName, lineNumber);
 		if (result instanceof V8Array) {
 			return (V8Array) result;
@@ -256,7 +339,7 @@ public class V8Context extends V8Object {
 	 * @return The result of the script as a Java Object.
 	 */
 	public Object executeScript(final String script, final String scriptName, final int lineNumber) {
-		getRuntime().checkThread();
+		getIsolate().checkThread();
 		checkScript(script);
 		return executeScript(V8API.UNKNOWN, script, scriptName, lineNumber);
 	}
@@ -287,7 +370,7 @@ public class V8Context extends V8Object {
 	 * the result is not a V8Object.
 	 */
 	public V8Object executeObjectScript(final String script, final String scriptName, final int lineNumber) {
-		getRuntime().checkThread();
+		getIsolate().checkThread();
 		Object result = this.executeScript(script, scriptName, lineNumber);
 		if (result instanceof V8Object) {
 			return (V8Object) result;
@@ -313,7 +396,7 @@ public class V8Context extends V8Object {
 	 * the script. Typically 0, but could be set to another value for exception stack trace purposes.
 	 */
 	public void executeVoidScript(final String script, final String scriptName, final int lineNumber) {
-		getRuntime().checkThread();
+		getIsolate().checkThread();
 		checkScript(script);
 		V8API.get()._executeVoidScript(getContextPtr(), script, scriptName, lineNumber);
 	}
@@ -377,10 +460,14 @@ public class V8Context extends V8Object {
 		v8WeakReferences.put(objectID, value);
 	}
 
+	void weakReferenceRemoved(final long objectID) {
+		v8WeakReferences.remove(objectID);
+	}
+
 	void weakReferenceReleased(final long objectID) {
 		V8Value v8Value = v8WeakReferences.get(objectID);
 		if (v8Value != null) {
-			v8WeakReferences.remove(objectID);
+			weakReferenceRemoved(objectID);
 			try {
 				v8Value.close();
 			} catch (Exception e) {
@@ -390,9 +477,9 @@ public class V8Context extends V8Object {
 			}
 		}
 	}
-	
-	long weakReferenceCount() {
-		return v8WeakReferences.size();
+
+	long objectReferenceCount() {
+		return objectReferences - v8WeakReferences.size();
 	}
 
 	Object callObjectJavaMethod(final long methodID, final V8Object receiver, final V8Array parameters) throws Throwable {
@@ -555,7 +642,7 @@ public class V8Context extends V8Object {
 				case V8API.V8_ARRAY_BUFFER:
 					return array.get(index);
 				case V8API.UNDEFINED:
-					return V8.getUndefined();
+					return V8Isolate.getUndefined();
 			}
 		} catch (V8ResultUndefined e) {
 			// do nothing
@@ -905,5 +992,9 @@ public class V8Context extends V8Object {
 
 	void releaseMethodDescriptor(final long methodDescriptor) {
 		V8API.get()._releaseMethodDescriptor(getContextPtr(), methodDescriptor);
+	}
+
+	void createNodeRuntime(final String fileName) {
+		startNodeJS(fileName);
 	}
 }

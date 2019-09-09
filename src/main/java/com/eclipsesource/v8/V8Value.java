@@ -50,7 +50,7 @@ abstract public class V8Value implements Releasable {
     void addObjectReference(final long objectHandle) throws Error {
         this.objectHandle = objectHandle;
         try {
-            getRuntime().addObjRef(this);
+            getContext().addObjRef(this);
         } catch (Error | RuntimeException e) {
             release();
             throw e;
@@ -123,8 +123,8 @@ abstract public class V8Value implements Releasable {
      * @return The V8Value constructor name as a string.
      */
     public String getConstructorName() {
-        getRuntime().checkThread();
-        getRuntime().checkReleased();
+        getIsolate().checkThread();
+        getIsolate().checkReleased();
         return getContext().getConstructorName(objectHandle);
     }
 
@@ -142,8 +142,8 @@ abstract public class V8Value implements Releasable {
      *
      * @return Returns the V8 runtime this value is associated with.
      */
-    public V8 getRuntime() {
-        return getContext().getRuntime();
+    public V8Isolate getIsolate() {
+        return getContext().getIsolate();
     }
     
     public V8Context getContext() {
@@ -161,7 +161,7 @@ abstract public class V8Value implements Releasable {
         if (isUndefined()) {
             return V8API.UNDEFINED;
         }
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         getContext().checkReleased();
         return getContext().getType(objectHandle);
     }
@@ -183,7 +183,7 @@ abstract public class V8Value implements Releasable {
         if (isUndefined()) {
             return this;
         }
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         getContext().checkReleased();
         V8Value twin = createTwin();
         getContext().createTwin(this, twin);
@@ -204,7 +204,7 @@ abstract public class V8Value implements Releasable {
      * @return The receiver.
      */
     public V8Value setWeak() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         getContext().checkReleased();
         getContext().weakReferenceAdded(getHandle(), this);
         getContext().setWeak(getHandle());
@@ -222,9 +222,9 @@ abstract public class V8Value implements Releasable {
      * @return The receiver.
      */
     public V8Value clearWeak() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         getContext().checkReleased();
-        getContext().weakReferenceReleased(getHandle());
+        getContext().weakReferenceRemoved(getHandle());
         getContext().clearWeak(getHandle());
         return this;
     }
@@ -236,8 +236,8 @@ abstract public class V8Value implements Releasable {
      * @return Returns true if this object has been set 'Weak', return false otherwise.
      */
     public boolean isWeak() {
-        getRuntime().checkThread();
-        getRuntime().checkReleased();
+        getIsolate().checkThread();
+        getIsolate().checkReleased();
         return getContext().isWeak(getHandle());
     }
 
@@ -247,10 +247,10 @@ abstract public class V8Value implements Releasable {
      */
     @Override
     public void close() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         if (!released) {
             try {
-                getRuntime().releaseObjRef(this);
+                getContext().releaseObjRef(this);
             } finally {
                 released = true;
                 getContext().release(objectHandle);
@@ -286,7 +286,7 @@ abstract public class V8Value implements Releasable {
      * @return Returns true iff this === that
      */
     public boolean strictEquals(final Object that) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         if (that == this) {
             return true;
@@ -329,7 +329,7 @@ abstract public class V8Value implements Releasable {
      * @return Returns true iff this == that
      */
     public boolean jsEquals(final Object that) {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         if (that == this) {
             return true;
@@ -355,15 +355,8 @@ abstract public class V8Value implements Releasable {
      */
     @Override
     public int hashCode() {
-        getRuntime().checkThread();
+        getIsolate().checkThread();
         checkReleased();
         return getContext().identityHash(getHandle());
     }
-
-    void checkReleased() {
-        if (released) {
-            throw new IllegalStateException("Object released");
-        }
-    }
-
 }
