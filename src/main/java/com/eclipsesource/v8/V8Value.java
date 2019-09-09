@@ -47,7 +47,7 @@ abstract public class V8Value implements Releasable {
         addObjectReference(objectHandle);
     }
 
-    void addObjectReference(final long objectHandle) throws Error {
+    protected void addObjectReference(final long objectHandle) throws Error {
         this.objectHandle = objectHandle;
         try {
             getContext().addObjRef(this);
@@ -306,7 +306,7 @@ abstract public class V8Value implements Releasable {
         return getContext().strictEquals(getHandle(), ((V8Value) that).getHandle());
     }
 
-    long getHandle() {
+    protected long getHandle() {
         checkReleased();
         return objectHandle;
     }

@@ -68,11 +68,20 @@ public class NodeJS implements Closeable {
      * May throw an UnsupportedOperationException if node.js integration has not
      * been compiled for your platform.
      */
+
     public static NodeJS createNodeJS() {
-        final V8Isolate v8Isolate = V8Isolate.create();
-        final V8Context v8Context = v8Isolate.createContext(GLOBAL);
-        final NodeJS node = new NodeJS(v8Context);
-        v8Context.registerJavaMethod(new JavaVoidCallback() {
+        V8Isolate isolate = V8Isolate.create();
+        return createNodeJS(isolate);
+    }
+
+    public static NodeJS createNodeJS(final V8Isolate isolate) {
+        V8Context context = isolate.createContext(GLOBAL);
+        return createNodeJS(context);
+    }
+
+    public static NodeJS createNodeJS(final V8Context context) {
+        final NodeJS node = new NodeJS(context);
+        context.registerJavaMethod(new JavaVoidCallback() {
 
             @Override
             public void invoke(final V8Object receiver, final V8Array parameters) {
@@ -84,7 +93,7 @@ public class NodeJS implements Closeable {
         try {
             File startupScript = createTemporaryScriptFile(STARTUP_SCRIPT, STARTUP_SCRIPT_NAME);
             try {
-                v8Context.createNodeRuntime(startupScript.getAbsolutePath());
+                context.createNodeRuntime(startupScript.getAbsolutePath());
             } finally {
                 startupScript.delete();
             }
