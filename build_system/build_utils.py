@@ -296,7 +296,7 @@ def apply_file_template(src, dest, inject_vars_fn):
 def check_node_builtins():
     """
     The function compares the list of builtin Node.js modules with the setup
-    code in jni/com_eclipsesource_v8_V8Impl.cpp to make sure that every module
+    code in jni/com_eclipsesource_v8_V8APIImpl.cpp to make sure that every module
     is correctly initialized and linked into the native J2V8 library.
     """
     node_src = "./node/src/"

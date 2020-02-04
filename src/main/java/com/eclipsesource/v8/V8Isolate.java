@@ -139,7 +139,7 @@ public class V8Isolate implements Releasable {
         return isolatePtr;
     }
 
-    private void doAllContexts(Consumer<V8Context> contextConsumer) {
+    void doAllContexts(Consumer<V8Context> contextConsumer) {
         contexts.forEach(contextConsumer);
     }
 

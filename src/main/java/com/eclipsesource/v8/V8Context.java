@@ -61,6 +61,15 @@ public class V8Context extends V8Object {
 		}
 	}
 
+	public void closeIsolateIfLastContext() {
+		List<Boolean> status = new ArrayList<>();
+		getIsolate().doAllContexts(context -> status.add(context.isReleased()));
+
+		if (!status.contains(false)) {
+			getIsolate().close();
+		}
+	}
+
 	/**
 	 * Adds a ReferenceHandler to track when new V8Objects are created.
 	 *
