@@ -77,10 +77,18 @@ JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8API__1lowMemoryNotification
 
 /*
  * Class:     com_eclipsesource_v8_V8API
- * Method:    _releaseRuntime
+ * Method:    _releaseIsolate
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8API__1releaseRuntime
+JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8API__1releaseIsolate
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     com_eclipsesource_v8_V8API
+ * Method:    _releaseContext
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8API__1releaseContext
   (JNIEnv *, jobject, jlong);
 
 /*

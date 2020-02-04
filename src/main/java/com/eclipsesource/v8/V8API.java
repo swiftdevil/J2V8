@@ -40,7 +40,9 @@ public class V8API {
 
 	native void _lowMemoryNotification(long v8RuntimePtr);
 
-	native void _releaseRuntime(long v8RuntimePtr);
+	native void _releaseIsolate(long v8RuntimePtr);
+
+	native void _releaseContext(long v8ContextPtr);
 
 	native long _createIsolate(V8Isolate v8Isolate);
 

@@ -253,7 +253,7 @@ public class V8Isolate implements Releasable {
             doAllContexts(V8Context::releaseNativeMethodDescriptors);
             doAllContexts(V8Context::close);
             runtimeCounter.decrementAndGet();
-            V8API.get()._releaseRuntime(isolatePtr);
+            V8API.get()._releaseIsolate(isolatePtr);
             released = true;
             if (reportMemoryLeaks && (getObjectReferenceCount() > 0)) {
                 throw new IllegalStateException(getObjectReferenceCount() + " Object(s) still exist in runtime");

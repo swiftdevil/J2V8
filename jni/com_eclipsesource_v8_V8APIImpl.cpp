@@ -728,15 +728,24 @@ JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8API__1terminateExecution
 	return;
 }
 
-JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8API__1releaseRuntime
+JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8API__1releaseIsolate
 (JNIEnv *env, jobject, jlong v8RuntimePtr) {
   if (v8RuntimePtr == 0) {
     return;
   }
   reinterpret_cast<V8Runtime*>(v8RuntimePtr)->isolate->Dispose();
   env->DeleteGlobalRef(reinterpret_cast<V8Runtime*>(v8RuntimePtr)->v8);
-  V8Runtime* runtime = reinterpret_cast<V8Runtime*>(v8RuntimePtr);
   delete(reinterpret_cast<V8Runtime*>(v8RuntimePtr));
+}
+
+JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8API__1releaseContext
+(JNIEnv *env, jobject, jlong v8ContextPtr) {
+  if (v8ContextPtr == 0) {
+    return;
+  }
+
+  env->DeleteGlobalRef(reinterpret_cast<V8Context*>(v8ContextPtr)->v8Ctx);
+  delete(reinterpret_cast<V8Context*>(v8ContextPtr));
 }
 
 JNIEXPORT jboolean JNICALL Java_com_eclipsesource_v8_V8API__1contains

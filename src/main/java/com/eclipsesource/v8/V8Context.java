@@ -57,7 +57,7 @@ public class V8Context extends V8Object {
 		getIsolate().checkThread();
 		if (!released) {
 			released = true;
-			release(objectHandle);
+			V8API.get()._releaseContext(getContextPtr());
 		}
 	}
 
