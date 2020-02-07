@@ -66,6 +66,7 @@ class V8Context {
 public:
   jlong v8RuntimePtr;
   jobject v8Ctx;
+  jobject exLsnr;
   Persistent<Context> context;
   Persistent<Object>* globalObject;
 
@@ -96,7 +97,8 @@ jclass undefinedV8ObjectCls = NULL;
 jclass undefinedV8ArrayCls = NULL;
 jclass v8ResultsUndefinedCls = NULL;
 jclass v8ScriptCompilationCls = NULL;
-jclass v8ScriptExecutionException = NULL;
+jclass v8ScriptExecutionExceptionCls = NULL;
+jclass v8ScriptExecutionExceptionListenerCls = NULL;
 jclass v8RuntimeExceptionCls = NULL;
 jclass throwableCls = NULL;
 jclass stringCls = NULL;
@@ -123,6 +125,7 @@ jmethodID doubleDoubleValueMethodID = NULL;
 jmethodID v8CallObjectJavaMethodMethodID = NULL;
 jmethodID v8ScriptCompilationInitMethodID = NULL;
 jmethodID v8ScriptExecutionExceptionInitMethodID = NULL;
+jmethodID v8ScriptExecutionExceptionListenerCallMethodID = NULL;
 jmethodID undefinedV8ArrayInitMethodID = NULL;
 jmethodID undefinedV8ObjectInitMethodID = NULL;
 jmethodID integerInitMethodID = NULL;
@@ -288,7 +291,8 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
     throwableCls = (jclass)env->NewGlobalRef((env)->FindClass("java/lang/Throwable"));
     v8ResultsUndefinedCls = (jclass)env->NewGlobalRef((env)->FindClass("com/eclipsesource/v8/V8ResultUndefined"));
     v8ScriptCompilationCls = (jclass)env->NewGlobalRef((env)->FindClass("com/eclipsesource/v8/V8ScriptCompilationException"));
-    v8ScriptExecutionException = (jclass)env->NewGlobalRef((env)->FindClass("com/eclipsesource/v8/V8ScriptExecutionException"));
+    v8ScriptExecutionExceptionCls = (jclass)env->NewGlobalRef((env)->FindClass("com/eclipsesource/v8/V8ScriptExecutionException"));
+    v8ScriptExecutionExceptionListenerCls = (jclass)env->NewGlobalRef((env)->FindClass("com/eclipsesource/v8/V8ScriptExecutionExceptionListener"));
     v8RuntimeExceptionCls = (jclass)env->NewGlobalRef((env)->FindClass("com/eclipsesource/v8/V8RuntimeException"));
     errorCls = (jclass)env->NewGlobalRef((env)->FindClass("java/lang/Error"));
     unsupportedOperationExceptionCls = (jclass)env->NewGlobalRef((env)->FindClass("java/lang/UnsupportedOperationException"));
@@ -311,7 +315,8 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
     v8DisposeMethodID = (env)->GetMethodID(v8ctx, "disposeMethodID", "(J)V");
     v8WeakReferenceReleased = (env)->GetMethodID(v8ctx, "weakReferenceReleased", "(J)V");
     v8ScriptCompilationInitMethodID = env->GetMethodID(v8ScriptCompilationCls, "<init>", "(Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;II)V");
-    v8ScriptExecutionExceptionInitMethodID = env->GetMethodID(v8ScriptExecutionException, "<init>", "(Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;IILjava/lang/String;Ljava/lang/Throwable;)V");
+    v8ScriptExecutionExceptionInitMethodID = env->GetMethodID(v8ScriptExecutionExceptionCls, "<init>", "(Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;IILjava/lang/String;Ljava/lang/Throwable;)V");
+    v8ScriptExecutionExceptionListenerCallMethodID = env->GetMethodID(v8ScriptExecutionExceptionListenerCls, "onException", "(Ljava/lang/Throwable;)V");
     undefinedV8ArrayInitMethodID = env->GetMethodID(undefinedV8ArrayCls, "<init>", "()V");
     undefinedV8ObjectInitMethodID = env->GetMethodID(undefinedV8ObjectCls, "<init>", "()V");
     v8RuntimeExceptionInitMethodID = env->GetMethodID(v8RuntimeExceptionCls, "<init>", "(Ljava/lang/String;)V");
@@ -515,6 +520,12 @@ JNIEXPORT jlong JNICALL Java_com_eclipsesource_v8_V8API__1createContext
   }
 
   return reinterpret_cast<jlong>(v8Context);
+}
+
+JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8API__1setExceptionListener
+  (JNIEnv *env, jobject, jlong v8ContextPtr, jobject lsnr) {
+  V8Context* v8Context = reinterpret_cast<V8Context*>(v8ContextPtr);
+  v8Context->exLsnr = env->NewGlobalRef(lsnr);
 }
 
 JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8API__1acquireLock
@@ -745,6 +756,7 @@ JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8API__1releaseContext
   }
 
   env->DeleteGlobalRef(reinterpret_cast<V8Context*>(v8ContextPtr)->v8Ctx);
+  env->DeleteGlobalRef(reinterpret_cast<V8Context*>(v8ContextPtr)->exLsnr);
   delete(reinterpret_cast<V8Context*>(v8ContextPtr));
 }
 
@@ -1955,10 +1967,13 @@ void throwExecutionException(JNIEnv *env, const char* fileName, int lineNumber, 
     std::cout << "Wrapped Exception is not a Throwable" << std::endl;
     wrappedException = NULL;
   }
-  jthrowable result = (jthrowable)env->NewObject(v8ScriptExecutionException, v8ScriptExecutionExceptionInitMethodID, jfileName, lineNumber, jmessage, jsourceLine, startColumn, endColumn, jstackTrace, wrappedException);
+  jthrowable result = (jthrowable)env->NewObject(v8ScriptExecutionExceptionCls, v8ScriptExecutionExceptionInitMethodID, jfileName, lineNumber, jmessage, jsourceLine, startColumn, endColumn, jstackTrace, wrappedException);
   env->DeleteLocalRef(jfileName);
   env->DeleteLocalRef(jmessage);
   env->DeleteLocalRef(jsourceLine);
+
+  env->CallVoidMethod(reinterpret_cast<V8Context*>(v8ContextPtr)->exLsnr, v8ScriptExecutionExceptionListenerCallMethodID, result);
+
   (env)->Throw(result);
 }
 

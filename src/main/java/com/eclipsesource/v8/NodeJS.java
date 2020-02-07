@@ -198,6 +198,14 @@ public class NodeJS implements Closeable {
         }
     }
 
+    public void execAndPump(final String script) {
+        exec(script);
+
+        boolean running = true;
+        while (running)
+            running = handleMessage();
+    }
+
     private V8Function createScriptExecutionCallback(final String script) {
         return new V8Function(getContext(), new JavaCallback() {
             @Override

@@ -8,15 +8,16 @@ import java.nio.ByteBuffer;
 import java.util.*;
 
 public class V8Context extends V8Object {
-	private V8Isolate                    isolate                 = null;
-	private long                         contextPtr              = 0L;
-	private Map<String, Object>          data                    = null;
-	private Map<Long, MethodDescriptor>  functionRegistry        = new HashMap<Long, MethodDescriptor>();
-	private long                         objectReferences        = 0;
-	private Map<Long, V8Value>           v8WeakReferences        = new HashMap<Long, V8Value>();
-	private LinkedList<ReferenceHandler> referenceHandlers       = new LinkedList<ReferenceHandler>();
-	private LinkedList<V8Runnable>       releaseHandlers         = new LinkedList<V8Runnable>();
-	private static Object                invalid                 = new Object();
+	private V8Isolate                          isolate                 = null;
+	private long                               contextPtr              = 0L;
+	private Map<String, Object>                data                    = null;
+	private Map<Long, MethodDescriptor>        functionRegistry        = new HashMap<Long, MethodDescriptor>();
+	private long                               objectReferences        = 0;
+	private Map<Long, V8Value>                 v8WeakReferences        = new HashMap<Long, V8Value>();
+	private LinkedList<ReferenceHandler>       referenceHandlers       = new LinkedList<ReferenceHandler>();
+	private LinkedList<V8Runnable>             releaseHandlers         = new LinkedList<V8Runnable>();
+	private V8ScriptExecutionExceptionListener exceptionListener       = new V8ScriptExecutionExceptionListener();
+	private static Object                      invalid                 = new Object();
 
 	private static class MethodDescriptor {
 		Object           object;
@@ -34,6 +35,7 @@ public class V8Context extends V8Object {
 
 		contextPtr = V8API.get()._createContext(this, isolate.getIsolatePtr(), globalAlias);
 		objectHandle = V8API.get()._getGlobalObject(contextPtr);
+		V8API.get()._setExceptionListener(contextPtr, exceptionListener);
 	}
 
 	@Override
@@ -43,6 +45,10 @@ public class V8Context extends V8Object {
 	
 	private long getContextPtr() {
 		return contextPtr;
+	}
+
+	public void addExceptionListener(V8ExceptionListener listener) {
+		exceptionListener.addListener(listener);
 	}
 
 	public void close(boolean closeRuntime) {
