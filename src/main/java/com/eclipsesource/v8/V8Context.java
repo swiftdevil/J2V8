@@ -16,7 +16,7 @@ public class V8Context extends V8Object {
 	private Map<Long, V8Value>                 v8WeakReferences        = new HashMap<Long, V8Value>();
 	private LinkedList<ReferenceHandler>       referenceHandlers       = new LinkedList<ReferenceHandler>();
 	private LinkedList<V8Runnable>             releaseHandlers         = new LinkedList<V8Runnable>();
-	private V8ScriptExecutionExceptionListener exceptionListener       = new V8ScriptExecutionExceptionListener();
+	private V8ScriptException                  pendingException        = null;
 	private static Object                      invalid                 = new Object();
 
 	private static class MethodDescriptor {
@@ -35,7 +35,6 @@ public class V8Context extends V8Object {
 
 		contextPtr = V8API.get()._createContext(this, isolate.getIsolatePtr(), globalAlias);
 		objectHandle = V8API.get()._getGlobalObject(contextPtr);
-		V8API.get()._setExceptionListener(contextPtr, exceptionListener);
 	}
 
 	@Override
@@ -45,10 +44,6 @@ public class V8Context extends V8Object {
 	
 	private long getContextPtr() {
 		return contextPtr;
-	}
-
-	public void addExceptionListener(V8ExceptionListener listener) {
-		exceptionListener.addListener(listener);
 	}
 
 	public void close(boolean closeRuntime) {
@@ -73,6 +68,12 @@ public class V8Context extends V8Object {
 
 		if (!status.contains(false)) {
 			getIsolate().close();
+		}
+	}
+
+	public void setException(Throwable t) {
+		if (t instanceof V8ScriptException) {
+			pendingException = (V8ScriptException) t;
 		}
 	}
 
@@ -195,7 +196,9 @@ public class V8Context extends V8Object {
 	public int executeIntegerScript(final String script, final String scriptName, final int lineNumber) {
 		getIsolate().checkThread();
 		checkScript(script);
-		return V8API.get()._executeIntegerScript(getContextPtr(), script, scriptName, lineNumber);
+		int i = V8API.get()._executeIntegerScript(getContextPtr(), script, scriptName, lineNumber);
+		checkPendingException();
+		return i;
 	}
 
 	void createTwin(final V8Value value, final V8Value twin) {
@@ -231,7 +234,9 @@ public class V8Context extends V8Object {
 	public double executeDoubleScript(final String script, final String scriptName, final int lineNumber) {
 		getIsolate().checkThread();
 		checkScript(script);
-		return V8API.get()._executeDoubleScript(getContextPtr(), script, scriptName, lineNumber);
+		double d = V8API.get()._executeDoubleScript(getContextPtr(), script, scriptName, lineNumber);
+		checkPendingException();
+		return d;
 	}
 
 	/**
@@ -262,7 +267,9 @@ public class V8Context extends V8Object {
 	public String executeStringScript(final String script, final String scriptName, final int lineNumber) {
 		getIsolate().checkThread();
 		checkScript(script);
-		return V8API.get()._executeStringScript(getContextPtr(), script, scriptName, lineNumber);
+		String s = V8API.get()._executeStringScript(getContextPtr(), script, scriptName, lineNumber);
+		checkPendingException();
+		return s;
 	}
 
 	/**
@@ -293,7 +300,9 @@ public class V8Context extends V8Object {
 	public boolean executeBooleanScript(final String script, final String scriptName, final int lineNumber) {
 		getIsolate().checkThread();
 		checkScript(script);
-		return V8API.get()._executeBooleanScript(getContextPtr(), script, scriptName, lineNumber);
+		boolean b = V8API.get()._executeBooleanScript(getContextPtr(), script, scriptName, lineNumber);
+		checkPendingException();
+		return b;
 	}
 
 	/**
@@ -414,6 +423,7 @@ public class V8Context extends V8Object {
 		getIsolate().checkThread();
 		checkScript(script);
 		V8API.get()._executeVoidScript(getContextPtr(), script, scriptName, lineNumber);
+		checkPendingException();
 	}
 
 	void registerCallback(final Object object, final Method method, final long objectHandle, final String jsFunctionName, final boolean includeReceiver) {
@@ -543,6 +553,12 @@ public class V8Context extends V8Object {
 		throw new V8RuntimeException("Unknown return type: " + result.getClass());
 	}
 
+	void checkPendingException() {
+		if (pendingException != null) {
+			throw pendingException;
+		}
+	}
+
 	protected void callVoidJavaMethod(final long methodID, final V8Object receiver, final V8Array parameters) throws Throwable {
 		MethodDescriptor methodDescriptor = functionRegistry.get(methodID);
 		if (methodDescriptor.voidCallback != null) {
@@ -560,6 +576,7 @@ public class V8Context extends V8Object {
 			throw e;
 		} finally {
 			releaseArguments(args, hasVarArgs);
+			checkPendingException();
 		}
 	}
 
@@ -694,7 +711,9 @@ public class V8Context extends V8Object {
 	}
 
 	Object executeScript(final int expectedType, final String script, final String scriptName, final int lineNumber) {
-		return V8API.get()._executeScript(getContextPtr(), expectedType, script, scriptName, lineNumber);
+		Object o = V8API.get()._executeScript(getContextPtr(), expectedType, script, scriptName, lineNumber);
+		checkPendingException();
+		return o;
 	}
 
 	void setWeak(final long objectHandle) {
@@ -742,31 +761,44 @@ public class V8Context extends V8Object {
 	}
 
 	int executeIntegerFunction(final long objectHandle, final String name, final long parametersHandle) {
-		return V8API.get()._executeIntegerFunction(getContextPtr(), objectHandle, name, parametersHandle);
+		int i = V8API.get()._executeIntegerFunction(getContextPtr(), objectHandle, name, parametersHandle);
+		checkPendingException();
+		return i;
 	}
 
 	double executeDoubleFunction(final long objectHandle, final String name, final long parametersHandle) {
-		return V8API.get()._executeDoubleFunction(getContextPtr(), objectHandle, name, parametersHandle);
+		double d = V8API.get()._executeDoubleFunction(getContextPtr(), objectHandle, name, parametersHandle);
+		checkPendingException();
+		return d;
 	}
 
 	String executeStringFunction(final long handle, final String name, final long parametersHandle) {
-		return V8API.get()._executeStringFunction(getContextPtr(), handle, name, parametersHandle);
+		String s = V8API.get()._executeStringFunction(getContextPtr(), handle, name, parametersHandle);
+		checkPendingException();
+		return s;
 	}
 
 	boolean executeBooleanFunction(final long handle, final String name, final long parametersHandle) {
-		return V8API.get()._executeBooleanFunction(getContextPtr(), handle, name, parametersHandle);
+		boolean b = V8API.get()._executeBooleanFunction(getContextPtr(), handle, name, parametersHandle);
+		checkPendingException();
+		return b;
 	}
 
 	Object executeFunction(final int expectedType, final long objectHandle, final String name, final long parametersHandle) {
-		return V8API.get()._executeFunction(getContextPtr(), expectedType, objectHandle, name, parametersHandle);
+		Object o = V8API.get()._executeFunction(getContextPtr(), expectedType, objectHandle, name, parametersHandle);
+		checkPendingException();
+		return o;
 	}
 
 	Object executeFunction(final long receiverHandle, final long functionHandle, final long parametersHandle) {
-		return V8API.get()._executeFunction(getContextPtr(), receiverHandle, functionHandle, parametersHandle);
+		Object o = V8API.get()._executeFunction(getContextPtr(), receiverHandle, functionHandle, parametersHandle);
+		checkPendingException();
+		return o;
 	}
 
 	void executeVoidFunction(final long objectHandle, final String name, final long parametersHandle) {
 		V8API.get()._executeVoidFunction(getContextPtr(), objectHandle, name, parametersHandle);
+		checkPendingException();
 	}
 
 	boolean equals(final long objectHandle, final long that) {

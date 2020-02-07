@@ -23,16 +23,16 @@ import java.io.PrintWriter;
  */
 public class NodeJS implements Closeable {
 
-    private static final String TMP_JS_EXT          = ".js.tmp";
-    private static final String NEXT_TICK           = "nextTick";
-    private static final String PROCESS             = "process";
-    private static final String GLOBAL              = "global";
-    private static final String STARTUP_CALLBACK    = "__run";
-    private static final String STARTUP_SCRIPT      = "global." + STARTUP_CALLBACK + "(require, exports, module, __filename, __dirname);";
-    private static final String STARTUP_SCRIPT_NAME = "startup";
-    private static final String VERSIONS            = "versions";
-    private static final String NODE                = "node";
-    private String              nodeVersion         = null;
+    private static final String     TMP_JS_EXT          = ".js.tmp";
+    private static final String     NEXT_TICK           = "nextTick";
+    private static final String     PROCESS             = "process";
+    private static final String     GLOBAL              = "global";
+    private static final String     STARTUP_CALLBACK    = "__run";
+    private static final String     STARTUP_SCRIPT      = "global." + STARTUP_CALLBACK + "(require, exports, module, __filename, __dirname);";
+    private static final String     STARTUP_SCRIPT_NAME = "startup";
+    private static final String     VERSIONS            = "versions";
+    private static final String     NODE                = "node";
+    private String                  nodeVersion         = null;
 
     private V8Context  v8Context;
     private V8Function require;
@@ -200,10 +200,13 @@ public class NodeJS implements Closeable {
 
     public void execAndPump(final String script) {
         exec(script);
+        getContext().checkPendingException();
 
         boolean running = true;
-        while (running)
+        while (running) {
             running = handleMessage();
+            getContext().checkPendingException();
+        }
     }
 
     private V8Function createScriptExecutionCallback(final String script) {

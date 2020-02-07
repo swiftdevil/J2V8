@@ -166,6 +166,24 @@ public class NodeJSTest {
 
     }
 
+    @Test (expected = V8ScriptException.class)
+    public void testException() throws V8ScriptException {
+        assumeFalse(skipMessage, skipTest()); // conditional skip
+        nodeJS.close();
+
+        nodeJS = NodeJS.createNodeJS();
+        nodeJS.execAndPump("throw 'check out this exception'");
+    }
+
+    @Test
+    public void testCaughtException() {
+        assumeFalse(skipMessage, skipTest()); // conditional skip
+        nodeJS.close();
+
+        nodeJS = NodeJS.createNodeJS();
+        nodeJS.execAndPump("try {throw 'check out this exception'} catch (e) {}");
+    }
+
     private void runMessageLoop() {
         while (nodeJS.isRunning()) {
             nodeJS.handleMessage();

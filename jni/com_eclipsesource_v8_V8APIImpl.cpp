@@ -86,8 +86,8 @@ const char* ToCString(const String::Utf8Value& value) {
 }
 
 JavaVM* jvm = NULL;
-jclass v8cls = NULL;
-jclass v8ctx = NULL;
+jclass v8Cls = NULL;
+jclass v8ContextCls = NULL;
 jclass v8ObjectCls = NULL;
 jclass v8ArrayCls = NULL;
 jclass v8TypedArrayCls = NULL;
@@ -125,7 +125,7 @@ jmethodID doubleDoubleValueMethodID = NULL;
 jmethodID v8CallObjectJavaMethodMethodID = NULL;
 jmethodID v8ScriptCompilationInitMethodID = NULL;
 jmethodID v8ScriptExecutionExceptionInitMethodID = NULL;
-jmethodID v8ScriptExecutionExceptionListenerCallMethodID = NULL;
+jmethodID v8ContextSetExceptionMethodID = NULL;
 jmethodID undefinedV8ArrayInitMethodID = NULL;
 jmethodID undefinedV8ObjectInitMethodID = NULL;
 jmethodID integerInitMethodID = NULL;
@@ -275,8 +275,8 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
 
     // on first creation, store the JVM and a handle to J2V8 classes
     jvm = vm;
-    v8cls = (jclass)env->NewGlobalRef((env)->FindClass("com/eclipsesource/v8/V8Isolate"));
-    v8ctx = (jclass)env->NewGlobalRef((env)->FindClass("com/eclipsesource/v8/V8Context"));
+    v8Cls = (jclass)env->NewGlobalRef((env)->FindClass("com/eclipsesource/v8/V8Isolate"));
+    v8ContextCls = (jclass)env->NewGlobalRef((env)->FindClass("com/eclipsesource/v8/V8Context"));
     v8ObjectCls = (jclass)env->NewGlobalRef((env)->FindClass("com/eclipsesource/v8/V8Object"));
     v8ArrayCls = (jclass)env->NewGlobalRef((env)->FindClass("com/eclipsesource/v8/V8Array"));
     v8TypedArrayCls = (jclass)env->NewGlobalRef((env)->FindClass("com/eclipsesource/v8/V8TypedArray"));
@@ -292,7 +292,6 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
     v8ResultsUndefinedCls = (jclass)env->NewGlobalRef((env)->FindClass("com/eclipsesource/v8/V8ResultUndefined"));
     v8ScriptCompilationCls = (jclass)env->NewGlobalRef((env)->FindClass("com/eclipsesource/v8/V8ScriptCompilationException"));
     v8ScriptExecutionExceptionCls = (jclass)env->NewGlobalRef((env)->FindClass("com/eclipsesource/v8/V8ScriptExecutionException"));
-    v8ScriptExecutionExceptionListenerCls = (jclass)env->NewGlobalRef((env)->FindClass("com/eclipsesource/v8/V8ScriptExecutionExceptionListener"));
     v8RuntimeExceptionCls = (jclass)env->NewGlobalRef((env)->FindClass("com/eclipsesource/v8/V8RuntimeException"));
     errorCls = (jclass)env->NewGlobalRef((env)->FindClass("java/lang/Error"));
     unsupportedOperationExceptionCls = (jclass)env->NewGlobalRef((env)->FindClass("java/lang/UnsupportedOperationException"));
@@ -302,7 +301,7 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
 	v8TypedArrayInitMethodID = env->GetMethodID(v8TypedArrayCls, "<init>", "(Lcom/eclipsesource/v8/V8Context;)V");
     v8ArrayBufferInitMethodID = env->GetMethodID(v8ArrayBufferCls, "<init>", "(Lcom/eclipsesource/v8/V8Context;Ljava/nio/ByteBuffer;)V");
     v8ArrayGetHandleMethodID = env->GetMethodID(v8ArrayCls, "getHandle", "()J");
-    v8CallVoidMethodID = (env)->GetMethodID(v8ctx, "callVoidJavaMethod", "(JLcom/eclipsesource/v8/V8Object;Lcom/eclipsesource/v8/V8Array;)V");
+    v8CallVoidMethodID = (env)->GetMethodID(v8ContextCls, "callVoidJavaMethod", "(JLcom/eclipsesource/v8/V8Object;Lcom/eclipsesource/v8/V8Array;)V");
     v8ObjectReleaseMethodID = env->GetMethodID(v8ObjectCls, "release", "()V");
     v8ArrayReleaseMethodID = env->GetMethodID(v8ArrayCls, "release", "()V");
     v8ObjectIsUndefinedMethodID = env->GetMethodID(v8ObjectCls, "isUndefined", "()Z");
@@ -311,12 +310,12 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
     integerIntValueMethodID = env->GetMethodID(integerCls, "intValue", "()I");
     booleanBoolValueMethodID = env->GetMethodID(booleanCls, "booleanValue", "()Z");
     doubleDoubleValueMethodID = env->GetMethodID(doubleCls, "doubleValue", "()D");
-    v8CallObjectJavaMethodMethodID = (env)->GetMethodID(v8ctx, "callObjectJavaMethod", "(JLcom/eclipsesource/v8/V8Object;Lcom/eclipsesource/v8/V8Array;)Ljava/lang/Object;");
-    v8DisposeMethodID = (env)->GetMethodID(v8ctx, "disposeMethodID", "(J)V");
-    v8WeakReferenceReleased = (env)->GetMethodID(v8ctx, "weakReferenceReleased", "(J)V");
+    v8CallObjectJavaMethodMethodID = (env)->GetMethodID(v8ContextCls, "callObjectJavaMethod", "(JLcom/eclipsesource/v8/V8Object;Lcom/eclipsesource/v8/V8Array;)Ljava/lang/Object;");
+    v8DisposeMethodID = (env)->GetMethodID(v8ContextCls, "disposeMethodID", "(J)V");
+    v8WeakReferenceReleased = (env)->GetMethodID(v8ContextCls, "weakReferenceReleased", "(J)V");
     v8ScriptCompilationInitMethodID = env->GetMethodID(v8ScriptCompilationCls, "<init>", "(Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;II)V");
     v8ScriptExecutionExceptionInitMethodID = env->GetMethodID(v8ScriptExecutionExceptionCls, "<init>", "(Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;IILjava/lang/String;Ljava/lang/Throwable;)V");
-    v8ScriptExecutionExceptionListenerCallMethodID = env->GetMethodID(v8ScriptExecutionExceptionListenerCls, "onException", "(Ljava/lang/Throwable;)V");
+    v8ContextSetExceptionMethodID = env->GetMethodID(v8ContextCls, "setException", "(Ljava/lang/Throwable;)V");
     undefinedV8ArrayInitMethodID = env->GetMethodID(undefinedV8ArrayCls, "<init>", "()V");
     undefinedV8ObjectInitMethodID = env->GetMethodID(undefinedV8ObjectCls, "<init>", "()V");
     v8RuntimeExceptionInitMethodID = env->GetMethodID(v8RuntimeExceptionCls, "<init>", "(Ljava/lang/String;)V");
@@ -756,7 +755,6 @@ JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8API__1releaseContext
   }
 
   env->DeleteGlobalRef(reinterpret_cast<V8Context*>(v8ContextPtr)->v8Ctx);
-  env->DeleteGlobalRef(reinterpret_cast<V8Context*>(v8ContextPtr)->exLsnr);
   delete(reinterpret_cast<V8Context*>(v8ContextPtr));
 }
 
@@ -1972,9 +1970,7 @@ void throwExecutionException(JNIEnv *env, const char* fileName, int lineNumber, 
   env->DeleteLocalRef(jmessage);
   env->DeleteLocalRef(jsourceLine);
 
-  env->CallVoidMethod(reinterpret_cast<V8Context*>(v8ContextPtr)->exLsnr, v8ScriptExecutionExceptionListenerCallMethodID, result);
-
-  (env)->Throw(result);
+  env->CallVoidMethod(reinterpret_cast<V8Context*>(v8ContextPtr)->v8Ctx, v8ContextSetExceptionMethodID, result);
 }
 
 void throwParseException(JNIEnv *env, Isolate* isolate, TryCatch* tryCatch) {

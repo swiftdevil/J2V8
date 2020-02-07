@@ -109,14 +109,6 @@ JNIEXPORT jlong JNICALL Java_com_eclipsesource_v8_V8API__1createContext
 
 /*
  * Class:     com_eclipsesource_v8_V8API
- * Method:    _setExceptionListener
- * Signature: (JLcom/eclipsesource/v8/V8ScriptExecutionExceptionListener;)V
- */
-JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8API__1setExceptionListener
-  (JNIEnv *, jobject, jlong, jobject);
-
-/*
- * Class:     com_eclipsesource_v8_V8API
  * Method:    _getBuildID
  * Signature: ()J
  */

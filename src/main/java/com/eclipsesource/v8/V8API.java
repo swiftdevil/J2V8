@@ -48,8 +48,6 @@ public class V8API {
 
 	native long _createContext(V8Context ctx, long v8RuntimePtr, String globalAlias);
 
-	native void _setExceptionListener(long v8ContextPtr, V8ScriptExecutionExceptionListener listener);
-
 	native long _getBuildID();
 
 	native long _initNewV8Object(long v8ContextPtr);
