@@ -14,6 +14,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.function.Consumer;
 
 /**
  * An isolate NodeJS runtime.
@@ -34,8 +35,9 @@ public class NodeJS implements Closeable {
     private static final String     NODE                = "node";
     private String                  nodeVersion         = null;
 
-    private V8Context  v8Context;
-    private V8Function require;
+    private V8Context               v8Context;
+    private V8Function              require;
+    private Consumer<V8Function>    initConsumer;
 
     /**
      * Returns the version of Node.js that is runtime is built against.
@@ -90,17 +92,30 @@ public class NodeJS implements Closeable {
                 }
             }
         }, STARTUP_CALLBACK);
+        return node;
+    }
+
+    public NodeJS start() {
+        return start(null);
+    }
+
+    public NodeJS start(File baseDir) {
         try {
-            File startupScript = createTemporaryScriptFile(STARTUP_SCRIPT, STARTUP_SCRIPT_NAME);
+            File startupScript = createTemporaryScriptFile(STARTUP_SCRIPT, STARTUP_SCRIPT_NAME, baseDir);
             try {
-                context.createNodeRuntime(startupScript.getAbsolutePath());
+                getContext().createNodeRuntime(startupScript.getAbsolutePath());
             } finally {
                 startupScript.delete();
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        return node;
+
+        return this;
+    }
+
+    public void setInitConsumer(Consumer<V8Function> consumer) {
+        initConsumer = consumer;
     }
 
     /**
@@ -230,10 +245,13 @@ public class NodeJS implements Closeable {
 
     private void init(final V8Function require) {
         this.require = require;
+        if (initConsumer != null) {
+            initConsumer.accept(require);
+        }
     }
 
-    private static File createTemporaryScriptFile(final String script, final String name) throws IOException {
-        File tempFile = File.createTempFile(name, TMP_JS_EXT);
+    private static File createTemporaryScriptFile(final String script, final String name, final File baseDir) throws IOException {
+        File tempFile = File.createTempFile(name, TMP_JS_EXT, baseDir);
         try (PrintWriter writer = new PrintWriter(tempFile, "UTF-8")) {
             writer.print(script);
         }

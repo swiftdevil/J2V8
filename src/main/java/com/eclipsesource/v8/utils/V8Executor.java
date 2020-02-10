@@ -115,7 +115,7 @@ public class V8Executor extends Thread {
     @Override
     public void run() {
         synchronized (this) {
-            nodeJs = NodeJS.createNodeJS();
+            nodeJs = NodeJS.createNodeJS().start();
             nodeJs.getContext().registerJavaMethod(new ExecutorTermination(), "__j2v8__checkThreadTerminate");
             setup(nodeJs);
         }

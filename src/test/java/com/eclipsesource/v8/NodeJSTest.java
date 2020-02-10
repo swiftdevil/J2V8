@@ -31,7 +31,7 @@ public class NodeJSTest {
             return;
         }
 
-        nodeJS = NodeJS.createNodeJS();
+        nodeJS = NodeJS.createNodeJS().start();
     }
 
     @After
@@ -130,7 +130,7 @@ public class NodeJSTest {
         assumeFalse(skipMessage, skipTest()); // conditional skip
         nodeJS.close();
 
-        nodeJS = NodeJS.createNodeJS();
+        nodeJS = NodeJS.createNodeJS().start();
         nodeJS.exec("global.passed = true;");
         runMessageLoop();
 
@@ -143,7 +143,7 @@ public class NodeJSTest {
         nodeJS.close();
         File testScript = createTemporaryScriptFile("global.passed = true;", "testScript");
 
-        nodeJS = NodeJS.createNodeJS();
+        nodeJS = NodeJS.createNodeJS().start();
         nodeJS.require(testScript.getAbsolutePath()).close();
         runMessageLoop();
 
@@ -157,7 +157,7 @@ public class NodeJSTest {
         nodeJS.close();
         File testScript = createTemporaryScriptFile("exports.foo=7", "testScript");
 
-        nodeJS = NodeJS.createNodeJS();
+        nodeJS = NodeJS.createNodeJS().start();
         V8Object exports = nodeJS.require(testScript.getAbsolutePath());
         runMessageLoop();
 
@@ -171,7 +171,7 @@ public class NodeJSTest {
         assumeFalse(skipMessage, skipTest()); // conditional skip
         nodeJS.close();
 
-        nodeJS = NodeJS.createNodeJS();
+        nodeJS = NodeJS.createNodeJS().start();
         nodeJS.execAndPump("throw 'check out this exception'");
     }
 
@@ -180,7 +180,7 @@ public class NodeJSTest {
         assumeFalse(skipMessage, skipTest()); // conditional skip
         nodeJS.close();
 
-        nodeJS = NodeJS.createNodeJS();
+        nodeJS = NodeJS.createNodeJS().start();
         nodeJS.execAndPump("try {throw 'check out this exception'} catch (e) {}");
     }
 
