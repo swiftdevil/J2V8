@@ -416,7 +416,7 @@ JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8API__1startNodeJS
     _register_uv();
   #endif
   }
-  runtime->uvLoop = uv_default_loop();
+  runtime->uvLoop = uv_loop_new();
   runtime->isolateData = node::CreateIsolateData(isolate, runtime->uvLoop);
   node::Environment* env = node::CreateEnvironment(runtime->isolateData, context, argc, argv, 0, 0);
   node::LoadEnvironment(env);
