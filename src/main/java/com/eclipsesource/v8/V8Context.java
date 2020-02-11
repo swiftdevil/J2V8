@@ -555,6 +555,10 @@ public class V8Context extends V8Object {
 
 	void checkPendingException() {
 		if (pendingException != null) {
+			if (pendingException.getCause() != null && (pendingException.getCause() instanceof V8ScriptException)) {
+				pendingException = (V8ScriptException) pendingException.getCause();
+			}
+
 			throw pendingException;
 		}
 	}
