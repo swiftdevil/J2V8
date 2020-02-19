@@ -1,9 +1,9 @@
+import cmake_utils as cmu
 import constants as c
-from build_structures import PlatformConfig
-from docker_build import DockerBuildSystem, DockerBuildStep
 import java_build_steps as j
 import shared_build_steps as u
-import cmake_utils as cmu
+from build_structures import PlatformConfig
+from docker_build import DockerBuildSystem, DockerBuildStep
 
 linux_config = PlatformConfig(c.target_linux, [c.arch_x86, c.arch_x64])
 
@@ -33,6 +33,7 @@ def build_node_js(config):
             --without-inspector     \
             --dest-cpu=$ARCH        \
             --without-snapshot      \
+            --no-browser-globals    \
             --enable-static""",
         # "make clean", # TODO: make this an on/off option
         "CFLAGS=-fPIC CXXFLAGS=-fPIC make -j4 > node.build.output 2>&1",

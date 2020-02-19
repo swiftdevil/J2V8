@@ -1,10 +1,11 @@
 import os
+
+import cmake_utils as cmu
 import constants as c
-from build_structures import PlatformConfig
-from vagrant_build import VagrantBuildSystem, VagrantBuildStep
 import java_build_steps as j
 import shared_build_steps as u
-import cmake_utils as cmu
+from build_structures import PlatformConfig
+from vagrant_build import VagrantBuildSystem, VagrantBuildStep
 
 macos_config = PlatformConfig(c.target_macos, [c.arch_x86, c.arch_x64])
 
@@ -35,6 +36,7 @@ def build_node_js(config):
             --without-inspector     \
             --dest-cpu=$ARCH        \
             --without-snapshot      \
+            --no-browser-globals    \
             --enable-static""",
         "make -j4",
     ]
