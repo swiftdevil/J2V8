@@ -195,7 +195,7 @@ public class V8Isolate implements Releasable {
      * @return The version of the V8 Engine.
      */
     public static String getV8Version() {
-        return V8API.get()._getVersion();
+        return V8API._getVersion();
     }
 
     /**
@@ -226,7 +226,7 @@ public class V8Isolate implements Releasable {
      */
     public void terminateExecution() {
         forceTerminateExecutors = true;
-        doAllContexts(V8Context::terminateExecution);
+        V8API._terminateExecution(getIsolatePtr());
     }
 
     /**
@@ -253,7 +253,7 @@ public class V8Isolate implements Releasable {
             doAllContexts(V8Context::releaseNativeMethodDescriptors);
             doAllContexts(V8Context::close);
             runtimeCounter.decrementAndGet();
-            V8API.get()._releaseIsolate(isolatePtr);
+            V8API._releaseIsolate(isolatePtr);
             released = true;
             if (reportMemoryLeaks && (getObjectReferenceCount() > 0)) {
                 throw new IllegalStateException(getObjectReferenceCount() + " Object(s) still exist in runtime");
@@ -401,7 +401,7 @@ public class V8Isolate implements Releasable {
      */
     public void lowMemoryNotification() {
         checkThread();
-        V8API.get()._lowMemoryNotification(getIsolatePtr());
+        V8API._lowMemoryNotification(getIsolatePtr());
     }
 
     void checkRuntime(final V8Value value) {
@@ -424,11 +424,11 @@ public class V8Isolate implements Releasable {
     }
 
     protected void acquireLock() {
-        V8API.get()._acquireLock(getIsolatePtr());
+        V8API._acquireLock(getIsolatePtr());
     }
 
     protected void releaseLock() {
-        V8API.get()._releaseLock(getIsolatePtr());
+        V8API._releaseLock(getIsolatePtr());
     }
 
     public static boolean isNodeCompatible() {

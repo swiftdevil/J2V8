@@ -58,15 +58,19 @@ public class V8Context extends V8Object {
 		getIsolate().checkThread();
 		if (!released) {
 			released = true;
-			V8API.get()._releaseContext(getContextPtr());
+			V8API._releaseContext(getContextPtr());
 		}
 	}
 
-	public void closeIsolateIfLastContext() {
+	public void closeIsolateIfLastContext(boolean terminate) {
 		List<Boolean> status = new ArrayList<>();
 		getIsolate().doAllContexts(context -> status.add(context.isReleased()));
 
 		if (!status.contains(false)) {
+			if (terminate) {
+				getIsolate().terminateExecution();
+			}
+
 			getIsolate().close();
 		}
 	}
@@ -1035,10 +1039,6 @@ public class V8Context extends V8Object {
 
 	int arrayGetStrings(final long objectHandle, final int index, final int length, final String[] resultArray) {
 		return V8API.get()._arrayGetStrings(getContextPtr(), objectHandle, index, length, resultArray);
-	}
-
-	void terminateExecution() {
-		V8API.get()._terminateExecution(getContextPtr());
 	}
 
 	void releaseMethodDescriptor(final long methodDescriptor) {

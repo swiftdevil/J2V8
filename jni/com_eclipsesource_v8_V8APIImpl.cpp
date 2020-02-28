@@ -528,7 +528,7 @@ JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8API__1setExceptionListener
 }
 
 JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8API__1acquireLock
-  (JNIEnv *env, jobject, jlong v8RuntimePtr) {
+  (JNIEnv *env, jclass, jlong v8RuntimePtr) {
   V8Runtime* runtime = reinterpret_cast<V8Runtime*>(v8RuntimePtr);
   if(runtime->isolate->InContext()) {
     jstring exceptionString = env->NewStringUTF("Cannot acquire lock while in a V8 Context");
@@ -541,7 +541,7 @@ JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8API__1acquireLock
 }
 
 JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8API__1releaseLock
-  (JNIEnv *env, jobject, jlong v8RuntimePtr) {
+  (JNIEnv *env, jclass, jlong v8RuntimePtr) {
   V8Runtime* runtime = reinterpret_cast<V8Runtime*>(v8RuntimePtr);
   if(runtime->isolate->InContext()) {
     jstring exceptionString = env->NewStringUTF("Cannot release lock while in a V8 Context");
@@ -555,7 +555,7 @@ JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8API__1releaseLock
 }
 
 JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8API__1lowMemoryNotification
-  (JNIEnv *env, jobject, jlong v8RuntimePtr) {
+  (JNIEnv *env, jclass, jlong v8RuntimePtr) {
   V8Runtime* runtime = reinterpret_cast<V8Runtime*>(v8RuntimePtr);
   runtime->isolate->LowMemoryNotification();
 }
@@ -729,17 +729,18 @@ JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8API__1release
 }
 
 JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8API__1terminateExecution
-  (JNIEnv * env, jobject, jlong v8ContextPtr) {
-	if (v8ContextPtr == 0) {
+  (JNIEnv *env, jclass, jlong v8RuntimePtr) {
+	if (v8RuntimePtr == 0) {
 	  return;
 	}
-	Isolate* isolate = getIsolate(env, v8ContextPtr);
+
+	Isolate* isolate = reinterpret_cast<V8Runtime*>(v8RuntimePtr)->isolate;
 	V8::TerminateExecution(isolate);
 	return;
 }
 
 JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8API__1releaseIsolate
-(JNIEnv *env, jobject, jlong v8RuntimePtr) {
+(JNIEnv *env, jclass, jlong v8RuntimePtr) {
   if (v8RuntimePtr == 0) {
     return;
   }
@@ -749,7 +750,7 @@ JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8API__1releaseIsolate
 }
 
 JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8API__1releaseContext
-(JNIEnv *env, jobject, jlong v8ContextPtr) {
+(JNIEnv *env, jclass, jlong v8ContextPtr) {
   if (v8ContextPtr == 0) {
     return;
   }

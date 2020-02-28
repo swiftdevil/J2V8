@@ -63,7 +63,7 @@ public class V8ContextTest {
 		contexts.forEach(V8Context::close);
 		assertFalse(isolate.isReleased());
 
-		contexts.get(0).closeIsolateIfLastContext();
+		contexts.get(0).closeIsolateIfLastContext(false);
 		assertTrue(isolate.isReleased());
 	}
 	

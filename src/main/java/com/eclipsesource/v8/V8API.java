@@ -33,16 +33,6 @@ public class V8API {
 	}
 	
 	private V8API() {}
-	
-	native void _acquireLock(long v8RuntimePtr);
-
-	native void _releaseLock(long v8RuntimePtr);
-
-	native void _lowMemoryNotification(long v8RuntimePtr);
-
-	native void _releaseIsolate(long v8RuntimePtr);
-
-	native void _releaseContext(long v8ContextPtr);
 
 	native long _createIsolate(V8Isolate v8Isolate);
 
@@ -222,10 +212,20 @@ public class V8API {
 
 	native ByteBuffer _createV8ArrayBufferBackingStore(long v8ContextPtr, long objectHandle, int capacity);
 
-	native void _terminateExecution(long v8ContextPtr);
-
 	native long _getGlobalObject(long v8ContextPtr);
 
+
+	native static void _acquireLock(long v8RuntimePtr);
+
+	native static void _releaseLock(long v8RuntimePtr);
+
+	native static void _lowMemoryNotification(long v8RuntimePtr);
+
+	native static void _releaseIsolate(long v8RuntimePtr);
+
+	native static void _releaseContext(long v8ContextPtr);
+
+	native static void _terminateExecution(long v8RuntimePtr);
 
 	native static String _getVersion();
 
