@@ -1,23 +1,20 @@
-Index: lib/internal/bootstrap_node.js
-IDEA additional info:
-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
-<+>UTF-8
-===================================================================
---- lib/internal/bootstrap_node.js	(date 1491924165000)
-+++ lib/internal/bootstrap_node.js	(date 1582956698809)
+diff --git a/lib/internal/bootstrap_node.js b/lib/internal/bootstrap_node.js
+index 1aa2f8c2..f3288239 100644
+--- a/lib/internal/bootstrap_node.js
++++ b/lib/internal/bootstrap_node.js
 @@ -452,7 +452,7 @@
-
+ 
      const cached = NativeModule.getCached(id);
      if (cached && (cached.loaded || cached.loading)) {
 -      return cached.exports;
 +      return NativeModule.proxyNative(id, cached.exports);
      }
-
+ 
      if (!NativeModule.exists(id)) {
 @@ -466,7 +466,18 @@
      nativeModule.cache();
      nativeModule.compile();
-
+ 
 -    return nativeModule.exports;
 +    return NativeModule.proxyNative(id, nativeModule.exports);
 +  };
@@ -32,5 +29,5 @@ Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
 +
 +    return exports;
    };
-
+ 
    NativeModule.getCached = function(id) {
