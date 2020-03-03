@@ -1,33 +1,43 @@
-diff --git a/lib/internal/bootstrap_node.js b/lib/internal/bootstrap_node.js
-index 1aa2f8c2..f3288239 100644
---- a/lib/internal/bootstrap_node.js
-+++ b/lib/internal/bootstrap_node.js
-@@ -452,7 +452,7 @@
+diff --git a/lib/module.js b/lib/module.js
+index d485c7c9..be7d3e48 100644
+--- a/lib/module.js
++++ b/lib/module.js
+@@ -419,12 +419,12 @@ Module._load = function(request, parent, isMain) {
  
-     const cached = NativeModule.getCached(id);
-     if (cached && (cached.loaded || cached.loading)) {
--      return cached.exports;
-+      return NativeModule.proxyNative(id, cached.exports);
-     }
+   var cachedModule = Module._cache[filename];
+   if (cachedModule) {
+-    return cachedModule.exports;
++    return proxyNative(parent, filename, cachedModule.exports);
+   }
  
-     if (!NativeModule.exists(id)) {
-@@ -466,7 +466,18 @@
-     nativeModule.cache();
-     nativeModule.compile();
+   if (NativeModule.nonInternalExists(filename)) {
+     debug('load native module %s', request);
+-    return NativeModule.require(filename);
++    return proxyNative(parent, filename, NativeModule.require(filename));
+   }
  
--    return nativeModule.exports;
-+    return NativeModule.proxyNative(id, nativeModule.exports);
-+  };
-+
-+  NativeModule.proxyNative = function(id, exports) {
-+    if (global.f8 && global.f8.proxyNative) {
-+      let proxyModule = global.f8.proxyNative(id, exports);
-+      if (proxyModule) {
-+        return proxyModule;
-+      }
-+    }
-+
+   var module = new Module(filename, parent);
+@@ -441,6 +441,23 @@ Module._load = function(request, parent, isMain) {
+   return module.exports;
+ };
+ 
++function proxyNative(parent, id, exports) {
++  // if a builtin is requiring another builtin, let it through
++  if (NativeModule.nonInternalExists(parent.id) && NativeModule.nonInternalExists(id)) {
 +    return exports;
-   };
- 
-   NativeModule.getCached = function(id) {
++  }
++
++  // if a normal mod is requiring a builtin that F8 has a shim for, then return the F8 shim proxy
++  if (global.f8 && global.f8.proxyNative) {
++    let proxyModule = global.f8.proxyNative(id, exports);
++    if (proxyModule) {
++      return proxyModule;
++    }
++  }
++
++  return exports;
++}
++
+ function tryModuleLoad(module, filename) {
+   var threw = true;
+   try {
