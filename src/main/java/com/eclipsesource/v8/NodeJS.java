@@ -28,16 +28,20 @@ public class NodeJS implements Closeable {
     private static final String     NEXT_TICK           = "nextTick";
     private static final String     PROCESS             = "process";
     private static final String     GLOBAL              = "global";
+    private static final String     J2V8_GLOBAL_NS      = "_j2v8";
+    private static final String     NATIVE_PROXY        = "nativeProxy";
     private static final String     STARTUP_CALLBACK    = "__run";
     private static final String     STARTUP_SCRIPT      = "global." + STARTUP_CALLBACK + "(require, exports, module, __filename, __dirname);";
     private static final String     STARTUP_SCRIPT_NAME = "startup";
     private static final String     VERSIONS            = "versions";
     private static final String     NODE                = "node";
-    private String                  nodeVersion         = null;
 
-    private V8Context               v8Context;
+    private final V8Context         V8CONTEXT;
+
     private V8Function              require;
+    private V8Object                j2v8GlobalNs;
     private Consumer<V8Function>    initConsumer;
+	private String                  nodeVersion         = null;
 
     /**
      * Returns the version of Node.js that is runtime is built against.
@@ -52,7 +56,7 @@ public class NodeJS implements Closeable {
         V8Object process = null;
         V8Object versions = null;
         try {
-            process = v8Context.getObject(PROCESS);
+            process = V8CONTEXT.getObject(PROCESS);
             versions = process.getObject(VERSIONS);
             nodeVersion = versions.getString(NODE);
         } finally {
@@ -83,17 +87,33 @@ public class NodeJS implements Closeable {
 
     public static NodeJS createNodeJS(final V8Context context) {
         final NodeJS node = new NodeJS(context);
-        context.registerJavaMethod(new JavaVoidCallback() {
+        context.registerJavaMethod((receiver, parameters) -> {
+			try (V8Function require = (V8Function) parameters.get(0)) {
+				node.init(require.twin());
+			}
+		}, STARTUP_CALLBACK);
 
-            @Override
-            public void invoke(final V8Object receiver, final V8Array parameters) {
-                try (V8Function require = (V8Function) parameters.get(0)) {
-                    node.init(require.twin());
-                }
-            }
-        }, STARTUP_CALLBACK);
+        node.setupJ2v8GlobalNs();
         return node;
     }
+
+    private void setupJ2v8GlobalNs() {
+    	V8Object global = V8CONTEXT.getObject(GLOBAL);
+    	j2v8GlobalNs = new V8Object(V8CONTEXT);
+
+    	global.add(J2V8_GLOBAL_NS, j2v8GlobalNs);
+    	global.close();
+	}
+
+	private void releaseNativeProxy() {
+    	j2v8GlobalNs.close();
+	}
+
+	public NodeJS setNativeProxy(JavaCallback nativeProxy) {
+    	j2v8GlobalNs.registerJavaMethod(nativeProxy, NATIVE_PROXY);
+
+    	return this;
+	}
 
     public NodeJS start() {
         return start(null);
@@ -124,7 +144,7 @@ public class NodeJS implements Closeable {
      * @return The V8 Context.
      */
     public V8Context getContext() {
-        return v8Context;
+        return V8CONTEXT;
     }
 
     /**
@@ -153,6 +173,9 @@ public class NodeJS implements Closeable {
     @Override
     public void close() {
         getRuntime().checkThread();
+
+        releaseNativeProxy();
+
         if (!require.isReleased()) {
             require.close();
         }
@@ -180,13 +203,10 @@ public class NodeJS implements Closeable {
      */
     public V8Object require(final String path) {
         getRuntime().checkThread();
-        V8Array requireParams = new V8Array(getContext());
-        try {
-            requireParams.push(path);
-            return (V8Object) require.call(null, requireParams);
-        } finally {
-            requireParams.close();
-        }
+		try (V8Array requireParams = new V8Array(getContext())) {
+			requireParams.push(path);
+			return (V8Object) require.call(null, requireParams);
+		}
     }
 
     /**
@@ -225,12 +245,7 @@ public class NodeJS implements Closeable {
     }
 
     private V8Function createScriptExecutionCallback(final String script) {
-        return new V8Function(getContext(), new JavaCallback() {
-            @Override
-            public Object invoke(final V8Object receiver, final V8Array parameters) {
-                return getContext().executeScript(script);
-            }
-        });
+        return new V8Function(getContext(), (receiver, parameters) -> getContext().executeScript(script));
     }
 
     private void safeRelease(final Releasable releasable) {
@@ -240,11 +255,14 @@ public class NodeJS implements Closeable {
     }
 
     private NodeJS(final V8Context v8Context) {
-        this.v8Context = v8Context;
+        this.V8CONTEXT = v8Context;
     }
 
     private void init(final V8Function require) {
         this.require = require;
+
+        getContext().add("require", require);
+
         if (initConsumer != null) {
             initConsumer.accept(require);
         }

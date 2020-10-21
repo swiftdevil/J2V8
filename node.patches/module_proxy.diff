@@ -1,5 +1,5 @@
 diff --git a/lib/module.js b/lib/module.js
-index d485c7c9..be7d3e48 100644
+index d485c7c9..d00c6d6d 100644
 --- a/lib/module.js
 +++ b/lib/module.js
 @@ -419,12 +419,12 @@ Module._load = function(request, parent, isMain) {
@@ -27,9 +27,9 @@ index d485c7c9..be7d3e48 100644
 +    return exports;
 +  }
 +
-+  // if a normal mod is requiring a builtin that F8 has a shim for, then return the F8 shim proxy
-+  if (global.f8 && global.f8.proxyNative) {
-+    let proxyModule = global.f8.proxyNative(id, exports);
++  // if a userspace mod is requiring a system builtin that has been overridden, then return the override
++  if (global._j2v8 && global._j2v8.proxyNative) {
++    let proxyModule = global._j2v8.proxyNative(id, exports);
 +    if (proxyModule) {
 +      return proxyModule;
 +    }

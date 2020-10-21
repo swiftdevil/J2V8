@@ -134,7 +134,7 @@ public class NodeJSTest {
         nodeJS.exec("global.passed = true;");
         runMessageLoop();
 
-        assertEquals(true, nodeJS.getContext().getBoolean("passed"));
+		assertTrue(nodeJS.getContext().getBoolean("passed"));
     }
 
     @Test
@@ -147,7 +147,7 @@ public class NodeJSTest {
         nodeJS.require(testScript.getAbsolutePath()).close();
         runMessageLoop();
 
-        assertEquals(true, nodeJS.getContext().getBoolean("passed"));
+		assertTrue(nodeJS.getContext().getBoolean("passed"));
         testScript.delete();
     }
 
@@ -165,6 +165,40 @@ public class NodeJSTest {
         exports.close();
 
     }
+
+    @Test
+	public void testNativeProxy() {
+    	JavaCallback cb = (receiver, parameters) -> {
+			V8Object exports = new V8Object(nodeJS.getContext());
+    		String name = parameters.getString(0);
+
+    		switch (name) {
+				case "fs":
+					exports.registerJavaMethod((receiver1, parameters1) -> "foo", "test");
+					break;
+			}
+
+			return exports;
+		};
+
+		nodeJS.setNativeProxy(cb);
+
+    	String script = "const fs = require('fs'); var x = fs.test(); ";
+    	nodeJS.execAndPump(script);
+
+    	String x = nodeJS.getContext().getString("x");
+    	assertEquals("foo", x);
+	}
+
+	@Test
+	public void testNativeRequire() {
+    	String script = "const http = require('http'); var x = http.createServer;";
+    	nodeJS.execAndPump(script);
+
+    	V8Object o = nodeJS.getContext().getObject("x");
+    	assertNotNull(o);
+    	o.close();
+	}
 
     @Test (expected = V8ScriptException.class)
     public void testException() throws V8ScriptException {
@@ -192,12 +226,9 @@ public class NodeJSTest {
 
     private static File createTemporaryScriptFile(final String script, final String name) throws IOException {
         File tempFile = File.createTempFile(name, ".js.tmp");
-        PrintWriter writer = new PrintWriter(tempFile, "UTF-8");
-        try {
-            writer.print(script);
-        } finally {
-            writer.close();
-        }
+		try (PrintWriter writer = new PrintWriter(tempFile, "UTF-8")) {
+			writer.print(script);
+		}
         return tempFile;
     }
 
