@@ -241,6 +241,11 @@ public class V8ObjectUtils {
         }
     }
 
+    public static V8Function toV8Function(final V8Context v8Context, final String script) {
+		V8Object result = v8Context.executeObjectScript("(function(){return " + script+ "})()");
+		return (result instanceof V8Function) ? (V8Function) result : null;
+	}
+
     /**
      * Creates a V8Array from a java.util.List. This is a deep copy, so if the list
      * contains other lists (or maps) they will also be converted.

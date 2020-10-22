@@ -10,6 +10,10 @@ public class V8ResultConsumer {
 	private Function<V8Context, Object> retriever;
 	private String resultVar;
 
+	public V8ResultConsumer(Consumer<Object> consumer) {
+		this.consumer = consumer;
+	}
+
 	public V8ResultConsumer(Consumer<Object> consumer, Function<V8Context, Object> retriever) {
 		this.consumer = consumer;
 		this.retriever = retriever;
@@ -20,13 +24,15 @@ public class V8ResultConsumer {
 		this.resultVar = resultVar;
 	}
 
-	void apply(V8Context context) {
+	void apply(V8Context context, Object o) {
 		if (consumer != null) {
-			Object result = null;
+			Object result = o;
+
 			if (retriever != null) {
 				result = retriever.apply(context);
-			} else if (resultVar != null)
+			} else if (resultVar != null) {
 				result = context.get(resultVar);
+			}
 
 			consumer.accept(result);
 		}

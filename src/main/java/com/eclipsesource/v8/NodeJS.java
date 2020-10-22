@@ -36,7 +36,7 @@ public class NodeJS implements Closeable {
     private static final String     VERSIONS            = "versions";
     private static final String     NODE                = "node";
 
-    private final V8Context         V8CONTEXT;
+    private final V8Context         v8Context;
 
     private V8Function              require;
     private V8Object                j2v8GlobalNs;
@@ -56,7 +56,7 @@ public class NodeJS implements Closeable {
         V8Object process = null;
         V8Object versions = null;
         try {
-            process = V8CONTEXT.getObject(PROCESS);
+            process = v8Context.getObject(PROCESS);
             versions = process.getObject(VERSIONS);
             nodeVersion = versions.getString(NODE);
         } finally {
@@ -98,8 +98,8 @@ public class NodeJS implements Closeable {
     }
 
     private void setupJ2v8GlobalNs() {
-    	V8Object global = V8CONTEXT.getObject(GLOBAL);
-    	j2v8GlobalNs = new V8Object(V8CONTEXT);
+    	V8Object global = v8Context.getObject(GLOBAL);
+    	j2v8GlobalNs = new V8Object(v8Context);
 
     	global.add(J2V8_GLOBAL_NS, j2v8GlobalNs);
     	global.close();
@@ -144,7 +144,7 @@ public class NodeJS implements Closeable {
      * @return The V8 Context.
      */
     public V8Context getContext() {
-        return V8CONTEXT;
+        return v8Context;
     }
 
     /**
@@ -255,7 +255,7 @@ public class NodeJS implements Closeable {
     }
 
     private NodeJS(final V8Context v8Context) {
-        this.V8CONTEXT = v8Context;
+        this.v8Context = v8Context;
     }
 
     private void init(final V8Function require) {

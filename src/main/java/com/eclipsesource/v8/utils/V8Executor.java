@@ -10,12 +10,10 @@
  ******************************************************************************/
 package com.eclipsesource.v8.utils;
 
-import com.eclipsesource.v8.JavaVoidCallback;
-import com.eclipsesource.v8.NodeJS;
-import com.eclipsesource.v8.V8Array;
-import com.eclipsesource.v8.V8Object;
+import com.eclipsesource.v8.*;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Executes a JS Script on a new V8 runtime in its own thread, and once finished,
@@ -31,57 +29,20 @@ import java.util.LinkedList;
  * once any scripts finish executing and the message queue becomes empty.
  */
 public class V8Executor extends Thread {
+	private final List<V8QueueMessage>    messageQueue = new ArrayList<>();
 
-    private final String                   script;
-    private NodeJS                         nodeJs;
-	private V8ResultConsumer               resultConsumer;
-    private volatile boolean               terminated       = false;
-    private volatile boolean               shuttingDown     = false;
-    private volatile boolean               forceTerminating = false;
-    private Exception                      exception        = null;
-    private LinkedList<String[]>           messageQueue     = new LinkedList<String[]>();
-    private boolean                        longRunning;
-    private String                         messageHandler;
+	private NodeJS                        nodeJs;
+    private volatile boolean              terminated       = false;
+    private volatile boolean              shuttingDown     = false;
+    private volatile boolean              forceTerminating = false;
+    private Exception                     exception        = null;
 
     /**
-     * Create a new executor and execute the given script on it. Once
-     * the script has finished executing, the executor can optionally
-     * wait on a message queue.
+     * Create a new executor. The executor will wait on a
+	 * message queue until it is terminated.
      *
-     * @param script The script to execute on this executor.
-     * @param longRunning True to indicate that this executor should be longRunning.
-     * @param messageHandler The name of the message handler that should be notified when messages are delivered.
-	 * @param resultConsumer The consumer that the result will get pushed to
      */
-    public V8Executor(final String script, boolean longRunning, String messageHandler, final V8ResultConsumer resultConsumer) {
-        this.script = script;
-        this.longRunning = longRunning;
-        this.messageHandler = messageHandler;
-        this.resultConsumer = resultConsumer;
-    }
-
-    public V8Executor(final String script, boolean longRunning, String messageHandler) {
-        this(script, longRunning, messageHandler, null);
-    }
-
-    /**
-     * Create a new executor and execute the given script on it.
-     *
-     * @param script The script to execute on this executor.
-	 * @param resultConsumer The consumer that the result will get pushed to
-     */
-    public V8Executor(final String script, final V8ResultConsumer resultConsumer) {
-        this(script, false, null, resultConsumer);
-    }
-
-    /**
-     * Create a new executor and execute the given script on it.
-     *
-     * @param script The script to execute on this executor.
-     */
-    public V8Executor(final String script) {
-        this(script, false, null, null);
-    }
+    public V8Executor() {}
 
     /**
      * Override to provide a custom setup for this V8 runtime.
@@ -99,14 +60,15 @@ public class V8Executor extends Thread {
      * Posts a message to the receiver to be processed by the executor
      * and sent to the V8 runtime via the messageHandler.
      *
-     * @param message The message to send to the messageHandler
+     * @param queueMessage The message to send to the messageHandler
      */
-    public void postMessage(final String... message) {
-        synchronized (this) {
-            messageQueue.add(message);
-            notify();
-        }
-    }
+
+	public void postMessage(final V8QueueMessage queueMessage) {
+		synchronized (this) {
+			messageQueue.add(queueMessage);
+			notify();
+		}
+	}
 
     /*
      * (non-Javadoc)
@@ -120,13 +82,7 @@ public class V8Executor extends Thread {
             setup(nodeJs);
         }
         try {
-            if (!forceTerminating) {
-                nodeJs.getContext().executeVoidScript("__j2v8__checkThreadTerminate();\n" + script, getName(), -1);
-                if (resultConsumer != null) {
-                    resultConsumer.apply(nodeJs.getContext());
-                }
-            }
-            while (!forceTerminating && longRunning) {
+            while (!forceTerminating) {
                 synchronized (this) {
                     if (messageQueue.isEmpty() && !shuttingDown) {
                         wait();
@@ -136,19 +92,32 @@ public class V8Executor extends Thread {
                     }
                 }
                 if (!messageQueue.isEmpty()) {
-                    String[] message = messageQueue.remove(0);
+                    V8QueueMessage qm = messageQueue.remove(0);
+
                     try (V8Array parameters = new V8Array(nodeJs.getContext());
-                         V8Array strings = new V8Array(nodeJs.getContext())) {
-                        for (String string : message) {
+                         V8Array strings = new V8Array(nodeJs.getContext());
+						 V8Function f = V8ObjectUtils.toV8Function(nodeJs.getContext(), qm.getScript())) {
+
+                    	if (f == null) {
+                    		continue;
+						}
+
+                        for (String string : qm.getArgs()) {
                             strings.push(string);
                         }
                         parameters.push(strings);
-                        nodeJs.getContext().executeVoidFunction(messageHandler, parameters);
+                        Object o = f.call(f, strings);
 
-                        if (resultConsumer != null) {
-                            resultConsumer.apply(nodeJs.getContext());
+                        if (qm.hasConsumer()) {
+                            qm.getConsumer().apply(nodeJs.getContext(), o);
                         }
-                    }
+                    } catch (V8ScriptException e) {
+                    	qm.setException(e);
+					} finally {
+                    	synchronized (qm) {
+                    		qm.notify();
+						}
+					}
                 }
             }
         } catch (Exception e) {
