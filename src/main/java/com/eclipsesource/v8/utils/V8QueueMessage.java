@@ -2,18 +2,23 @@ package com.eclipsesource.v8.utils;
 
 import com.eclipsesource.v8.V8ScriptException;
 
+import java.util.concurrent.Callable;
+
 public class V8QueueMessage {
 	private final String script;
-	private final String[] args;
+	private final Object[] args;
+	private final Callable<Void> callback;
 	private V8ResultConsumer consumer;
 	private V8ScriptException exception;
 
-	public V8QueueMessage(String script, String... args) {
+	public V8QueueMessage(Callable<Void> callback, String script, Object... args) {
+		this.callback = callback;
 		this.script = script;
 		this.args = args;
 	}
 
-	public V8QueueMessage(V8ResultConsumer consumer, String script, String... args) {
+	public V8QueueMessage(Callable<Void> callback, V8ResultConsumer consumer, String script, Object... args) {
+		this.callback = callback;
 		this.script = script;
 		this.consumer = consumer;
 		this.args = args;
@@ -27,7 +32,7 @@ public class V8QueueMessage {
 		return consumer;
 	}
 
-	String[] getArgs() {
+	Object[] getArgs() {
 		return args;
 	}
 
@@ -43,5 +48,9 @@ public class V8QueueMessage {
 		if (exception != null) {
 			throw exception;
 		}
+	}
+
+	Callable<Void> getCallback() {
+		return callback;
 	}
 }

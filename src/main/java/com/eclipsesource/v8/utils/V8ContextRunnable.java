@@ -17,7 +17,7 @@ import com.eclipsesource.v8.V8Context;
  * isolated V8 runtime on its own thread. Instances of classes that
  * implement this interface can be passed to V8Thread.
  */
-public interface V8Runnable {
+public interface V8ContextRunnable {
 
     /**
      * Execute the code on the provided runtime.

@@ -10,9 +10,9 @@
  ******************************************************************************/
 package com.eclipsesource.v8;
 
+import com.eclipsesource.v8.utils.V8ContextRunnable;
+import com.eclipsesource.v8.utils.V8ContextThread;
 import com.eclipsesource.v8.utils.V8ObjectUtils;
-import com.eclipsesource.v8.utils.V8Runnable;
-import com.eclipsesource.v8.utils.V8Thread;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -63,7 +63,7 @@ public class V8MultiThreadTest {
         public Object invoke(final V8Object receiver, final V8Array parameters) {
             final List<Object> data = V8ObjectUtils.toList(parameters);
 
-            V8Thread t = new V8Thread(new V8Runnable() {
+            V8ContextThread t = new V8ContextThread(new V8ContextRunnable() {
 
                 @Override
                 public void run(final V8Context v8Context) {
@@ -136,7 +136,7 @@ public class V8MultiThreadTest {
 
         final List<Thread> threads = new ArrayList<Thread>();
         for (int i = 0; i < 10; i++) {
-            V8Thread t = new V8Thread(new V8Runnable() {
+            V8ContextThread t = new V8ContextThread(new V8ContextRunnable() {
 
                 @Override
                 public void run(final V8Context v8Context) {

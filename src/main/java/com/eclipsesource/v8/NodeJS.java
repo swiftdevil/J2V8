@@ -172,6 +172,14 @@ public class NodeJS implements Closeable {
      */
     @Override
     public void close() {
+        closeContext(true);
+
+        if (!getContext().isReleased()) {
+            getContext().close(true);
+        }
+    }
+
+    public void closeContext(boolean closeRuntime) {
         getRuntime().checkThread();
 
         releaseNativeProxy();
@@ -180,7 +188,7 @@ public class NodeJS implements Closeable {
             require.close();
         }
         if (!getContext().isReleased()) {
-            getContext().close(true);
+            getContext().close(closeRuntime);
         }
     }
 
@@ -236,7 +244,10 @@ public class NodeJS implements Closeable {
     public void execAndPump(final String script) {
         exec(script);
         getContext().checkPendingException();
+        pump();
+    }
 
+    public void pump() {
         boolean running = true;
         while (running) {
             running = handleMessage();

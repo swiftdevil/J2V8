@@ -10,8 +10,8 @@
  ******************************************************************************/
 package com.eclipsesource.v8;
 
+import com.eclipsesource.v8.utils.V8ContextRunnable;
 import com.eclipsesource.v8.utils.V8Map;
-import com.eclipsesource.v8.utils.V8Runnable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -1478,7 +1478,7 @@ public class V8Test {
     public void testV8ReleaseHandleRemoved() {
         V8Isolate testV8Isolate = V8Isolate.create();
         V8Context testV8Context = testV8Isolate.createContext();
-        V8Runnable releaseHandler = mock(V8Runnable.class);
+        V8ContextRunnable releaseHandler = mock(V8ContextRunnable.class);
         testV8Context.addReleaseHandler(releaseHandler);
         testV8Context.removeReleaseHandler(releaseHandler);
 
@@ -1491,8 +1491,8 @@ public class V8Test {
     public void testV8UnknownReleaseHandleRemoved() {
         V8Isolate testV8Isolate = V8Isolate.create();
         V8Context testV8Context = testV8Isolate.createContext();
-        V8Runnable releaseHandler1 = mock(V8Runnable.class);
-        V8Runnable releaseHandler2 = mock(V8Runnable.class);
+        V8ContextRunnable releaseHandler1 = mock(V8ContextRunnable.class);
+        V8ContextRunnable releaseHandler2 = mock(V8ContextRunnable.class);
         testV8Context.addReleaseHandler(releaseHandler1);
         testV8Context.removeReleaseHandler(releaseHandler2);
 
@@ -1505,8 +1505,8 @@ public class V8Test {
     public void testV8MultipleReleaseHandlers() {
         V8Isolate testV8Isolate = V8Isolate.create();
         V8Context testV8Context = testV8Isolate.createContext();
-        V8Runnable releaseHandler1 = mock(V8Runnable.class);
-        V8Runnable releaseHandler2 = mock(V8Runnable.class);
+        V8ContextRunnable releaseHandler1 = mock(V8ContextRunnable.class);
+        V8ContextRunnable releaseHandler2 = mock(V8ContextRunnable.class);
         testV8Context.addReleaseHandler(releaseHandler1);
         testV8Context.addReleaseHandler(releaseHandler2);
 
@@ -1520,7 +1520,7 @@ public class V8Test {
     public void testExceptionInReleaseHandlerStillReleasesV8() {
         V8Isolate testV8Isolate = V8Isolate.create();
         V8Context testV8Context = testV8Isolate.createContext();
-        V8Runnable releaseHandler = mock(V8Runnable.class);
+        V8ContextRunnable releaseHandler = mock(V8ContextRunnable.class);
         doThrow(new RuntimeException()).when(releaseHandler).run(any(V8Context.class));
         testV8Context.addReleaseHandler(releaseHandler);
 

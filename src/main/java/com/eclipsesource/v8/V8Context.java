@@ -1,6 +1,6 @@
 package com.eclipsesource.v8;
 
-import com.eclipsesource.v8.utils.V8Runnable;
+import com.eclipsesource.v8.utils.V8ContextRunnable;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -15,7 +15,7 @@ public class V8Context extends V8Object {
 	private long                               objectReferences        = 0;
 	private Map<Long, V8Value>                 v8WeakReferences        = new HashMap<Long, V8Value>();
 	private LinkedList<ReferenceHandler>       referenceHandlers       = new LinkedList<ReferenceHandler>();
-	private LinkedList<V8Runnable>             releaseHandlers         = new LinkedList<V8Runnable>();
+	private LinkedList<V8ContextRunnable>             releaseHandlers         = new LinkedList<V8ContextRunnable>();
 	private V8ScriptException                  pendingException        = null;
 	private static Object                      invalid                 = new Object();
 
@@ -96,7 +96,7 @@ public class V8Context extends V8Object {
 	 *
 	 * @param handler The handler to invoke when the runtime, is being released
 	 */
-	public void addReleaseHandler(final V8Runnable handler) {
+	public void addReleaseHandler(final V8ContextRunnable handler) {
 		releaseHandlers.add(handler);
 	}
 
@@ -116,13 +116,13 @@ public class V8Context extends V8Object {
 	 *
 	 * @param handler The handler to remove
 	 */
-	public void removeReleaseHandler(final V8Runnable handler) {
+	public void removeReleaseHandler(final V8ContextRunnable handler) {
 		releaseHandlers.remove(handler);
 	}
 
 
 	void notifyReleaseHandlers() {
-		for (V8Runnable handler : releaseHandlers) {
+		for (V8ContextRunnable handler : releaseHandlers) {
 			handler.run(this);
 		}
 	}
@@ -557,7 +557,7 @@ public class V8Context extends V8Object {
 		throw new V8RuntimeException("Unknown return type: " + result.getClass());
 	}
 
-	void checkPendingException() {
+	public void checkPendingException() {
 		if (pendingException != null) {
 			if (pendingException.getCause() != null && (pendingException.getCause() instanceof V8ScriptException)) {
 				pendingException = (V8ScriptException) pendingException.getCause();

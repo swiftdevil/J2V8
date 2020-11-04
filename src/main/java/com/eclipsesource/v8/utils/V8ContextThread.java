@@ -21,16 +21,16 @@ import com.eclipsesource.v8.V8Isolate;
  * If the lock is released, you will need to ensure that the runtime
  * is properly released.
  */
-public class V8Thread extends Thread {
+public class V8ContextThread extends Thread {
 
-    private final V8Runnable target;
+    private final V8ContextRunnable target;
 
     /**
      * Create as new Thread with its own V8Runtime.
      *
      * @param target The code to execute with the given runtime.
      */
-    public V8Thread(final V8Runnable target) {
+    public V8ContextThread(final V8ContextRunnable target) {
         this.target = target;
     }
 

@@ -95,18 +95,18 @@ public class V8Executor extends Thread {
                     V8QueueMessage qm = messageQueue.remove(0);
 
                     try (V8Array parameters = new V8Array(nodeJs.getContext());
-                         V8Array strings = new V8Array(nodeJs.getContext());
+                         V8Array args = new V8Array(nodeJs.getContext());
 						 V8Function f = V8ObjectUtils.toV8Function(nodeJs.getContext(), qm.getScript())) {
 
                     	if (f == null) {
                     		continue;
 						}
 
-                        for (String string : qm.getArgs()) {
-                            strings.push(string);
+                        for (Object arg : qm.getArgs()) {
+                            args.push(arg);
                         }
-                        parameters.push(strings);
-                        Object o = f.call(f, strings);
+                        parameters.push(args);
+                        Object o = f.call(f, args);
 
                         if (qm.hasConsumer()) {
                             qm.getConsumer().apply(nodeJs.getContext(), o);

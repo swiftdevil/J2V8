@@ -49,16 +49,16 @@ public final class ConcurrentV8 {
     }
 
     /**
-     * Runs an {@link V8Runnable} on the V8 thread.
+     * Runs an {@link V8ContextRunnable} on the V8 thread.
      *
      * <b>Note: </b> This method executes synchronously, not asynchronously;
-     * it will not return until the passed {@link V8Runnable} is done
+     * it will not return until the passed {@link V8ContextRunnable} is done
      * executing. The method is also synchronized, so it will block until it
      * gets a chance to run.
      *
-     * @param runnable {@link V8Runnable} to run.
+     * @param runnable {@link V8ContextRunnable} to run.
      */
-    public synchronized void run(final V8Runnable runnable) {
+    public synchronized void run(final V8ContextRunnable runnable) {
         try {
             v8Context.getIsolate().getLocker().acquire();
             runnable.run(v8Context);
@@ -82,7 +82,7 @@ public final class ConcurrentV8 {
     public void release() {
         if ((v8Context != null) && !v8Context.isReleased()) {
             // Release the V8 instance from the V8 thread context.
-            run(new V8Runnable() {
+            run(new V8ContextRunnable() {
                 @Override
                 public void run(final V8Context v8Context) {
                     if ((v8Context != null) && !v8Context.isReleased()) {

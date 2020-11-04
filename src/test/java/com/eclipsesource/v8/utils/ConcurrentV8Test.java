@@ -50,7 +50,7 @@ public class ConcurrentV8Test {
     public void testLockNotAcquiredAfterExecution() {
         ConcurrentV8 concurrentV8 = new ConcurrentV8();
 
-        concurrentV8.run(new V8Runnable() {
+        concurrentV8.run(new V8ContextRunnable() {
 
             @Override
             public void run(final V8Context v8Context) {
@@ -67,7 +67,7 @@ public class ConcurrentV8Test {
         ConcurrentV8 concurrentV8 = new ConcurrentV8();
 
         try {
-            concurrentV8.run(new V8Runnable() {
+            concurrentV8.run(new V8ContextRunnable() {
 
                 @Override
                 public void run(final V8Context v8Context) {
@@ -87,7 +87,7 @@ public class ConcurrentV8Test {
         ConcurrentV8 concurrentV8 = new ConcurrentV8();
 
         try {
-            concurrentV8.run(new V8Runnable() {
+            concurrentV8.run(new V8ContextRunnable() {
 
                 @Override
                 public void run(final V8Context v8Context) {
@@ -115,7 +115,7 @@ public class ConcurrentV8Test {
         Thread thread1 = new Thread(new Runnable() {
             @Override
             public void run() {
-                v8.run(new V8Runnable() {
+                v8.run(new V8ContextRunnable() {
                     @Override
                     public void run(final V8Context v8Context) {
                         v8Context.executeVoidScript("var i = 3000;");
@@ -134,7 +134,7 @@ public class ConcurrentV8Test {
         Thread thread2 = new Thread(new Runnable() {
             @Override
             public void run() {
-                v8.run(new V8Runnable() {
+                v8.run(new V8ContextRunnable() {
                     @Override
                     public void run(final V8Context v8Context) {
                         v8Context.executeVoidScript("i += 344;");
@@ -150,7 +150,7 @@ public class ConcurrentV8Test {
             Assert.fail(e.getMessage());
         }
 
-        v8.run(new V8Runnable() {
+        v8.run(new V8ContextRunnable() {
             @Override
             public void run(final V8Context v8Context) {
                 Assert.assertEquals(3344, v8Context.executeIntegerScript("i"));
@@ -166,7 +166,7 @@ public class ConcurrentV8Test {
         ConcurrentV8 v8 = new ConcurrentV8();
         final ExceptionThrower exceptionThrower = new ExceptionThrower();
 
-        v8.run(new V8Runnable() {
+        v8.run(new V8ContextRunnable() {
             @Override
             public void run(final V8Context v8Context) {
                 v8Context.registerJavaMethod(exceptionThrower, "whine", "whine", new Class[0]);
@@ -174,7 +174,7 @@ public class ConcurrentV8Test {
         });
 
         try {
-            v8.run(new V8Runnable() {
+            v8.run(new V8ContextRunnable() {
                 @Override
                 public void run(final V8Context v8Context) {
                     v8Context.executeScript("whine();");
