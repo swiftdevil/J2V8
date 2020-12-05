@@ -96,7 +96,7 @@ public class V8Executor extends Thread {
 
                     try (V8Array parameters = new V8Array(nodeJs.getContext());
                          V8Array args = new V8Array(nodeJs.getContext());
-						 V8Function f = V8ObjectUtils.toV8Function(nodeJs.getContext(), qm.getScript())) {
+						 V8Function f = V8ObjectUtils.toV8Function(nodeJs.getContext(), qm.getMethod())) {
 
                     	if (f == null) {
                     		continue;
@@ -109,7 +109,7 @@ public class V8Executor extends Thread {
                         Object o = f.call(f, args);
 
                         if (qm.hasConsumer()) {
-                            qm.getConsumer().apply(nodeJs.getContext(), o);
+                            qm.getConsumer().apply(nodeJs.getContext(), qm, o);
                         }
                     } catch (V8ScriptException e) {
                     	qm.setException(e);

@@ -7,13 +7,13 @@ index d485c7c9..d00c6d6d 100644
    var cachedModule = Module._cache[filename];
    if (cachedModule) {
 -    return cachedModule.exports;
-+    return proxyNative(parent, filename, cachedModule.exports);
++    return maskNative(parent, filename, cachedModule.exports);
    }
  
    if (NativeModule.nonInternalExists(filename)) {
      debug('load native module %s', request);
 -    return NativeModule.require(filename);
-+    return proxyNative(parent, filename, NativeModule.require(filename));
++    return maskNative(parent, filename, NativeModule.require(filename));
    }
  
    var module = new Module(filename, parent);
@@ -21,17 +21,17 @@ index d485c7c9..d00c6d6d 100644
    return module.exports;
  };
  
-+function proxyNative(parent, id, exports) {
++function maskNative(parent, id, exports) {
 +  // if a builtin is requiring another builtin, let it through
 +  if (NativeModule.nonInternalExists(parent.id) && NativeModule.nonInternalExists(id)) {
 +    return exports;
 +  }
 +
 +  // if a userspace mod is requiring a system builtin that has been overridden, then return the override
-+  if (global._j2v8 && global._j2v8.proxyNative) {
-+    let proxyModule = global._j2v8.proxyNative(id, exports);
-+    if (proxyModule) {
-+      return proxyModule;
++  if (global._j2v8 && global._j2v8.maskNative) {
++    let maskModule = global._j2v8.maskNative(id, exports);
++    if (maskModule) {
++      return maskModule;
 +    }
 +  }
 +

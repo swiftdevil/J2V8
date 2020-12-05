@@ -13,7 +13,7 @@ public interface V8IsolateRunnable {
 	 *
 	 * @param isolate The V8 runtime assigned to this runnable.
 	 */
-	public void run(final V8Isolate isolate);
+	void run(final V8Isolate isolate);
 
-	public void destroy();
+	void destroy();
 }

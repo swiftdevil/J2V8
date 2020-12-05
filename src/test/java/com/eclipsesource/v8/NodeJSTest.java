@@ -31,7 +31,8 @@ public class NodeJSTest {
             return;
         }
 
-        nodeJS = NodeJS.createNodeJS().start();
+        nodeJS = NodeJS.createNodeJS();
+        nodeJS.setInitConsumer(rq -> nodeJS.getContext().add("require", rq)).start();
     }
 
     @After
@@ -167,7 +168,7 @@ public class NodeJSTest {
     }
 
     @Test
-	public void testNativeProxy() {
+	public void testNativeMask() {
     	JavaCallback cb = (receiver, parameters) -> {
 			V8Object exports = new V8Object(nodeJS.getContext());
     		String name = parameters.getString(0);
@@ -181,7 +182,7 @@ public class NodeJSTest {
 			return exports;
 		};
 
-		nodeJS.setNativeProxy(cb);
+		nodeJS.setNativeMask(cb);
 
     	String script = "const fs = require('fs'); var x = fs.test(); ";
     	nodeJS.execAndPump(script);

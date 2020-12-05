@@ -29,7 +29,7 @@ public class NodeJS implements Closeable {
     private static final String     PROCESS             = "process";
     private static final String     GLOBAL              = "global";
     private static final String     J2V8_GLOBAL_NS      = "_j2v8";
-    private static final String     NATIVE_PROXY        = "nativeProxy";
+    private static final String     NATIVE_MASK         = "nativeMask";
     private static final String     STARTUP_CALLBACK    = "__run";
     private static final String     STARTUP_SCRIPT      = "global." + STARTUP_CALLBACK + "(require, exports, module, __filename, __dirname);";
     private static final String     STARTUP_SCRIPT_NAME = "startup";
@@ -105,13 +105,12 @@ public class NodeJS implements Closeable {
     	global.close();
 	}
 
-	private void releaseNativeProxy() {
+	private void releaseNativeMask() {
     	j2v8GlobalNs.close();
 	}
 
-	public NodeJS setNativeProxy(JavaCallback nativeProxy) {
-    	j2v8GlobalNs.registerJavaMethod(nativeProxy, NATIVE_PROXY);
-
+	public NodeJS setNativeMask(JavaCallback nativeMask) {
+    	j2v8GlobalNs.registerJavaMethod(nativeMask, NATIVE_MASK);
     	return this;
 	}
 
@@ -134,8 +133,9 @@ public class NodeJS implements Closeable {
         return this;
     }
 
-    public void setInitConsumer(Consumer<V8Function> consumer) {
+    public NodeJS setInitConsumer(Consumer<V8Function> consumer) {
         initConsumer = consumer;
+        return this;
     }
 
     /**
@@ -182,7 +182,7 @@ public class NodeJS implements Closeable {
     public void closeContext(boolean closeRuntime) {
         getRuntime().checkThread();
 
-        releaseNativeProxy();
+        releaseNativeMask();
 
         if (!require.isReleased()) {
             require.close();
@@ -271,8 +271,6 @@ public class NodeJS implements Closeable {
 
     private void init(final V8Function require) {
         this.require = require;
-
-        getContext().add("require", require);
 
         if (initConsumer != null) {
             initConsumer.accept(require);
